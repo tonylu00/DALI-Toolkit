@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "160794690317",
+    "project_id": "dalimaster-5d226",
+    "storage_bucket": "dalimaster-5d226.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:160794690317:android:6cfabb39b7aa187c07e644",
+        "android_client_info": {
+          "package_name": "org.tonycloud.dalimaster.dalimaster"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQMI447_Ag3lf9iJ_GM1FZzn3Zx1znk68"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
