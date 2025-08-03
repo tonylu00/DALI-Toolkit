@@ -14,7 +14,6 @@ class Dali {
     return _instance!;
   }
   static const int broadcast = 127;
-  int com = 1;
   String name = "dali1";
   int gw = 0;
   DaliBase? base;
@@ -24,10 +23,9 @@ class Dali {
   DaliAddr? addr;
   ConnectionManager cm = ConnectionManager.instance;
 
-  Dali({int? c, int? g, String? n}) {
-    com = c ?? com;
+  Dali({int? g, String? n}) {
     gw = g ?? gw;
-    name = n ?? ("dali$com");
+    name = n ?? "dali1";
     // placeholders for any init logic
     base = DaliBase(cm);
     decode = DaliDecode();

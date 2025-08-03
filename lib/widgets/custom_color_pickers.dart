@@ -335,124 +335,48 @@ class ColorGridPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // 预定义颜色网格
-        Container(
-          width: 320,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 8,
-              mainAxisSpacing: 4,
-              crossAxisSpacing: 4,
-              childAspectRatio: 1,
-            ),
-            itemCount: _predefinedColors.length,
-            itemBuilder: (context, index) {
-              final colorItem = _predefinedColors[index];
-              final isSelected = _colorsAreEqual(color, colorItem);
-
-              return GestureDetector(
-                onTap: () => onColorChanged(colorItem),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: colorItem,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: isSelected ? Colors.black : Colors.grey.shade400,
-                      width: isSelected ? 3 : 1,
-                    ),
-                  ),
-                  child: isSelected
-                      ? Icon(
-                          Icons.check,
-                          color: _getContrastColor(colorItem),
-                          size: 16,
-                        )
-                      : null,
-                ),
-              );
-            },
-          ),
+    return Container(
+      width: 320,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 8,
+          mainAxisSpacing: 4,
+          crossAxisSpacing: 4,
+          childAspectRatio: 1,
         ),
-        const SizedBox(height: 16),
-        // RGB滑块
-        _buildRGBSliders(),
-      ],
-    );
-  }
+        itemCount: _predefinedColors.length,
+        itemBuilder: (context, index) {
+          final colorItem = _predefinedColors[index];
+          final isSelected = _colorsAreEqual(color, colorItem);
 
-  Widget _buildRGBSliders() {
-    return Column(
-      children: [
-        _buildRGBSlider('R', color.red, Colors.red, (value) {
-          onColorChanged(Color.fromRGBO(value, color.green, color.blue, 1.0));
-        }),
-        const SizedBox(height: 8),
-        _buildRGBSlider('G', color.green, Colors.green, (value) {
-          onColorChanged(Color.fromRGBO(color.red, value, color.blue, 1.0));
-        }),
-        const SizedBox(height: 8),
-        _buildRGBSlider('B', color.blue, Colors.blue, (value) {
-          onColorChanged(Color.fromRGBO(color.red, color.green, value, 1.0));
-        }),
-      ],
-    );
-  }
-
-  Widget _buildRGBSlider(
-      String label, int value, Color sliderColor, ValueChanged<int> onChanged) {
-    return Builder(
-      builder: (context) => Row(
-        children: [
-          SizedBox(
-            width: 20,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: sliderColor,
+          return GestureDetector(
+            onTap: () => onColorChanged(colorItem),
+            child: Container(
+              decoration: BoxDecoration(
+                color: colorItem,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: isSelected ? Colors.black : Colors.grey.shade400,
+                  width: isSelected ? 3 : 1,
+                ),
               ),
+              child: isSelected
+                  ? Icon(
+                      Icons.check,
+                      color: _getContrastColor(colorItem),
+                      size: 16,
+                    )
+                  : null,
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                trackHeight: 6,
-                thumbColor: sliderColor,
-                activeTrackColor: sliderColor.withValues(alpha: 0.8),
-                inactiveTrackColor: sliderColor.withValues(alpha: 0.3),
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-                overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-              ),
-              child: Slider(
-                value: value.toDouble(),
-                min: 0,
-                max: 255,
-                divisions: 255,
-                onChanged: (val) => onChanged(val.round()),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 35,
-            child: Text(
-              value.toString(),
-              style: const TextStyle(fontFamily: 'monospace'),
-              textAlign: TextAlign.right,
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
