@@ -23,7 +23,7 @@ class ReadOperationButtonsWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(16.0),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).shadowColor.withOpacity(0.1),
+            color: Theme.of(context).shadowColor.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -106,8 +106,8 @@ class ReadOperationButtonsWidget extends StatelessWidget {
         ),
       ),
       style: OutlinedButton.styleFrom(
-        side: BorderSide(color: color.withOpacity(0.5)),
-        backgroundColor: color.withOpacity(0.05),
+        side: BorderSide(color: color.withValues(alpha: 0.5)),
+        backgroundColor: color.withValues(alpha: 0.05),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),

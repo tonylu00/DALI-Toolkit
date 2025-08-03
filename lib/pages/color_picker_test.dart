@@ -50,7 +50,7 @@ class _ColorPickerTestPageState extends State<ColorPickerTestPage> {
               ),
               child: Center(
                 child: Text(
-                  'RGBA(${themeColor.red}, ${themeColor.green}, ${themeColor.blue}, ${(themeColor.alpha / 255 * 100).round()}%)',
+                  'RGBA(${(themeColor.r * 255.0).round()}, ${(themeColor.g * 255.0).round()}, ${(themeColor.b * 255.0).round()}, ${(themeColor.a * 100).round()}%)',
                   style: TextStyle(
                     color: _getContrastColor(themeColor),
                     fontWeight: FontWeight.bold,
@@ -88,7 +88,7 @@ class _ColorPickerTestPageState extends State<ColorPickerTestPage> {
               ),
               child: Center(
                 child: Text(
-                  'RGB(${daliColor.red}, ${daliColor.green}, ${daliColor.blue})',
+                  'RGB(${(daliColor.r * 255.0).round()}, ${(daliColor.g * 255.0).round()}, ${(daliColor.b * 255.0).round()})',
                   style: TextStyle(
                     color: _getContrastColor(daliColor),
                     fontWeight: FontWeight.bold,
@@ -104,8 +104,10 @@ class _ColorPickerTestPageState extends State<ColorPickerTestPage> {
   }
 
   Color _getContrastColor(Color color) {
-    double luminance =
-        (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue) / 255;
+    double luminance = (0.299 * color.r * 255.0 +
+            0.587 * color.g * 255.0 +
+            0.114 * color.b * 255.0) /
+        255;
     return luminance > 0.5 ? Colors.black : Colors.white;
   }
 }

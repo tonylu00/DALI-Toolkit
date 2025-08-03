@@ -36,7 +36,8 @@ class MyColorState extends State<MyColorPicker> {
     // 根据enableAlpha决定是否保持alpha通道
     final finalColor = widget.enableAlpha
         ? color
-        : Color.fromRGBO(color.red, color.green, color.blue, 1.0);
+        : Color.fromRGBO((color.r * 255.0).round(), (color.g * 255.0).round(),
+            (color.b * 255.0).round(), 1.0);
 
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 100), () {
@@ -64,8 +65,10 @@ class MyColorState extends State<MyColorPicker> {
   }
 
   Color _getContrastColor(Color color) {
-    double luminance =
-        (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue) / 255;
+    double luminance = (0.299 * color.r * 255.0 +
+            0.587 * color.g * 255.0 +
+            0.114 * color.b * 255.0) /
+        255;
     return luminance > 0.5 ? Colors.black : Colors.white;
   }
 
@@ -206,8 +209,8 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
               child: Center(
                 child: Text(
                   widget.enableAlpha
-                      ? 'RGBA(${dialogColor.red}, ${dialogColor.green}, ${dialogColor.blue}, ${(dialogColor.alpha / 255 * 100).round()}%)'
-                      : 'RGB(${dialogColor.red}, ${dialogColor.green}, ${dialogColor.blue})',
+                      ? 'RGBA(${(dialogColor.r * 255.0).round()}, ${(dialogColor.g * 255.0).round()}, ${(dialogColor.b * 255.0).round()}, ${(dialogColor.a * 100).round()}%)'
+                      : 'RGB(${(dialogColor.r * 255.0).round()}, ${(dialogColor.g * 255.0).round()}, ${(dialogColor.b * 255.0).round()})',
                   style: TextStyle(
                     color: _getContrastColor(dialogColor),
                     fontWeight: FontWeight.bold,
@@ -347,26 +350,32 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
 
   // RGB滑块组件
   Widget _buildRGBSliders(Color color, ValueChanged<Color> onChanged) {
-    final alpha = widget.enableAlpha ? color.alpha / 255.0 : 1.0;
+    final alpha = widget.enableAlpha ? color.a : 1.0;
 
     return Column(
       children: [
-        _buildRGBSlider('R', color.red, Colors.red, (value) {
-          onChanged(Color.fromRGBO(value, color.green, color.blue, alpha));
+        _buildRGBSlider('R', (color.r * 255.0).round(), Colors.red, (value) {
+          onChanged(Color.fromRGBO(value, (color.g * 255.0).round(),
+              (color.b * 255.0).round(), alpha));
         }),
         const SizedBox(height: 16),
-        _buildRGBSlider('G', color.green, Colors.green, (value) {
-          onChanged(Color.fromRGBO(color.red, value, color.blue, alpha));
+        _buildRGBSlider('G', (color.g * 255.0).round(), Colors.green, (value) {
+          onChanged(Color.fromRGBO((color.r * 255.0).round(), value,
+              (color.b * 255.0).round(), alpha));
         }),
         const SizedBox(height: 16),
-        _buildRGBSlider('B', color.blue, Colors.blue, (value) {
-          onChanged(Color.fromRGBO(color.red, color.green, value, alpha));
+        _buildRGBSlider('B', (color.b * 255.0).round(), Colors.blue, (value) {
+          onChanged(Color.fromRGBO((color.r * 255.0).round(),
+              (color.g * 255.0).round(), value, alpha));
         }),
         if (widget.enableAlpha) ...[
           const SizedBox(height: 16),
-          _buildAlphaSlider(color.alpha, (value) {
+          _buildAlphaSlider((color.a * 255.0).round(), (value) {
             onChanged(Color.fromRGBO(
-                color.red, color.green, color.blue, value / 255.0));
+                (color.r * 255.0).round(),
+                (color.g * 255.0).round(),
+                (color.b * 255.0).round(),
+                value / 255.0));
           }),
         ],
       ],
@@ -483,8 +492,10 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
   }
 
   Color _getContrastColor(Color color) {
-    double luminance =
-        (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue) / 255;
+    double luminance = (0.299 * color.r * 255.0 +
+            0.587 * color.g * 255.0 +
+            0.114 * color.b * 255.0) /
+        255;
     return luminance > 0.5 ? Colors.black : Colors.white;
   }
 }

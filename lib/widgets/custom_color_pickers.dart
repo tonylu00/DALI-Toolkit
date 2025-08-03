@@ -15,9 +15,9 @@ class HSVColor {
 
   /// 从RGB色彩创建HSV
   factory HSVColor.fromColor(Color color) {
-    final r = color.red / 255.0;
-    final g = color.green / 255.0;
-    final b = color.blue / 255.0;
+    final r = color.r;
+    final g = color.g;
+    final b = color.b;
 
     final max = math.max(r, math.max(g, b));
     final min = math.min(r, math.min(g, b));
@@ -143,8 +143,9 @@ class _ColorWheelPickerState extends State<ColorWheelPicker> {
     });
     final newColor = newHSV.toColor();
     final finalColor = widget.enableAlpha
-        ? newColor.withValues(alpha: widget.color.alpha / 255.0)
-        : Color.fromRGBO(newColor.red, newColor.green, newColor.blue, 1.0);
+        ? newColor.withValues(alpha: widget.color.a)
+        : Color.fromRGBO((newColor.r * 255.0).round(),
+            (newColor.g * 255.0).round(), (newColor.b * 255.0).round(), 1.0);
     widget.onColorChanged(finalColor);
   }
 
@@ -236,7 +237,7 @@ class _ColorWheelPickerState extends State<ColorWheelPicker> {
                   ),
                 ),
                 child: Slider(
-                  value: widget.color.alpha / 255.0,
+                  value: widget.color.a,
                   onChanged: (value) {
                     final newColor =
                         currentHSV.toColor().withValues(alpha: value);
@@ -407,7 +408,10 @@ class ColorGridPicker extends StatelessWidget {
               final finalColor = enableAlpha
                   ? colorItem
                   : Color.fromRGBO(
-                      colorItem.red, colorItem.green, colorItem.blue, 1.0);
+                      (colorItem.r * 255.0).round(),
+                      (colorItem.g * 255.0).round(),
+                      (colorItem.b * 255.0).round(),
+                      1.0);
               onColorChanged(finalColor);
             },
             child: Container(
@@ -435,18 +439,22 @@ class ColorGridPicker extends StatelessWidget {
 
   bool _colorsAreEqual(Color a, Color b) {
     if (enableAlpha) {
-      return a.red == b.red &&
-          a.green == b.green &&
-          a.blue == b.blue &&
-          a.alpha == b.alpha;
+      return (a.r * 255.0).round() == (b.r * 255.0).round() &&
+          (a.g * 255.0).round() == (b.g * 255.0).round() &&
+          (a.b * 255.0).round() == (b.b * 255.0).round() &&
+          (a.a * 255.0).round() == (b.a * 255.0).round();
     } else {
-      return a.red == b.red && a.green == b.green && a.blue == b.blue;
+      return (a.r * 255.0).round() == (b.r * 255.0).round() &&
+          (a.g * 255.0).round() == (b.g * 255.0).round() &&
+          (a.b * 255.0).round() == (b.b * 255.0).round();
     }
   }
 
   Color _getContrastColor(Color color) {
-    double luminance =
-        (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue) / 255;
+    double luminance = (0.299 * color.r * 255.0 +
+            0.587 * color.g * 255.0 +
+            0.114 * color.b * 255.0) /
+        255;
     return luminance > 0.5 ? Colors.black : Colors.white;
   }
 }

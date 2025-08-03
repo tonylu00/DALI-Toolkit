@@ -62,7 +62,7 @@ class _ColorControlWidgetState extends State<ColorControlWidget> {
         borderRadius: BorderRadius.circular(16.0),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).shadowColor.withOpacity(0.1),
+            color: Theme.of(context).shadowColor.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -101,7 +101,7 @@ class _ColorControlWidgetState extends State<ColorControlWidget> {
                   backgroundColor: Theme.of(context)
                       .colorScheme
                       .primaryContainer
-                      .withOpacity(0.3),
+                      .withValues(alpha: 0.3),
                 ),
               ),
             ],
@@ -117,13 +117,15 @@ class _ColorControlWidgetState extends State<ColorControlWidget> {
                   color: widget.color,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color:
-                        Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .outline
+                        .withValues(alpha: 0.3),
                     width: 2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: widget.color.withOpacity(0.3),
+                      color: widget.color.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -191,9 +193,9 @@ class _ColorControlWidgetState extends State<ColorControlWidget> {
           width: 20,
           height: 20,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
+            color: color.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: color.withOpacity(0.5)),
+            border: Border.all(color: color.withValues(alpha: 0.5)),
           ),
           child: Center(
             child: Text(
@@ -232,12 +234,12 @@ class _ColorControlWidgetState extends State<ColorControlWidget> {
           border: Border.all(
             color: isSelected
                 ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
             width: isSelected ? 3 : 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.3),
+              color: color.withValues(alpha: 0.3),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -255,15 +257,17 @@ class _ColorControlWidgetState extends State<ColorControlWidget> {
   }
 
   bool _colorsAreEqual(Color a, Color b) {
-    return (a.red - b.red).abs() < 10 &&
-        (a.green - b.green).abs() < 10 &&
-        (a.blue - b.blue).abs() < 10;
+    return ((a.r * 255.0).round() - (b.r * 255.0).round()).abs() < 10 &&
+        ((a.g * 255.0).round() - (b.g * 255.0).round()).abs() < 10 &&
+        ((a.b * 255.0).round() - (b.b * 255.0).round()).abs() < 10;
   }
 
   Color _getContrastColor(Color color) {
     // Calculate relative luminance
-    double luminance =
-        (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue) / 255;
+    double luminance = (0.299 * color.r * 255.0 +
+            0.587 * color.g * 255.0 +
+            0.114 * color.b * 255.0) /
+        255;
     return luminance > 0.5 ? Colors.black : Colors.white;
   }
 }

@@ -75,7 +75,7 @@ class _ColorTemperatureControlWidgetState
         borderRadius: BorderRadius.circular(16.0),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).shadowColor.withOpacity(0.1),
+            color: Theme.of(context).shadowColor.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -109,7 +109,7 @@ class _ColorTemperatureControlWidgetState
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.15),
+                      color: Colors.orange.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -129,7 +129,7 @@ class _ColorTemperatureControlWidgetState
                     ),
                     tooltip: 'Read'.tr(),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.orange.withOpacity(0.1),
+                      backgroundColor: Colors.orange.withValues(alpha: 0.1),
                     ),
                   ),
                 ],
@@ -200,13 +200,16 @@ class _ColorTemperatureControlWidgetState
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? Colors.orange.withOpacity(0.15)
-              : Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+              ? Colors.orange.withValues(alpha: 0.15)
+              : Theme.of(context)
+                  .colorScheme
+                  .surfaceContainerHighest
+                  .withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected
                 ? Colors.orange
-                : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
           ),
         ),
         child: Column(

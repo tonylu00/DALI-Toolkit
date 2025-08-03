@@ -1,5 +1,3 @@
-library dali_dart;
-
 import 'addr.dart';
 import 'base.dart';
 import 'decode.dart';
