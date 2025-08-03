@@ -1,38 +1,43 @@
 import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import '../widgets/custom_color_pickers.dart';
+
+enum ColorPickerMode { wheel, grid }
 
 class MyColorPicker extends StatefulWidget {
   final ValueChanged<Color> onColorChanged;
-  final Color defaultColor;
+  final Color? defaultColor;
 
-  const MyColorPicker({super.key, required this.onColorChanged, defaultColor})
-      : defaultColor = defaultColor ?? const Color(0xFFFF0000);
+  const MyColorPicker({
+    super.key,
+    required this.onColorChanged,
+    this.defaultColor,
+  });
 
   @override
   MyColorState createState() => MyColorState();
 }
 
 class MyColorState extends State<MyColorPicker> {
-  bool lightTheme = true;
   late Color currentColor;
   Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
-    currentColor = widget.defaultColor;
+    currentColor = widget.defaultColor ?? const Color(0xFFFF0000);
   }
 
   void changeColor(Color color) {
     setState(() => currentColor = color);
-    if (color.a < 1.0) {
-      color = color.withValues(alpha: 1.0);
-    }
+    // 确保颜色完全不透明
+    final opaqueColor =
+        Color.fromRGBO(color.r.toInt(), color.g.toInt(), color.b.toInt(), 1.0);
+
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 100), () {
-      widget.onColorChanged(color);
+      widget.onColorChanged(opaqueColor);
     });
   }
 
@@ -40,53 +45,251 @@ class MyColorState extends State<MyColorPicker> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Pick a color').tr(),
-          content: SingleChildScrollView(
-            child: HueRingPicker(
-              pickerColor: currentColor,
-              onColorChanged: changeColor,
-              displayThumbColor: true,
-              portraitOnly: true,
-              enableAlpha: false,
-              hueRingStrokeWidth: 30,
-              colorPickerHeight: 250,
-              pickerAreaBorderRadius: const BorderRadius.all(Radius.circular(40)),
-            ),
+        return Dialog(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel').tr(),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('OK').tr(),
-              onPressed: () {
-                changeColor(currentColor);
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
+          child: _buildColorPickerContent(context),
         );
       },
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final foregroundColor = useWhiteForeground(currentColor) ? Colors.white : Colors.black;
-    return Column(
-      children: <Widget>[
-        ElevatedButton(
-          onPressed: () => showColorPickerDialog(context),
-          style: ButtonStyle(
-            backgroundColor: WidgetStateProperty.all<Color>(currentColor),
+  Widget _buildColorPickerContent(BuildContext context) {
+    return StatefulBuilder(
+      builder: (context, setDialogState) {
+        ColorPickerMode mode = ColorPickerMode.wheel;
+        Color dialogColor = currentColor;
+
+        return Container(
+          constraints: const BoxConstraints(
+            maxWidth: 800,
+            maxHeight: 600,
           ),
-          child: Text('Pick color', style: TextStyle(color: foregroundColor)).tr(),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 标题和模式切换
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Pick a color'.tr(),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                    ),
+                    // 模式切换按钮（窄屏设备）
+                    if (MediaQuery.of(context).size.width < 600)
+                      SegmentedButton<ColorPickerMode>(
+                        segments: [
+                          ButtonSegment(
+                            value: ColorPickerMode.wheel,
+                            icon: const Icon(Icons.palette, size: 16),
+                            label: Text('Wheel'.tr()),
+                          ),
+                          ButtonSegment(
+                            value: ColorPickerMode.grid,
+                            icon: const Icon(Icons.grid_view, size: 16),
+                            label: Text('Grid'.tr()),
+                          ),
+                        ],
+                        selected: {mode},
+                        onSelectionChanged:
+                            (Set<ColorPickerMode> newSelection) {
+                          setDialogState(() {
+                            mode = newSelection.first;
+                          });
+                        },
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // 颜色预览
+                Container(
+                  width: double.infinity,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: dialogColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withValues(alpha: 0.5),
+                      width: 2,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'RGB(${dialogColor.r.toInt()}, ${dialogColor.g.toInt()}, ${dialogColor.b.toInt()})',
+                      style: TextStyle(
+                        color: _getContrastColor(dialogColor),
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // 颜色选择器内容
+                Flexible(
+                  child: MediaQuery.of(context).size.width >= 600
+                      ? _buildWideScreenLayout(dialogColor, (color) {
+                          setDialogState(() {
+                            dialogColor = color;
+                          });
+                        })
+                      : _buildNarrowScreenLayout(mode, dialogColor, (color) {
+                          setDialogState(() {
+                            dialogColor = color;
+                          });
+                        }),
+                ),
+
+                const SizedBox(height: 20),
+
+                // 操作按钮
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text('Cancel'.tr()),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: () {
+                        changeColor(dialogColor);
+                        Navigator.of(context).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onPrimary,
+                      ),
+                      child: Text('OK'.tr()),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // 宽屏布局：同时显示两种选择器
+  Widget _buildWideScreenLayout(Color color, ValueChanged<Color> onChanged) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 色彩轮盘
+        Expanded(
+          child: Column(
+            children: [
+              Text(
+                'Color Wheel'.tr(),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              ColorWheelPicker(
+                color: color,
+                onColorChanged: onChanged,
+                size: 250,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 20),
+        // 色块选择器
+        Expanded(
+          child: Column(
+            children: [
+              Text(
+                'Color Grid'.tr(),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              SingleChildScrollView(
+                child: ColorGridPicker(
+                  color: color,
+                  onColorChanged: onChanged,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
+  }
+
+  // 窄屏布局：切换显示
+  Widget _buildNarrowScreenLayout(
+      ColorPickerMode mode, Color color, ValueChanged<Color> onChanged) {
+    return SingleChildScrollView(
+      child: mode == ColorPickerMode.wheel
+          ? ColorWheelPicker(
+              color: color,
+              onColorChanged: onChanged,
+              size: 280,
+            )
+          : ColorGridPicker(
+              color: color,
+              onColorChanged: onChanged,
+            ),
+    );
+  }
+
+  Color _getContrastColor(Color color) {
+    double luminance =
+        (0.299 * color.r + 0.587 * color.g + 0.114 * color.b) / 255;
+    return luminance > 0.5 ? Colors.black : Colors.white;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final foregroundColor = _getContrastColor(currentColor);
+
+    return ElevatedButton.icon(
+      onPressed: () => showColorPickerDialog(context),
+      icon: Container(
+        width: 16,
+        height: 16,
+        decoration: BoxDecoration(
+          color: currentColor,
+          borderRadius: BorderRadius.circular(2),
+          border: Border.all(color: foregroundColor.withValues(alpha: 0.3)),
+        ),
+      ),
+      label: Text(
+        'Pick color'.tr(),
+        style: TextStyle(color: foregroundColor),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: currentColor,
+        foregroundColor: foregroundColor,
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
   }
 }

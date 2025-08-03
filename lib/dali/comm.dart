@@ -23,7 +23,6 @@ class DaliComm {
     extDelays = prefs.getInt('extDelays') ?? 100;
   }
 
-  bool isQuery = false;
   int gw = 0;
   int com = 0;
   String name = "dali";
@@ -88,7 +87,8 @@ class DaliComm {
     await Future.delayed(Duration(milliseconds: delays));
   }
 
-  Future<void> sendRawNew(int a, int b, {int? d, int? g, bool needVerify = false}) async {
+  Future<void> sendRawNew(int a, int b,
+      {int? d, int? g, bool needVerify = false}) async {
     int delays = d ?? sendDelays;
     int addr = a;
     int cmd = b;
@@ -165,7 +165,8 @@ class DaliComm {
           }
         }
       } else {
-        debugPrint("dali:queryRaw: no data or invalid data, length: ${data?.length}");
+        debugPrint(
+            "dali:queryRaw: no data or invalid data, length: ${data?.length}");
       }
       await write(buffer);
     }
@@ -179,7 +180,6 @@ class DaliComm {
     int cmd = b;
     List<int> buffer = [0x12, addr, cmd];
     int ret = -2;
-    isQuery = true;
     //await flush();
     await write(buffer);
     for (int i = 0; i < 10; i++) {
@@ -199,7 +199,6 @@ class DaliComm {
       await write(buffer);
     }
 
-    isQuery = false;
     return ret;
   }
 
@@ -249,11 +248,9 @@ class DaliComm {
 
   /// getBusStatus
   Future<bool> getBusStatus() async {
-    isQuery = true;
     // SERIAL.write([0x01, 0x00, 0x00], com);
     await Future.delayed(Duration(milliseconds: 50));
     // Suppose we got no valid data => no response
-    isQuery = false;
     return false;
   }
 
@@ -274,7 +271,8 @@ class DaliComm {
   }
 
   /// Send brightness % with DEC address
-  Future<void> setBrightPercentage(int a, double b, {int? t, int? d, int? g}) async {
+  Future<void> setBrightPercentage(int a, double b,
+      {int? t, int? d, int? g}) async {
     int bright = (b * 254 / 100).floor();
     if (bright > 254) {
       bright = 254;
