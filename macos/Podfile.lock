@@ -163,9 +163,9 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Firebase: cf1b19f21410b029b6786a54e9764a0cacad3c99
-  firebase_analytics: a80b3d6645f2f12d626fde928b61dae12e5ea2ef
-  firebase_core: 1dfe1f4d02ad78be0277e320aa3d8384cf46231f
-  firebase_remote_config: 559bbd2f3fec93598e725d35da1f94a3140a15ad
+  firebase_analytics: fed86e1d48cd897708df526db04971fc2b1b3f58
+  firebase_core: 14e47e659f61e64000927bf2c1f96f1a10349443
+  firebase_remote_config: 323019c060b55c4e527f3b9c78485bd00fbbbdbc
   FirebaseABTesting: aef1719704fade00b200827e7973f352efc4caee
   FirebaseAnalytics: 3feef9ae8733c567866342a1000691baaa7cad49
   FirebaseCore: e0510f1523bc0eb21653cac00792e1e2bd6f1771
@@ -179,9 +179,9 @@ SPEC CHECKSUMS:
   GoogleUtilities: 26a3abef001b6533cf678d3eb38fd3f614b7872d
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
-  shared_preferences_foundation: fcdcbc04712aee1108ac7fda236f363274528f78
-  universal_ble: cf52a7b3fd2e7c14d6d7262e9fdadb72ab6b88a6
+  shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
+  universal_ble: ff19787898040d721109c6324472e5dd4bc86adc
 
 PODFILE CHECKSUM: 9ebaf0ce3d369aaa26a9ea0e159195ed94724cf3
 
-COCOAPODS: 1.15.2
+COCOAPODS: 1.16.2
