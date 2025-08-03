@@ -106,12 +106,14 @@ class ColorWheelPicker extends StatefulWidget {
   final Color color;
   final ValueChanged<Color> onColorChanged;
   final double size;
+  final bool enableAlpha;
 
   const ColorWheelPicker({
     super.key,
     required this.color,
     required this.onColorChanged,
     this.size = 280,
+    this.enableAlpha = false,
   });
 
   @override
@@ -139,7 +141,11 @@ class _ColorWheelPickerState extends State<ColorWheelPicker> {
     setState(() {
       currentHSV = newHSV;
     });
-    widget.onColorChanged(newHSV.toColor());
+    final newColor = newHSV.toColor();
+    final finalColor = widget.enableAlpha
+        ? newColor.withValues(alpha: widget.color.alpha / 255.0)
+        : Color.fromRGBO(newColor.red, newColor.green, newColor.blue, 1.0);
+    widget.onColorChanged(finalColor);
   }
 
   @override
@@ -206,6 +212,43 @@ class _ColorWheelPickerState extends State<ColorWheelPicker> {
             ),
           ),
         ),
+        // Alpha滑块（如果启用）
+        if (widget.enableAlpha) ...[
+          const SizedBox(height: 16),
+          SizedBox(
+            width: widget.size * 0.8,
+            child: SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 20,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
+                activeTrackColor: Colors.transparent,
+                inactiveTrackColor: Colors.transparent,
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  gradient: LinearGradient(
+                    colors: [
+                      currentHSV.toColor().withValues(alpha: 0),
+                      currentHSV.toColor().withValues(alpha: 1),
+                    ],
+                  ),
+                ),
+                child: Slider(
+                  value: widget.color.alpha / 255.0,
+                  onChanged: (value) {
+                    final newColor =
+                        currentHSV.toColor().withValues(alpha: value);
+                    widget.onColorChanged(newColor);
+                  },
+                  min: 0,
+                  max: 1,
+                ),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -288,11 +331,13 @@ class ColorWheelPainter extends CustomPainter {
 class ColorGridPicker extends StatelessWidget {
   final Color color;
   final ValueChanged<Color> onColorChanged;
+  final bool enableAlpha;
 
   const ColorGridPicker({
     super.key,
     required this.color,
     required this.onColorChanged,
+    this.enableAlpha = false,
   });
 
   static const List<Color> _predefinedColors = [
@@ -357,7 +402,14 @@ class ColorGridPicker extends StatelessWidget {
           final isSelected = _colorsAreEqual(color, colorItem);
 
           return GestureDetector(
-            onTap: () => onColorChanged(colorItem),
+            onTap: () {
+              // 根据enableAlpha决定是否保持原有alpha或使用预定义颜色的alpha
+              final finalColor = enableAlpha
+                  ? colorItem
+                  : Color.fromRGBO(
+                      colorItem.red, colorItem.green, colorItem.blue, 1.0);
+              onColorChanged(finalColor);
+            },
             child: Container(
               decoration: BoxDecoration(
                 color: colorItem,
@@ -382,7 +434,14 @@ class ColorGridPicker extends StatelessWidget {
   }
 
   bool _colorsAreEqual(Color a, Color b) {
-    return a.red == b.red && a.green == b.green && a.blue == b.blue;
+    if (enableAlpha) {
+      return a.red == b.red &&
+          a.green == b.green &&
+          a.blue == b.blue &&
+          a.alpha == b.alpha;
+    } else {
+      return a.red == b.red && a.green == b.green && a.blue == b.blue;
+    }
   }
 
   Color _getContrastColor(Color color) {

@@ -8,11 +8,13 @@ enum ColorPickerMode { wheel, grid, rgb }
 class MyColorPicker extends StatefulWidget {
   final ValueChanged<Color> onColorChanged;
   final Color? defaultColor;
+  final bool enableAlpha;
 
   const MyColorPicker({
     super.key,
     required this.onColorChanged,
     this.defaultColor,
+    this.enableAlpha = false,
   });
 
   @override
@@ -31,12 +33,14 @@ class MyColorState extends State<MyColorPicker> {
 
   void changeColor(Color color) {
     setState(() => currentColor = color);
-    // 确保颜色完全不透明
-    final opaqueColor = Color.fromRGBO(color.red, color.green, color.blue, 1.0);
+    // 根据enableAlpha决定是否保持alpha通道
+    final finalColor = widget.enableAlpha
+        ? color
+        : Color.fromRGBO(color.red, color.green, color.blue, 1.0);
 
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 100), () {
-      widget.onColorChanged(opaqueColor);
+      widget.onColorChanged(finalColor);
     });
   }
 
@@ -52,6 +56,7 @@ class MyColorState extends State<MyColorPicker> {
           child: _ColorPickerContent(
             initialColor: currentColor,
             onColorChanged: changeColor,
+            enableAlpha: widget.enableAlpha,
           ),
         );
       },
@@ -107,10 +112,12 @@ class MyColorState extends State<MyColorPicker> {
 class _ColorPickerContent extends StatefulWidget {
   final Color initialColor;
   final ValueChanged<Color> onColorChanged;
+  final bool enableAlpha;
 
   const _ColorPickerContent({
     required this.initialColor,
     required this.onColorChanged,
+    required this.enableAlpha,
   });
 
   @override
@@ -198,7 +205,9 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
               ),
               child: Center(
                 child: Text(
-                  'RGB(${dialogColor.red}, ${dialogColor.green}, ${dialogColor.blue})',
+                  widget.enableAlpha
+                      ? 'RGBA(${dialogColor.red}, ${dialogColor.green}, ${dialogColor.blue}, ${(dialogColor.alpha / 255 * 100).round()}%)'
+                      : 'RGB(${dialogColor.red}, ${dialogColor.green}, ${dialogColor.blue})',
                   style: TextStyle(
                     color: _getContrastColor(dialogColor),
                     fontWeight: FontWeight.bold,
@@ -272,6 +281,7 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
                 color: color,
                 onColorChanged: onChanged,
                 size: 200,
+                enableAlpha: widget.enableAlpha,
               ),
             ],
           ),
@@ -290,6 +300,7 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
                 child: ColorGridPicker(
                   color: color,
                   onColorChanged: onChanged,
+                  enableAlpha: widget.enableAlpha,
                 ),
               ),
             ],
@@ -322,11 +333,13 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
               color: color,
               onColorChanged: onChanged,
               size: 280,
+              enableAlpha: widget.enableAlpha,
             )
           : mode == ColorPickerMode.grid
               ? ColorGridPicker(
                   color: color,
                   onColorChanged: onChanged,
+                  enableAlpha: widget.enableAlpha,
                 )
               : _buildRGBSliders(color, onChanged),
     );
@@ -334,19 +347,86 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
 
   // RGB滑块组件
   Widget _buildRGBSliders(Color color, ValueChanged<Color> onChanged) {
+    final alpha = widget.enableAlpha ? color.alpha / 255.0 : 1.0;
+
     return Column(
       children: [
         _buildRGBSlider('R', color.red, Colors.red, (value) {
-          onChanged(Color.fromRGBO(value, color.green, color.blue, 1.0));
+          onChanged(Color.fromRGBO(value, color.green, color.blue, alpha));
         }),
         const SizedBox(height: 16),
         _buildRGBSlider('G', color.green, Colors.green, (value) {
-          onChanged(Color.fromRGBO(color.red, value, color.blue, 1.0));
+          onChanged(Color.fromRGBO(color.red, value, color.blue, alpha));
         }),
         const SizedBox(height: 16),
         _buildRGBSlider('B', color.blue, Colors.blue, (value) {
-          onChanged(Color.fromRGBO(color.red, color.green, value, 1.0));
+          onChanged(Color.fromRGBO(color.red, color.green, value, alpha));
         }),
+        if (widget.enableAlpha) ...[
+          const SizedBox(height: 16),
+          _buildAlphaSlider(color.alpha, (value) {
+            onChanged(Color.fromRGBO(
+                color.red, color.green, color.blue, value / 255.0));
+          }),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildAlphaSlider(int value, ValueChanged<int> onChanged) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 30,
+          child: Text(
+            'A',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[700],
+              fontSize: 16,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 8,
+              thumbColor: Colors.grey[700],
+              activeTrackColor: Colors.grey[700]!.withValues(alpha: 0.8),
+              inactiveTrackColor: Colors.grey[300],
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4),
+                gradient: const LinearGradient(
+                  colors: [Colors.transparent, Colors.black],
+                ),
+              ),
+              child: Slider(
+                value: value.toDouble(),
+                min: 0,
+                max: 255,
+                divisions: 255,
+                onChanged: (val) => onChanged(val.round()),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        SizedBox(
+          width: 40,
+          child: Text(
+            '${(value / 255 * 100).round()}%',
+            style: const TextStyle(
+              fontFamily: 'monospace',
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.right,
+          ),
+        ),
       ],
     );
   }
