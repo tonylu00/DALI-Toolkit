@@ -8,6 +8,7 @@ import 'connection.dart';
 class TcpClient implements Connection {
   late Socket _socket;
   final Completer<void> _doneCompleter = Completer<void>();
+  bool _isConnected = false;
 
   @override
   String connectedDeviceId = '';
@@ -21,7 +22,11 @@ class TcpClient implements Connection {
   @override
   Future<void> connect(String address, {int port = 12345}) async {
     _socket = await Socket.connect(address, port);
-    _socket.done.then((_) => _doneCompleter.complete());
+    _isConnected = true;
+    _socket.done.then((_) {
+      _isConnected = false;
+      _doneCompleter.complete();
+    });
     debugPrint('Connected to: ${_socket.remoteAddress.address}:${_socket.remotePort}');
   }
 
@@ -44,7 +49,10 @@ class TcpClient implements Connection {
 
   @override
   void disconnect() {
-    _socket.close();
+    if (_isConnected) {
+      _isConnected = false;
+      _socket.close();
+    }
   }
 
   @override
@@ -59,7 +67,7 @@ class TcpClient implements Connection {
 
   @override
   bool isDeviceConnected() {
-    return !_doneCompleter.isCompleted;
+    return _isConnected;
   }
 
   @override

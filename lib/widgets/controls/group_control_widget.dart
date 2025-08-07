@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '/dali/dali.dart';
-import '../toast.dart';
+import '/toast.dart';
 import '/connection/manager.dart';
 import 'package:easy_localization/easy_localization.dart';
 

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import '../widgets/custom_color_pickers.dart';
+import '../widgets/widgets.dart';
 
 enum ColorPickerMode { wheel, grid, rgb }
 

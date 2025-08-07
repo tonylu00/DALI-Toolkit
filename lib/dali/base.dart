@@ -7,39 +7,38 @@ class DaliStatus {
   DaliStatus(this._status);
 
   bool get controlGearPresent => (_status & 0x01) == 0x01;
-  set controlGearPresent(bool value) =>
-      _status = value ? (_status | 0x01) : (_status & ~0x01);
+  set controlGearPresent(bool value) => _status = value ? (_status | 0x01) : (_status & ~0x01);
 
   bool get lampFailure => (_status & 0x02) == 0x02;
-  set lampFailure(bool value) =>
-      _status = value ? (_status | 0x02) : (_status & ~0x02);
+  set lampFailure(bool value) => _status = value ? (_status | 0x02) : (_status & ~0x02);
 
   bool get lampPowerOn => (_status & 0x04) == 0x04;
-  set lampPowerOn(bool value) =>
-      _status = value ? (_status | 0x04) : (_status & ~0x04);
+  set lampPowerOn(bool value) => _status = value ? (_status | 0x04) : (_status & ~0x04);
 
   bool get limitError => (_status & 0x08) == 0x08;
-  set limitError(bool value) =>
-      _status = value ? (_status | 0x08) : (_status & ~0x08);
+  set limitError(bool value) => _status = value ? (_status | 0x08) : (_status & ~0x08);
 
   bool get fadingCompleted => (_status & 0x10) == 0x10;
-  set fadingCompleted(bool value) =>
-      _status = value ? (_status | 0x10) : (_status & ~0x10);
+  set fadingCompleted(bool value) => _status = value ? (_status | 0x10) : (_status & ~0x10);
 
   bool get resetState => (_status & 0x20) == 0x20;
-  set resetState(bool value) =>
-      _status = value ? (_status | 0x20) : (_status & ~0x20);
+  set resetState(bool value) => _status = value ? (_status | 0x20) : (_status & ~0x20);
 
   bool get missingShortAddress => (_status & 0x40) == 0x40;
-  set missingShortAddress(bool value) =>
-      _status = value ? (_status | 0x40) : (_status & ~0x40);
+  set missingShortAddress(bool value) => _status = value ? (_status | 0x40) : (_status & ~0x40);
 
   bool get psFault => (_status & 0x80) == 0x80;
-  set psFault(bool value) =>
-      _status = value ? (_status | 0x80) : (_status & ~0x80);
+  set psFault(bool value) => _status = value ? (_status | 0x80) : (_status & ~0x80);
 }
 
 class DaliFadeTime {}
+
+class DaliGwFeature {
+  final int gatewayType;
+  DaliGwFeature(this.gatewayType);
+  bool get addressAllocation => (gatewayType <= 1);
+  bool get programableGwAddress => (gatewayType == 3);
+}
 
 class DaliBase extends DaliComm {
   DaliBase(super.manager);

@@ -32,7 +32,7 @@ dependencies:
     sdk: flutter
   universal_ble: 0.14.0 # universal ble
   #flutter_libserialport: ^0.4.0 # flutter libserialport for linux
-  serial: ^0.0.5 # usb serial for web
+  serial: ^0.0.7 # usb serial for web
   #serial_port_win32: ^2.1.12 # usb serial for windows
   #linux_serial: ^0.2.3+6
   #usb_serial: ^0.5.2 # usb serial for android
@@ -50,6 +50,7 @@ dependencies:
   flutter_colorpicker: ^1.1.0
   fluttertoast: ^8.2.10
   flutter_launcher_icons: "^0.14.3"
+  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:

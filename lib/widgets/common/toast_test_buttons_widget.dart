@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../toast.dart';
+import '/toast.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 class ToastTestButtonsWidget extends StatelessWidget {

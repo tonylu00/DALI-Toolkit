@@ -301,14 +301,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.19.0"
-  js:
-    dependency: transitive
-    description:
-      name: js
-      sha256: c1b2e9b5ea78c45e1a0788d29606ba27dc5f71f019f32ca5140f61ef071838cf
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.7.1"
   json_annotation:
     dependency: transitive
     description:
@@ -449,10 +441,10 @@ packages:
     dependency: "direct main"
     description:
       name: serial
-      sha256: c24fecff494acc1bc951232f61d745099e0d8342cff3b3dd3c2e41edd0ae576c
+      sha256: "264e85ac2af4cdb3b16879992429ba8fb47b4ded1a06b8249b6f4357df855e2b"
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.5"
+    version: "0.0.7+1"
   shared_preferences:
     dependency: "direct main"
     description:
@@ -595,13 +587,13 @@ packages:
     source: hosted
     version: "14.3.0"
   web:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: web
-      sha256: cd3543bd5798f6ad290ea73d210f423502e71900302dde696f8bff84bf89a1cb
+      sha256: "868d88a33d8a87b18ffc05f9f030ba328ffefba92d6c127917a2ba740f9cfe4a"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.0"
+    version: "1.1.1"
   xdg_directories:
     dependency: transitive
     description:

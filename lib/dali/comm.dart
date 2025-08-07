@@ -54,6 +54,43 @@ class DaliComm {
     //return conn.readBuffer;
   }
 
+  Future<int> checkGatewayType(int gateway) async {
+    Connection conn = manager.connection;
+    List<int> bytes1 = [0x01, 0x00, 0x00]; // USB
+    List<int> bytes2 = [0x28, 0x01, gateway, 0x11, 0x00, 0x00, 0xff]; // Legacy
+    List<int> bytes3 = [0x28, 0x01, gateway, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff]; // New
+
+    await conn.send(Uint8List.fromList(bytes1));
+    await Future.delayed(Duration(milliseconds: 100));
+    Uint8List? data = await conn.read(2, timeout: 100);
+    if (data != null && data.length == 2) {
+      if (data[0] == 0x01 && data[1] == 0x00) {
+        debugPrint("dali:checkGatewayType: USB interface detected");
+        return 1; // USB interface
+      }
+    }
+    await conn.send(Uint8List.fromList(bytes2));
+    await Future.delayed(Duration(milliseconds: 100));
+    data = await conn.read(2, timeout: 100);
+    if (data != null && data.length == 2) {
+      if (data[0] == gateway && data[1] >= 0) {
+        debugPrint("dali:checkGatewayType: Legacy 485 interface detected");
+        return 2; // Legacy 485 interface
+      }
+    }
+    await conn.send(Uint8List.fromList(bytes3));
+    await Future.delayed(Duration(milliseconds: 100));
+    data = await conn.read(2, timeout: 100);
+    if (data != null && data.length == 2) {
+      if (data[0] == gateway && data[1] >= 0) {
+        debugPrint("dali:checkGatewayType: New 485 interface detected");
+        return 3; // New 485 interface
+      }
+    }
+    debugPrint("dali:checkGatewayType: No valid gateway detected");
+    return 0;
+  }
+
   Future<void> flush() async {
     Connection conn = manager.connection;
     for (int i = 0; i < 10; i++) {
@@ -87,8 +124,7 @@ class DaliComm {
     await Future.delayed(Duration(milliseconds: delays));
   }
 
-  Future<void> sendRawNew(int a, int b,
-      {int? d, int? g, bool needVerify = false}) async {
+  Future<void> sendRawNew(int a, int b, {int? d, int? g, bool needVerify = false}) async {
     int delays = d ?? sendDelays;
     int addr = a;
     int cmd = b;
@@ -165,8 +201,7 @@ class DaliComm {
           }
         }
       } else {
-        debugPrint(
-            "dali:queryRaw: no data or invalid data, length: ${data?.length}");
+        debugPrint("dali:queryRaw: no data or invalid data, length: ${data?.length}");
       }
       await write(buffer);
     }
@@ -271,8 +306,7 @@ class DaliComm {
   }
 
   /// Send brightness % with DEC address
-  Future<void> setBrightPercentage(int a, double b,
-      {int? t, int? d, int? g}) async {
+  Future<void> setBrightPercentage(int a, double b, {int? t, int? d, int? g}) async {
     int bright = (b * 254 / 100).floor();
     if (bright > 254) {
       bright = 254;

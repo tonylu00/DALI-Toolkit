@@ -14,7 +14,7 @@ class DaliDT1 {
       await base.dtSelect(1);
       await base.sendCmd(addr, 0xe3);
     } else {
-      // log.error("bad DT1 type, must be 1")
+      // log.error("bad device type, must be 1")
     }
   }
 
@@ -59,6 +59,40 @@ class DaliDT1 {
     return inProgress ? 1 : 0;
   }
 
+  /// Get detailed DT1 test status with more information
+  Future<Map<String, dynamic>?> getDT1TestStatusDetailed(int a) async {
+    int? failureStatus = await getDT1FailureStatus(a);
+    int? emergencyStatus = await getDT1Status(a);
+    int? emergencyMode = await getDT1EmergencyMode(a);
+    int? feature = await getDT1Feature(a);
+
+    if (failureStatus == null) return null;
+
+    bool testInProgress = (failureStatus & 0x01) != 0;
+    bool lampFailure = (failureStatus & 0x02) != 0;
+    bool batteryFailure = (failureStatus & 0x04) != 0;
+    bool functionTestActive = (failureStatus & 0x08) != 0;
+    bool durationTestActive = (failureStatus & 0x10) != 0;
+    bool testDone = (failureStatus & 0x20) != 0;
+    bool identifyActive = (failureStatus & 0x40) != 0;
+    bool physicalSelectionActive = (failureStatus & 0x80) != 0;
+
+    return {
+      'failureStatus': failureStatus,
+      'emergencyStatus': emergencyStatus,
+      'emergencyMode': emergencyMode,
+      'feature': feature,
+      'testInProgress': testInProgress,
+      'lampFailure': lampFailure,
+      'batteryFailure': batteryFailure,
+      'functionTestActive': functionTestActive,
+      'durationTestActive': durationTestActive,
+      'testDone': testDone,
+      'identifyActive': identifyActive,
+      'physicalSelectionActive': physicalSelectionActive,
+    };
+  }
+
   /// Perform DT1 selftest and wait for completion
   Future<bool> performDT1Test(int a, [int? t]) async {
     int timeout = t ?? 5;
@@ -77,7 +111,8 @@ class DaliDT1 {
         // log.info("DT1 self test status unknown")
         return false;
       }
-      // TODO: replace with actual delay, e.g. Future.delayed()
+      // Wait for 1 second before checking again
+      await Future.delayed(const Duration(seconds: 1));
     }
     return false;
   }

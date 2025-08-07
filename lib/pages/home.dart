@@ -7,14 +7,7 @@ import '/connection/manager.dart';
 import 'base_scaffold.dart';
 
 // Import the new widget components
-import '../widgets/device_status_widget.dart';
-import '../widgets/device_control_buttons_widget.dart';
-import '../widgets/brightness_control_widget.dart';
-import '../widgets/color_temperature_control_widget.dart';
-import '../widgets/color_control_widget.dart';
-import '../widgets/group_control_widget.dart';
-import '../widgets/toast_test_buttons_widget.dart';
-import '../widgets/read_operation_buttons_widget.dart';
+import '../widgets/widgets.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});

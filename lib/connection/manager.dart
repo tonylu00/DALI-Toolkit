@@ -23,8 +23,14 @@ class ConnectionManager extends ChangeNotifier {
       }
       debugPrint('Initializing BLE connection');
       _connection = BleManager();
-    } else {
+    } else if (connectionMethod == 'TCP') {
       _connection = TcpClient();
+    } else if (connectionMethod == 'USB') {
+      // Initialize USB connection if needed
+      // _connection = UsbConnection();
+    } else {
+      debugPrint('Unknown connection method: $connectionMethod');
+      return;
     }
   }
 

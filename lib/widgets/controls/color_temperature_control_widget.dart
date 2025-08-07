@@ -1,27 +1,28 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '/dali/dali.dart';
-import '../toast.dart';
+import '/toast.dart';
 import '/connection/manager.dart';
-import '../utils/colour_track_shape.dart';
+import '/utils/colour_track_shape.dart';
 import 'package:easy_localization/easy_localization.dart';
 
-class BrightnessControlWidget extends StatefulWidget {
-  final double brightness;
-  final ValueChanged<double> onBrightnessChanged;
+class ColorTemperatureControlWidget extends StatefulWidget {
+  final double colorTemperature;
+  final ValueChanged<double> onColorTemperatureChanged;
 
-  const BrightnessControlWidget({
+  const ColorTemperatureControlWidget({
     super.key,
-    required this.brightness,
-    required this.onBrightnessChanged,
+    required this.colorTemperature,
+    required this.onColorTemperatureChanged,
   });
 
   @override
-  State<BrightnessControlWidget> createState() =>
-      _BrightnessControlWidgetState();
+  State<ColorTemperatureControlWidget> createState() =>
+      _ColorTemperatureControlWidgetState();
 }
 
-class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
+class _ColorTemperatureControlWidgetState
+    extends State<ColorTemperatureControlWidget> {
   Timer? _debounce;
 
   bool _checkDeviceConnection() {
@@ -33,25 +34,28 @@ class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
     return true;
   }
 
-  Future<void> _readBrightness() async {
+  Future<void> _readColorTemperature() async {
     if (!_checkDeviceConnection()) return;
 
-    final bright = await Dali.instance.base!
-        .getBright(Dali.instance.base!.selectedAddress);
-    if (bright == null || bright < 0 || bright > 254) {
-      return;
+    int colorTemp = await Dali.instance.dt8!
+        .getColorTemperature(Dali.instance.base!.selectedAddress);
+    if (colorTemp < 2700) {
+      colorTemp = 2700;
     }
-    widget.onBrightnessChanged(bright.toDouble());
+    if (colorTemp > 6500) {
+      colorTemp = 6500;
+    }
+    widget.onColorTemperatureChanged(colorTemp.toDouble());
   }
 
-  void _setBrightness(double value) {
+  void _setColorTemperature(double value) {
     if (!_checkDeviceConnection()) return;
 
-    widget.onBrightnessChanged(value);
+    widget.onColorTemperatureChanged(value);
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 50), () {
-      Dali.instance.base!
-          .setBright(Dali.instance.base!.selectedAddress, value.toInt());
+      Dali.instance.dt8!.setColorTemperature(
+          Dali.instance.base!.selectedAddress, value.toInt());
     });
   }
 
@@ -86,13 +90,13 @@ class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
               Row(
                 children: [
                   Icon(
-                    Icons.brightness_6,
-                    color: Theme.of(context).colorScheme.primary,
+                    Icons.thermostat,
+                    color: Colors.orange,
                     size: 24,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Brightness'.tr(),
+                    'Color Temperature'.tr(),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -105,32 +109,27 @@ class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
+                      color: Colors.orange.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '${widget.brightness.toInt()}',
+                      '${widget.colorTemperature.toInt()}K',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onPrimaryContainer,
+                            color: Colors.orange.shade700,
                             fontWeight: FontWeight.bold,
                           ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    onPressed: _readBrightness,
+                    onPressed: _readColorTemperature,
                     icon: Icon(
                       Icons.refresh,
-                      color: Theme.of(context).colorScheme.primary,
+                      color: Colors.orange,
                     ),
                     tooltip: 'Read'.tr(),
                     style: IconButton.styleFrom(
-                      backgroundColor: Theme.of(context)
-                          .colorScheme
-                          .primaryContainer
-                          .withValues(alpha: 0.3),
+                      backgroundColor: Colors.orange.withValues(alpha: 0.1),
                     ),
                   ),
                 ],
@@ -145,42 +144,45 @@ class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
                 trackHeight: 8.0,
                 activeTrackColor: Colors.transparent,
                 inactiveTrackColor: Colors.transparent,
-                trackShape:
-                    GradientTrackShape(colors: [Colors.black, Colors.white]),
-                thumbColor: Theme.of(context).colorScheme.primary,
-                overlayColor:
-                    Theme.of(context).colorScheme.primary.withAlpha(32),
+                trackShape: GradientTrackShape(colors: [
+                  Colors.yellow.shade300,
+                  Colors.white,
+                  Colors.lightBlue.shade300
+                ]),
+                thumbColor: Colors.orange,
+                overlayColor: Colors.orange.withAlpha(32),
                 thumbShape:
                     const RoundSliderThumbShape(enabledThumbRadius: 14.0),
                 overlayShape:
                     const RoundSliderOverlayShape(overlayRadius: 20.0),
                 valueIndicatorShape: const PaddleSliderValueIndicatorShape(),
-                valueIndicatorColor: Theme.of(context).colorScheme.primary,
-                valueIndicatorTextStyle: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimary,
+                valueIndicatorColor: Colors.orange,
+                valueIndicatorTextStyle: const TextStyle(
+                  color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               child: Slider(
-                value: widget.brightness,
-                min: 0,
-                max: 254,
-                divisions: 255,
-                label: widget.brightness.toInt().toString(),
-                onChanged: _setBrightness,
+                value: widget.colorTemperature,
+                min: 2700,
+                max: 6500,
+                divisions: 3800,
+                label: '${widget.colorTemperature.toInt()}K',
+                onChanged: _setColorTemperature,
               ),
             ),
           ),
-          // 预设值快捷按钮
+          // 预设色温快捷按钮
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildPresetButton(context, '0%', 0),
-              _buildPresetButton(context, '25%', 63),
-              _buildPresetButton(context, '50%', 127),
-              _buildPresetButton(context, '75%', 191),
-              _buildPresetButton(context, '100%', 254),
+              _buildPresetButton(context, 'Warm', 2700, Colors.yellow.shade600),
+              _buildPresetButton(context, 'Soft', 3500, Colors.orange.shade300),
+              _buildPresetButton(context, 'Natural', 4500, Colors.white),
+              _buildPresetButton(context, 'Cool', 5500, Colors.blue.shade200),
+              _buildPresetButton(
+                  context, 'Daylight', 6500, Colors.lightBlue.shade300),
             ],
           ),
         ],
@@ -188,16 +190,17 @@ class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
     );
   }
 
-  Widget _buildPresetButton(BuildContext context, String label, double value) {
-    final isSelected = (widget.brightness - value).abs() < 2;
+  Widget _buildPresetButton(
+      BuildContext context, String label, double value, Color indicatorColor) {
+    final isSelected = (widget.colorTemperature - value).abs() < 50;
 
     return GestureDetector(
-      onTap: () => _setBrightness(value),
+      onTap: () => _setColorTemperature(value),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? Theme.of(context).colorScheme.primaryContainer
+              ? Colors.orange.withValues(alpha: 0.15)
               : Theme.of(context)
                   .colorScheme
                   .surfaceContainerHighest
@@ -205,18 +208,35 @@ class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected
-                ? Theme.of(context).colorScheme.primary
+                ? Colors.orange
                 : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
           ),
         ),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: isSelected
-                    ? Theme.of(context).colorScheme.onPrimaryContainer
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 16,
+              height: 4,
+              decoration: BoxDecoration(
+                color: indicatorColor,
+                borderRadius: BorderRadius.circular(2),
+                border: Border.all(color: Colors.grey.shade400, width: 0.5),
               ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: isSelected
+                        ? Colors.orange.shade700
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 10,
+                  ),
+            ),
+          ],
         ),
       ),
     );

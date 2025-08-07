@@ -4,7 +4,7 @@ mode: agent
 # Deprecated API Usage Guide
 
 ## Notice
-To avoid errors, do not use deprecated APIs. If an API is marked as deprecated, search online and use the suggested replacement. Use "flutter analyze" to check for deprecated API usage in your code.
+To avoid errors, do not use deprecated APIs. If an API is marked as deprecated, search online and use the suggested replacement.
 
 # Collaboration Notice
 To facilitate collaboration, the prompt file must be written in English.
@@ -21,17 +21,6 @@ Use instead:
 
 Migration examples:
 ```dart
-// OLD: Getting int values (0-255)
-int redValue = color.red;
-int greenValue = color.green; 
-int blueValue = color.blue;
-int alphaValue = color.alpha;
-
-// NEW: Getting double values (0.0-1.0)
-double rValue = color.r;
-double gValue = color.g;
-double bValue = color.b; 
-double aValue = color.a;
 
 // Converting from new to old format when needed:
 int redValue = (color.r * 255.0).round();

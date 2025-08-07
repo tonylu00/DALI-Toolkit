@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '/dali/dali.dart';
 import '/dali/log.dart';
-import '../toast.dart';
+import '/toast.dart';
 import '/connection/manager.dart';
 import 'package:easy_localization/easy_localization.dart';
 
@@ -106,9 +106,9 @@ class DeviceControlButtonsWidget extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 4.0),
         child: ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
-            backgroundColor: color.withValues(alpha:0.1),
+            backgroundColor: color.withValues(alpha: 0.1),
             foregroundColor: color,
-            side: BorderSide(color: color.withValues(alpha:0.3)),
+            side: BorderSide(color: color.withValues(alpha: 0.3)),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),

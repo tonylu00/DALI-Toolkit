@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '/dali/dali.dart';
-import '../dali/color.dart';
-import '../toast.dart';
+import '/dali/color.dart';
+import '/toast.dart';
 import '/connection/manager.dart';
-import '../pages/color_picker.dart';
+import '/pages/color_picker.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 class ColorControlWidget extends StatefulWidget {
