@@ -33,8 +33,7 @@ void main() async {
       supportedLocales: [Locale('en'), Locale('zh', 'CN')],
       path: 'assets/translations', // <-- change the path of the translation files
       fallbackLocale: Locale('zh', 'CN'),
-      child: MyApp()
-  ));
+      child: MyApp()));
   ConnectionManager.instance.init();
 }
 
@@ -81,9 +80,13 @@ class MyAppState extends State<MyApp> {
       themeMode: _themeMode,
       initialRoute: '/home',
       routes: {
-        '/home': (context) => const MyHomePage(title: '',),
-        '/settings': (context) => SettingsPage(onThemeModeChanged: _toggleThemeMode,
-          onThemeColorChanged: _changeThemeColor,),
+        '/home': (context) => const MyHomePage(
+              title: '',
+            ),
+        '/settings': (context) => SettingsPage(
+              onThemeModeChanged: _toggleThemeMode,
+              onThemeColorChanged: _changeThemeColor,
+            ),
         '/login': (context) => const LoginPage(),
       },
     );

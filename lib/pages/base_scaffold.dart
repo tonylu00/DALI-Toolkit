@@ -60,7 +60,9 @@ class BaseScaffoldState extends State<BaseScaffold> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(isConnected ? "Connected" : "Disconnected", style: const TextStyle(fontSize: 12)).tr(),
+                Text(isConnected ? "Connected" : "Disconnected",
+                        style: const TextStyle(fontSize: 12))
+                    .tr(),
                 const SizedBox(height: 1),
                 Text(connection.type, style: const TextStyle(fontSize: 12)),
                 Text(connection.connectedDeviceId, style: const TextStyle(fontSize: 8)),
@@ -68,12 +70,14 @@ class BaseScaffoldState extends State<BaseScaffold> {
             ),
           ],
         ),
-        leading: isLandscape ? null : Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
+        leading: isLandscape
+            ? null
+            : Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              ),
         actions: <Widget>[
           PopupMenuButton<String>(
             onSelected: (String result) async {
@@ -134,7 +138,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
 
   void navigateToPage(BuildContext context, String routeName) {
     if (!isRouteActive(context, routeName)) {
-      Navigator.pushNamed(context, routeName);
+      Navigator.restorablePushNamed(context, routeName);
     }
   }
 
