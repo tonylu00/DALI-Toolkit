@@ -160,7 +160,6 @@ class _ColorControlWidgetState extends State<ColorControlWidget> {
               _buildColorPreset(Colors.orange, 'Orange'),
               _buildColorPreset(Colors.cyan, 'Cyan'),
               _buildColorPreset(Colors.pink, 'Pink'),
-              _buildColorPreset(Colors.white, 'White'),
             ],
           ),
         ],
