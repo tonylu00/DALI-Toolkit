@@ -169,14 +169,15 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
       return const Center(child: CircularProgressIndicator());
     }
     final seq = current!;
+    final media = MediaQuery.of(context);
+    final isNarrow = media.size.width < 600; // 自适应阈值
     return Scaffold(
       appBar: AppBar(
         title: Text('sequence.editor.title'.tr()),
         actions: [
+          // 顶部按钮改为添加步骤
           IconButton(
-              onPressed: _createSequence,
-              tooltip: 'sequence.sequence.new'.tr(),
-              icon: const Icon(Icons.add_box_outlined)),
+              onPressed: _addStep, tooltip: 'sequence.add_step'.tr(), icon: const Icon(Icons.add)),
           if (runner?.isRunning == true)
             IconButton(
                 onPressed: _stop, tooltip: 'sequence.stop'.tr(), icon: const Icon(Icons.stop))
@@ -198,120 +199,149 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
           )
         ],
       ),
-      body: Row(
-        children: [
-          SizedBox(
-            width: 220,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('sequence.sequences'.tr(),
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                      IconButton(onPressed: _createSequence, icon: const Icon(Icons.add, size: 20))
-                    ],
-                  ),
+      body: isNarrow ? _buildNarrowBody(seq) : _buildWideBody(seq),
+      // 原浮动添加步骤按钮移除，顶部已替换为添加步骤
+    );
+  }
+
+  Widget _buildWideBody(CommandSequence seq) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 220,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('sequence.sequences'.tr(),
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    IconButton(onPressed: _createSequence, icon: const Icon(Icons.add, size: 20))
+                  ],
                 ),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: repo.sequences.length,
-                    itemBuilder: (c, i) {
-                      final s = repo.sequences[i];
-                      final selected = s.id == seq.id;
-                      return ListTile(
-                        selected: selected,
-                        title: Text(s.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                        onTap: () => _selectSequence(s),
-                        trailing: selected && runner?.isRunning == true
-                            ? const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(strokeWidth: 2))
-                            : null,
-                      );
-                    },
-                  ),
-                )
-              ],
-            ),
+              ),
+              Expanded(child: _sequenceList(seq))
+            ],
           ),
-          const VerticalDivider(width: 1),
-          Expanded(
-            child: Column(
-              children: [
-                Expanded(
-                  child: seq.steps.isEmpty
-                      ? Center(child: Text('sequence.no_steps'.tr()))
-                      : ReorderableListView.builder(
-                          itemCount: seq.steps.length,
-                          onReorder: (oldIndex, newIndex) async {
-                            setState(() {
-                              if (newIndex > oldIndex) newIndex -= 1;
-                              final item = seq.steps.removeAt(oldIndex);
-                              seq.steps.insert(newIndex, item);
-                            });
-                            repo.replace(seq);
-                            await repo.save();
-                          },
-                          itemBuilder: (context, index) {
-                            final s = seq.steps[index];
-                            final meta = _paramsSummary(s);
-                            final running =
-                                runner?.isRunning == true && runner?.currentIndex == index;
-                            return Container(
-                                key: ValueKey(s.id),
-                                decoration: BoxDecoration(
-                                  border: Border(
-                                    bottom: BorderSide(
-                                        color: Theme.of(context).dividerColor.withOpacity(0.3),
-                                        width: 0.5),
-                                  ),
-                                ),
-                                child: ListTile(
-                                  leading: running
-                                      ? const SizedBox(
-                                          width: 24,
-                                          height: 24,
-                                          child: CircularProgressIndicator(strokeWidth: 2))
-                                      : Text('${index + 1}'),
-                                  title: Text(s.type.label()),
-                                  subtitle: Text(meta,
-                                      style: TextStyle(
-                                          color: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.color
-                                              ?.withOpacity(0.6),
-                                          fontSize: 12)),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                          onPressed: () => _editStep(index),
-                                          icon: const Icon(Icons.edit, size: 18)),
-                                      IconButton(
-                                          onPressed: () => _deleteStep(index),
-                                          icon: const Icon(Icons.delete, size: 18)),
-                                      const Icon(Icons.drag_handle),
-                                    ],
-                                  ),
-                                ));
-                          },
-                        ),
+        ),
+        const VerticalDivider(width: 1),
+        Expanded(child: _stepsList(seq)),
+      ],
+    );
+  }
+
+  Widget _buildNarrowBody(CommandSequence seq) {
+    return Column(
+      children: [
+        // 顶部使用下拉选择序列 + 新建按钮
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: seq.id,
+                  isExpanded: true,
+                  decoration: InputDecoration(labelText: 'sequence.sequences'.tr()),
+                  items: repo.sequences
+                      .map((s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
+                      .toList(),
+                  onChanged: (v) {
+                    final target = repo.sequences.firstWhere((e) => e.id == v);
+                    _selectSequence(target);
+                  },
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                  tooltip: 'sequence.sequence.new'.tr(),
+                  onPressed: _createSequence,
+                  icon: const Icon(Icons.add_circle_outline))
+            ],
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addStep,
-        tooltip: 'sequence.add_step'.tr(),
-        child: const Icon(Icons.add),
-      ),
+        ),
+        // 步骤列表
+        Expanded(child: _stepsList(seq)),
+      ],
+    );
+  }
+
+  Widget _sequenceList(CommandSequence seq) {
+    return ListView.builder(
+      itemCount: repo.sequences.length,
+      itemBuilder: (c, i) {
+        final s = repo.sequences[i];
+        final selected = s.id == seq.id;
+        return ListTile(
+          selected: selected,
+          title: Text(s.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+          onTap: () => _selectSequence(s),
+          trailing: selected && runner?.isRunning == true
+              ? const SizedBox(
+                  width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+              : null,
+        );
+      },
+    );
+  }
+
+  Widget _stepsList(CommandSequence seq) {
+    if (seq.steps.isEmpty) {
+      return Center(child: Text('sequence.no_steps'.tr()));
+    }
+    return ReorderableListView.builder(
+      padding: const EdgeInsets.only(bottom: 32),
+      itemCount: seq.steps.length,
+      onReorder: (oldIndex, newIndex) async {
+        setState(() {
+          if (newIndex > oldIndex) newIndex -= 1;
+          final item = seq.steps.removeAt(oldIndex);
+          seq.steps.insert(newIndex, item);
+        });
+        repo.replace(seq);
+        await repo.save();
+      },
+      itemBuilder: (context, index) {
+        final s = seq.steps[index];
+        final meta = _paramsSummary(s);
+        final running = runner?.isRunning == true && runner?.currentIndex == index;
+        return Container(
+            key: ValueKey(s.id),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom:
+                    BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.3), width: 0.5),
+              ),
+            ),
+            child: ListTile(
+              dense: MediaQuery.of(context).size.width < 600,
+              leading: running
+                  ? const SizedBox(
+                      width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Text('${index + 1}'),
+              title: Text(s.type.label(), maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text(meta,
+                  style: TextStyle(
+                      color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6),
+                      fontSize: 12)),
+              trailing: Wrap(
+                spacing: 4,
+                children: [
+                  IconButton(
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => _editStep(index),
+                      icon: const Icon(Icons.edit, size: 18)),
+                  IconButton(
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => _deleteStep(index),
+                      icon: const Icon(Icons.delete, size: 18)),
+                  const Icon(Icons.drag_handle),
+                ],
+              ),
+            ));
+      },
     );
   }
 
