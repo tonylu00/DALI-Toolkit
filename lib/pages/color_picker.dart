@@ -32,12 +32,19 @@ class MyColorState extends State<MyColorPicker> {
   }
 
   void changeColor(Color color) {
-    setState(() => currentColor = color);
-    // 根据enableAlpha决定是否保持alpha通道
-    final finalColor = widget.enableAlpha
+    // 统一进行 alpha 修正，未开启 alpha 时强制 1.0
+    final sanitized = widget.enableAlpha
         ? color
         : Color.fromRGBO(
-            (color.r * 255.0).round(), (color.g * 255.0).round(), (color.b * 255.0).round(), 1.0);
+            (color.r * 255.0).round(),
+            (color.g * 255.0).round(),
+            (color.b * 255.0).round(),
+            1.0,
+          );
+    setState(() => currentColor = sanitized);
+
+    // Debounce 通知
+    final finalColor = sanitized;
 
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 100), () {
@@ -129,11 +136,22 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
   late ColorPickerMode mode;
   late Color dialogColor;
 
+  Color _sanitize(Color color) {
+    if (widget.enableAlpha) return color;
+    return Color.fromRGBO(
+      (color.r * 255.0).round(),
+      (color.g * 255.0).round(),
+      (color.b * 255.0).round(),
+      1.0,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     mode = ColorPickerMode.wheel;
-    dialogColor = widget.initialColor;
+    // 初始颜色在未启用 alpha 时强制 alpha=1
+    dialogColor = _sanitize(widget.initialColor);
   }
 
   @override
@@ -245,12 +263,12 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
               return Flexible(
                 child: isWide
                     ? _buildWideScreenLayout(dialogColor, (color) {
-                        setState(() => dialogColor = color);
+                        setState(() => dialogColor = _sanitize(color));
                       })
                     : SizedBox(
                         height: narrowPickerHeight,
                         child: _buildNarrowScreenLayout(mode, dialogColor, (color) {
-                          setState(() => dialogColor = color);
+                          setState(() => dialogColor = _sanitize(color));
                         }),
                       ),
               );
@@ -269,7 +287,7 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
                 const SizedBox(width: 12),
                 ElevatedButton(
                   onPressed: () {
-                    widget.onColorChanged(dialogColor);
+                    widget.onColorChanged(_sanitize(dialogColor));
                     Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(
@@ -302,7 +320,7 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
               const SizedBox(height: 12),
               ColorWheelPicker(
                 color: color,
-                onColorChanged: onChanged,
+                onColorChanged: (c) => onChanged(_sanitize(c)),
                 size: 200,
                 enableAlpha: widget.enableAlpha,
               ),
@@ -322,7 +340,7 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
               SingleChildScrollView(
                 child: ColorGridPicker(
                   color: color,
-                  onColorChanged: onChanged,
+                  onColorChanged: (c) => onChanged(_sanitize(c)),
                   enableAlpha: widget.enableAlpha,
                 ),
               ),
@@ -339,7 +357,7 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              _buildRGBSliders(color, onChanged),
+              _buildRGBSliders(color, (c) => onChanged(_sanitize(c))),
             ],
           ),
         ),
@@ -354,17 +372,17 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
       child: mode == ColorPickerMode.wheel
           ? ColorWheelPicker(
               color: color,
-              onColorChanged: onChanged,
+              onColorChanged: (c) => onChanged(_sanitize(c)),
               size: 280,
               enableAlpha: widget.enableAlpha,
             )
           : mode == ColorPickerMode.grid
               ? ColorGridPicker(
                   color: color,
-                  onColorChanged: onChanged,
+                  onColorChanged: (c) => onChanged(_sanitize(c)),
                   enableAlpha: widget.enableAlpha,
                 )
-              : _buildRGBSliders(color, onChanged),
+              : _buildRGBSliders(color, (c) => onChanged(_sanitize(c))),
     );
   }
 
