@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../dali/sequence.dart';
 import '../dali/sequence_store.dart';
+import '../connection/manager.dart';
+import '../toast.dart';
 
 /// 指令序列编辑页面
 class SequenceEditorPage extends StatefulWidget {
@@ -156,6 +158,8 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
   }
 
   Future<void> _run() async {
+    // 运行前检查连接与总线状态，不通过则在 ConnectionManager 内部给出 toast 提示
+    if (!ConnectionManager.instance.ensureReadyForOperation()) return;
     await runner?.run();
   }
 
@@ -623,8 +627,8 @@ class _StepDialogState extends State<StepDialog> {
               params['addr'] = 127;
             }
             if (missing) {
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(SnackBar(content: Text('sequence.validation.field_required'.tr())));
+              // 改用全局 Toast 提示
+              ToastManager().showErrorToast('sequence.validation.field_required'.tr());
               return;
             }
             final step = SequenceStep(

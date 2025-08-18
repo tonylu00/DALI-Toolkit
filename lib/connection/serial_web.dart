@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'manager.dart';
 import 'connection.dart';
+import '/toast.dart';
 
 class SerialWebManager implements Connection {
   SerialPort? _port;
@@ -29,8 +30,7 @@ class SerialWebManager implements Connection {
 
   final List<SerialPort> _availablePorts = [];
   final _scanResultsController = StreamController<List<SerialPort>>.broadcast();
-  Stream<List<SerialPort>> get scanResultsStream =>
-      _scanResultsController.stream;
+  Stream<List<SerialPort>> get scanResultsStream => _scanResultsController.stream;
 
   @override
   bool isDeviceConnected() {
@@ -103,8 +103,7 @@ class SerialWebManager implements Connection {
 
   Future<void> _startReceiving(SerialPort port) async {
     while (port.readable != null && _keepReading) {
-      final reader =
-          port.readable!.getReader() as web.ReadableStreamDefaultReader;
+      final reader = port.readable!.getReader() as web.ReadableStreamDefaultReader;
       _reader = reader;
 
       while (_keepReading) {
@@ -156,8 +155,7 @@ class SerialWebManager implements Connection {
       if (writer != null) {
         await writer.write(data.toJS).toDart;
         writer.releaseLock();
-        debugPrint(
-            'Sent data: ${data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ')}');
+        debugPrint('Sent data: ${data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ')}');
       }
     } catch (e) {
       debugPrint('Error sending data: $e');
@@ -196,9 +194,7 @@ class SerialWebManager implements Connection {
       if (!completer.isCompleted && data.length >= length) {
         timeoutTimer?.cancel();
         final result = Uint8List.fromList(data.take(length).toList());
-        readBuffer = data.length > length
-            ? Uint8List.fromList(data.skip(length).toList())
-            : null;
+        readBuffer = data.length > length ? Uint8List.fromList(data.skip(length).toList()) : null;
         completer.complete(result);
       }
     };
@@ -257,8 +253,7 @@ class SerialWebManager implements Connection {
                 ListTile(
                   leading: const Icon(Icons.add),
                   title: const Text('Request New Port').tr(),
-                  subtitle:
-                      const Text('Grant access to a new serial port').tr(),
+                  subtitle: const Text('Grant access to a new serial port').tr(),
                   onTap: () {
                     Navigator.of(context).pop();
                     connect("request");
@@ -276,8 +271,7 @@ class SerialWebManager implements Connection {
                       } else if (snapshot.hasError) {
                         return Center(child: Text('Error occurred').tr());
                       } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return Center(
-                            child: Text('No authorized ports found').tr());
+                        return Center(child: Text('No authorized ports found').tr());
                       } else {
                         return ListView.builder(
                           shrinkWrap: true,
@@ -288,8 +282,7 @@ class SerialWebManager implements Connection {
                             return ListTile(
                               leading: const Icon(Icons.usb),
                               title: Text('Serial Port $index'),
-                              subtitle: Text(
-                                  'Vendor ID: ${info.usbVendorId ?? 'Unknown'}\n'
+                              subtitle: Text('Vendor ID: ${info.usbVendorId ?? 'Unknown'}\n'
                                   'Product ID: ${info.usbProductId ?? 'Unknown'}'),
                               onTap: () {
                                 Navigator.of(context).pop();
@@ -324,13 +317,8 @@ class SerialWebManager implements Connection {
   @override
   void renameDeviceDialog(BuildContext context, String currentName) {
     // Web Serial API 不支持重命名设备
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content:
-            const Text('Device renaming is not supported for web serial ports')
-                .tr(),
-      ),
-    );
+    // 改为 toast 提示
+    ToastManager().showInfoToast('Device renaming is not supported for web serial ports'.tr());
   }
 
   Future<void> connectToSavedDevice() async {

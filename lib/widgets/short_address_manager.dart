@@ -4,6 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import '../connection/manager.dart';
 import '../dali/addr.dart';
 import '../dali/log.dart';
+import '../toast.dart';
 
 /// 短地址管理组件
 /// 功能: 扫描在线设备、显示列表、选择设备、修改短地址、删除短地址、拖拽重新排序
@@ -61,7 +62,8 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
     // 连接检查
     final connection = ConnectionManager.instance.connection;
     if (!connection.isDeviceConnected()) {
-      _showSnack('Device not connected'.tr());
+      // 改为统一 toast 提示
+      ToastManager().showErrorToast('Device not connected'.tr());
       return;
     }
     int? start = int.tryParse(_scanStartCtrl.text);
@@ -147,6 +149,7 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
   }
 
   Future<void> _renameAddress(int oldAddr, int newAddr) async {
+    if (!ConnectionManager.instance.ensureReadyForOperation()) return;
     if (newAddr < 0 || newAddr > 63) {
       _showSnack('short_addr_manager.invalid_range'.tr());
       return;
@@ -166,6 +169,7 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
   }
 
   Future<void> _deleteAddress(int addr) async {
+    if (!ConnectionManager.instance.ensureReadyForOperation()) return;
     try {
       await widget.daliAddr.removeAddr(addr);
       await _startScan();
@@ -227,6 +231,7 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
   /// 拖拽排序并批量写入新地址顺序
   Future<void> _applyReorder(List<int> newOrder) async {
     if (_applyingOrder) return;
+    if (!ConnectionManager.instance.ensureReadyForOperation()) return;
     int? startSlot = int.tryParse(_reorderStartCtrl.text) ?? 0;
     int? endSlot = int.tryParse(_reorderEndCtrl.text) ?? 63;
     if (startSlot < 0) startSlot = 0;
@@ -532,7 +537,24 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
   }
 
   void _showSnack(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    // 统一迁移为 Toast；根据关键字简单判断类型
+    final lower = msg.toLowerCase();
+    final toast = ToastManager();
+    if (lower.contains('fail') ||
+        lower.contains('error') ||
+        lower.contains('无效') ||
+        lower.contains('重复') ||
+        lower.contains('失败')) {
+      toast.showErrorToast(msg);
+    } else if (lower.contains('success') ||
+        lower.contains('完成') ||
+        lower.contains('已删除') ||
+        lower.contains('成功')) {
+      toast.showDoneToast(msg);
+    } else if (lower.contains('cancel') || lower.contains('取消')) {
+      toast.showInfoToast(msg);
+    } else {
+      toast.showToast(msg);
+    }
   }
 }

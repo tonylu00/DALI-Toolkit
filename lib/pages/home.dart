@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../toast.dart';
 import '/dali/dali.dart';
 import '/connection/manager.dart';
@@ -146,8 +147,8 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                         },
                       ),
 
-                      // Toast Test Buttons (for development)
-                      const ToastTestButtonsWidget(),
+                      // Toast Test Buttons (only in debug)
+                      if (kDebugMode) const ToastTestButtonsWidget(),
 
                       // Bottom spacing
                       const SizedBox(height: 20),
