@@ -14,7 +14,6 @@
   "Device Type":"Device Type",
   "Emergency Test Configuration":"Emergency Test Configuration",
   "Current Selection":"Current Selection",
-  "Use Selected Address":"Use Selected Address",
   "Start Emergency Test":"Start Emergency Test",
   "Device Information":"Device Information",
   "Test Status":"Test Status",
@@ -23,6 +22,8 @@
   "Ready":"Ready",
   "Starting test...":"Starting test...",
   "Test completed successfully":"Test completed successfully",
+  "oldAddr": "Old Address",
+  "newAddr": "New Address",
   "Test failed or timed out":"Test failed or timed out",
   "Test stopped by user":"Test stopped by user",
   "Test error: {}":"Test error: {}",
@@ -75,4 +76,58 @@
   ,"short_addr_manager.batch_delete_confirm":"Confirm delete {} selected addresses?"
   ,"short_addr_manager.batch_delete_success":"Batch delete success"
   ,"short_addr_manager.batch_delete_fail":"Batch delete failed: {}"
+  ,"sequence.editor.title":"Sequence Editor"
+  ,"sequence.sequences":"Sequences"
+  ,"sequence.sequence.new":"New Sequence"
+  ,"sequence.sequence.rename":"Rename Sequence"
+  ,"sequence.sequence.delete":"Delete Sequence"
+  ,"sequence.sequence.delete_confirm":"Delete this sequence?"
+  ,"sequence.add_step":"Add Step"
+  ,"sequence.edit_step":"Edit Step"
+  ,"sequence.save":"Save"
+  ,"sequence.cancel":"Cancel"
+  ,"sequence.run":"Run"
+  ,"sequence.stop":"Stop"
+  ,"sequence.no_steps":"No steps"
+  ,"sequence.current_running":"Running step {} / {}"
+  ,"sequence.cmd.setBright":"Set Brightness"
+  ,"sequence.cmd.on":"Turn On"
+  ,"sequence.cmd.off":"Turn Off"
+  ,"sequence.cmd.toScene":"Go To Scene"
+  ,"sequence.cmd.setScene":"Store Scene"
+  ,"sequence.cmd.removeScene":"Remove Scene"
+  ,"sequence.cmd.addToGroup":"Add To Group"
+  ,"sequence.cmd.removeFromGroup":"Remove From Group"
+  ,"sequence.cmd.setFadeTime":"Set Fade Time"
+  ,"sequence.cmd.setFadeRate":"Set Fade Rate"
+  ,"sequence.cmd.wait":"Wait"
+  ,"sequence.cmd.modifyShortAddress":"Modify Short Address"
+  ,"sequence.cmd.deleteShortAddress":"Delete Short Address"
+  ,"sequence.field.addr":"Address"
+  ,"sequence.field.level":"Level"
+  ,"sequence.field.scene":"Scene"
+  ,"sequence.field.group":"Group"
+  ,"sequence.field.value":"Value"
+  ,"sequence.field.ms":"Delay (ms)"
+  ,"sequence.field.name":"Name"
+  ,"sequence.field.remark":"Remark"
+  ,"sequence.field.oldAddr":"Old Address"
+  ,"sequence.field.newAddr":"New Address"
+  ,"sequence.field.broadcast":"Broadcast"
+  ,"sequence.summary.setBright":"Addr {addr} -> Level {level}"
+  ,"sequence.summary.on":"On Addr {addr}"
+  ,"sequence.summary.off":"Off Addr {addr}"
+  ,"sequence.summary.toScene":"Addr {addr} Go To Scene {scene}"
+  ,"sequence.summary.setScene":"Addr {addr} Store Scene {scene}"
+  ,"sequence.summary.removeScene":"Addr {addr} Remove Scene {scene}"
+  ,"sequence.summary.addToGroup":"Addr {addr} Add Group {group}"
+  ,"sequence.summary.removeFromGroup":"Addr {addr} Remove Group {group}"
+  ,"sequence.summary.setFadeTime":"Addr {addr} Fade Time {value}"
+  ,"sequence.summary.setFadeRate":"Addr {addr} Fade Rate {value}"
+  ,"sequence.summary.wait":"Wait {ms} ms"
+  ,"sequence.summary.modifyShortAddress":"Modify {oldAddr} -> {newAddr}"
+  ,"sequence.summary.deleteShortAddress":"Delete Addr {addr}"
+  ,"sequence.validation.field_required":"Field required"
+  ,"sequence.validation.required":"Required"
+  ,"sequence.sequence.default_name":"Sequence {}"
 }

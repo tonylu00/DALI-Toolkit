@@ -205,6 +205,15 @@ class BaseScaffoldState extends State<BaseScaffold> {
               }
             },
           ),
+          ListTile(
+            title: const Text('Sequence Editor').tr(),
+            selected: widget.currentPage == 'SequenceEditor',
+            onTap: () {
+              if (widget.currentPage != 'SequenceEditor') {
+                Navigator.pushNamed(context, '/sequenceEditor');
+              }
+            },
+          ),
         ],
       ),
     );

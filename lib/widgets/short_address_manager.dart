@@ -335,10 +335,11 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
         _showSnack('short_addr_manager.reorder_fail'.tr(args: [e.toString()]));
       }
     }
-    if (mounted)
+    if (mounted) {
       setState(() {
         _applyingOrder = false;
       });
+    }
   }
 
   @override
