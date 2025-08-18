@@ -65,6 +65,8 @@ class DaliAddr {
     }
     debugPrint('INFO [searchAddr]: done. online devices: $onlineDevices');
     isSearching = false; // Reset the flag when the search is done
+    // 确保即便无设备也触发一次构建, 让弹窗由"正在扫描"切换到"暂无设备"
+    _onlineDevicesController.add(List<int>.from(onlineDevices));
   }
 
   /// 新增: 按自定义起止地址扫描 (inclusive)
@@ -87,10 +89,14 @@ class DaliAddr {
     }
     debugPrint('INFO [searchAddrRange]: done range [$start,$end] devices: $onlineDevices');
     isSearching = false;
+    // 同样在结束时再推送一次, 解决空结果不刷新的问题
+    _onlineDevicesController.add(List<int>.from(onlineDevices));
   }
 
   void stopSearch() {
     isSearching = false;
+    // 停止后也推送一次当前结果, 避免 UI 停留在扫描状态
+    _onlineDevicesController.add(List<int>.from(onlineDevices));
   }
 
   /// Compare a selected address
@@ -399,29 +405,39 @@ class DaliAddr {
             child: StreamBuilder<List<int>>(
               stream: onlineDevicesStream,
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text('Error occurred').tr());
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(child: Text('No devices found').tr());
-                } else {
-                  return ListView.builder(
-                    itemCount: snapshot.data!.length,
-                    itemBuilder: (context, index) {
-                      return ListTile(
-                        title: Text('Device ${snapshot.data![index]}'),
-                        //subtitle: Text('ID: ${snapshot.data![index].deviceId}\nRSSI: ${snapshot.data![index].rssi}'),
-                        onTap: () {
-                          base.selectedAddress = snapshot.data![index];
-                          _selectedDeviceController.add(snapshot.data![index]);
-                          isSearching = false;
-                          Navigator.of(context).pop();
-                        },
-                      );
-                    },
+                // 根据 isSearching 与当前已发现设备数决定显示内容，避免在无结果时一直转圈
+                final devices = snapshot.data ?? onlineDevices;
+                if (isSearching) {
+                  if (devices.isEmpty) {
+                    // 扫描中但尚未发现设备
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(width: 32, height: 32, child: CircularProgressIndicator()),
+                          const SizedBox(height: 12),
+                          Text('short_addr_manager.scanning').tr(),
+                        ],
+                      ),
+                    );
+                  }
+                  // 扫描中且已有部分设备 => 显示列表并在顶部展示一个轻量进度指示
+                  return Column(
+                    children: [
+                      LinearProgressIndicator(minHeight: 3),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: _buildDevicesList(devices, context),
+                      ),
+                    ],
                   );
                 }
+                // 非扫描状态
+                if (devices.isEmpty) {
+                  // 扫描结束仍无设备
+                  return Center(child: Text('short_addr_manager.empty').tr());
+                }
+                return _buildDevicesList(devices, context);
               },
             ),
           ),
@@ -434,6 +450,25 @@ class DaliAddr {
               child: const Text('Close').tr(),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  /// 构建设备列表（提取方法以复用）
+  Widget _buildDevicesList(List<int> devices, BuildContext dialogContext) {
+    return ListView.builder(
+      itemCount: devices.length,
+      itemBuilder: (context, index) {
+        final addr = devices[index];
+        return ListTile(
+          title: Text('Device $addr'),
+          onTap: () {
+            base.selectedAddress = addr;
+            _selectedDeviceController.add(addr);
+            isSearching = false;
+            Navigator.of(dialogContext).pop();
+          },
         );
       },
     );
