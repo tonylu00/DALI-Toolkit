@@ -63,8 +63,8 @@ class DaliComm {
     await conn.send(Uint8List.fromList(bytes1));
     await Future.delayed(Duration(milliseconds: 100));
     Uint8List? data = await conn.read(2, timeout: 100);
-    if (data != null && data.length == 2) {
-      if (data[0] == 0x01 && data[1] == 0x00) {
+    if (data != null && data.isNotEmpty) {
+      if (data[0] > 0) {
         debugPrint("dali:checkGatewayType: USB interface detected");
         return 1; // USB interface
       }

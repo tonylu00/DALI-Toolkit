@@ -17,8 +17,7 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage>
-    with SingleTickerProviderStateMixin {
+class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
   bool isDrawerOpen = false;
   double brightness = 50;
   Color color = Colors.red;
@@ -48,8 +47,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   Future<void> _readBrightness() async {
     if (!_checkDeviceConnection()) return;
-    int? bright = await Dali.instance.base!
-        .getBright(Dali.instance.base!.selectedAddress);
+    int? bright = await Dali.instance.base!.getBright(Dali.instance.base!.selectedAddress);
     if (bright == null || bright < 0 || bright > 254) {
       return;
     }
@@ -60,14 +58,12 @@ class _MyHomePageState extends State<MyHomePage>
 
   Future<void> _readColor() async {
     if (!_checkDeviceConnection()) return;
-    final colorRGB = await Dali.instance.dt8!
-        .getColourRGB(Dali.instance.base!.selectedAddress);
+    final colorRGB = await Dali.instance.dt8!.getColourRGB(Dali.instance.base!.selectedAddress);
     if (colorRGB.isEmpty) {
       return;
     }
     debugPrint('Color: $colorRGB');
-    final colorObj = Color(
-        (0xFF << 24) + (colorRGB[0] << 16) + (colorRGB[1] << 8) + colorRGB[2]);
+    final colorObj = Color((0xFF << 24) + (colorRGB[0] << 16) + (colorRGB[1] << 8) + colorRGB[2]);
     setState(() {
       color = colorObj;
     });
@@ -75,8 +71,8 @@ class _MyHomePageState extends State<MyHomePage>
 
   Future<void> _readColorTemperature() async {
     if (!_checkDeviceConnection()) return;
-    int colorTemp = await Dali.instance.dt8!
-        .getColorTemperature(Dali.instance.base!.selectedAddress);
+    int colorTemp =
+        await Dali.instance.dt8!.getColorTemperature(Dali.instance.base!.selectedAddress);
     if (colorTemp < 2700) {
       colorTemp = 2700;
     }

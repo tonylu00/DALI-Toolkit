@@ -67,6 +67,16 @@ class BaseScaffoldState extends State<BaseScaffold> {
                 const SizedBox(height: 1),
                 Text(connection.type, style: const TextStyle(fontSize: 12)),
                 Text(connection.connectedDeviceId, style: const TextStyle(fontSize: 8)),
+                if (isConnected && ConnectionManager.instance.gatewayType == 0)
+                  Text(
+                    ConnectionManager.instance.busStatus == 'abnormal' ? '总线异常' : '总线正常',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: ConnectionManager.instance.busStatus == 'abnormal'
+                          ? Colors.red
+                          : Colors.green,
+                    ),
+                  ),
               ],
             ),
           ],

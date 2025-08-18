@@ -81,7 +81,10 @@ class BleManager implements Connection {
       debugPrint('OnConnectionChange $deviceId, $isConnected Error: $error');
       if (isConnected) {
         connectedDeviceId = deviceId;
-        ConnectionManager.instance.updateConnectionStatus(true);
+        // 先检测 gatewayType 后再广播连接状态
+        ConnectionManager.instance.ensureGatewayType().then((_) {
+          ConnectionManager.instance.updateConnectionStatus(true);
+        });
         final prefs = SharedPreferences.getInstance();
         prefs.then((prefs) {
           prefs.setString('deviceId', deviceId);
@@ -92,19 +95,39 @@ class BleManager implements Connection {
           debugPrint(
               'HEX Value changed: ${value.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ')}');
           readBuffer = value;
+          _handleBusMonitor(value);
         };
-        debugPrint('Connected to $deviceId');
+  debugPrint('Connected to $deviceId');
       } else if (error != null) {
         debugPrint('Error: $error');
       } else {
         connectedDeviceId = "";
         readBuffer = null;
         ConnectionManager.instance.updateConnectionStatus(false);
+        ConnectionManager.instance.resetBusStatus();
+  ConnectionManager.instance.updateGatewayType(-1);
       }
     });
     await disconnect();
     await UniversalBle.connect(deviceId);
   }
+
+  void _handleBusMonitor(Uint8List value) {
+    final manager = ConnectionManager.instance;
+    // 仅对 type0 网关启用
+    if (manager.gatewayType != 0) return;
+    // 空闲状态下收到两个字节依次为 0xFF 0xFD 表示总线异常
+    if (value.length >= 2) {
+      for (int i = 0; i < value.length - 1; i++) {
+        if (value[i] == 0xff && value[i + 1] == 0xfd) {
+          manager.markBusAbnormal();
+          break;
+        }
+      }
+    }
+  }
+
+  // 网关类型检测已迁移至 ConnectionManager.ensureGatewayType
 
   Future<void> connectToSavedDevice() async {
     final prefs = await SharedPreferences.getInstance();
@@ -249,6 +272,7 @@ class BleManager implements Connection {
   @override
   void onReceived(void Function(Uint8List) onData) {
     UniversalBle.onValueChange = (String deviceId, String characteristicId, Uint8List value) {
+      _handleBusMonitor(value);
       onData(value);
     };
   }
