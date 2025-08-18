@@ -220,4 +220,11 @@
   ,"sequence.validation.required":"必填"
   ,"sequence.sequence.default_name":"序列 {}"
   ,"sequence.field.broadcast":"广播"
+  ,"Sequence Editor":"指令序列编辑"
+  ,"Read Operations":"读取操作"
+  ,"Color Temp":"色温"
+  ,"Presets":"预设"
+  ,"Clear All":"清除全部"
+  ,"Select All":"全选"
+  ,"Toast Notifications Test":"Toast 通知测试"
 }

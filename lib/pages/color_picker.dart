@@ -36,8 +36,8 @@ class MyColorState extends State<MyColorPicker> {
     // 根据enableAlpha决定是否保持alpha通道
     final finalColor = widget.enableAlpha
         ? color
-        : Color.fromRGBO((color.r * 255.0).round(), (color.g * 255.0).round(),
-            (color.b * 255.0).round(), 1.0);
+        : Color.fromRGBO(
+            (color.r * 255.0).round(), (color.g * 255.0).round(), (color.b * 255.0).round(), 1.0);
 
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 100), () {
@@ -65,10 +65,8 @@ class MyColorState extends State<MyColorPicker> {
   }
 
   Color _getContrastColor(Color color) {
-    double luminance = (0.299 * color.r * 255.0 +
-            0.587 * color.g * 255.0 +
-            0.114 * color.b * 255.0) /
-        255;
+    double luminance =
+        (0.299 * color.r * 255.0 + 0.587 * color.g * 255.0 + 0.114 * color.b * 255.0) / 255;
     return luminance > 0.5 ? Colors.black : Colors.white;
   }
 
@@ -154,38 +152,60 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Pick a color'.tr(),
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                // 标题放在 Expanded 内，保证右侧按钮有压缩空间
+                Expanded(
+                  child: Text(
+                    'Pick a color'.tr(),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
                 ),
-                // 模式切换按钮（窄屏设备）
+                // 模式切换按钮（窄屏设备）添加自适应缩放
                 if (MediaQuery.of(context).size.width < 600)
-                  SegmentedButton<ColorPickerMode>(
-                    segments: [
-                      ButtonSegment(
-                        value: ColorPickerMode.wheel,
-                        icon: const Icon(Icons.palette, size: 16),
-                        label: Text('Wheel'.tr()),
+                  Flexible(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: SegmentedButton<ColorPickerMode>(
+                          showSelectedIcon: false,
+                          // 仅使用图标，减少宽度占用；通过 tooltip 提供可访问性
+                          segments: [
+                            ButtonSegment(
+                              value: ColorPickerMode.wheel,
+                              icon: const Icon(Icons.color_lens_outlined, size: 20),
+                              tooltip: 'Wheel'.tr(),
+                            ),
+                            ButtonSegment(
+                              value: ColorPickerMode.grid,
+                              icon: const Icon(Icons.grid_on_outlined, size: 20),
+                              tooltip: 'Grid'.tr(),
+                            ),
+                            ButtonSegment(
+                              value: ColorPickerMode.rgb,
+                              icon: const Icon(Icons.tune, size: 20),
+                              tooltip: 'RGB'.tr(),
+                            ),
+                          ],
+                          selected: {mode},
+                          style: ButtonStyle(
+                            // 增加高度但允许宽度继续自适应
+                            visualDensity: const VisualDensity(horizontal: -1, vertical: -1),
+                            padding: WidgetStateProperty.all(
+                              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            ),
+                            minimumSize: WidgetStateProperty.all(const Size(0, 44)),
+                          ),
+                          onSelectionChanged: (Set<ColorPickerMode> newSelection) {
+                            setState(() {
+                              mode = newSelection.first;
+                            });
+                          },
+                        ),
                       ),
-                      ButtonSegment(
-                        value: ColorPickerMode.grid,
-                        icon: const Icon(Icons.grid_view, size: 16),
-                        label: Text('Grid'.tr()),
-                      ),
-                      ButtonSegment(
-                        value: ColorPickerMode.rgb,
-                        icon: const Icon(Icons.tune, size: 16),
-                        label: Text('RGB'.tr()),
-                      ),
-                    ],
-                    selected: {mode},
-                    onSelectionChanged: (Set<ColorPickerMode> newSelection) {
-                      setState(() {
-                        mode = newSelection.first;
-                      });
-                    },
+                    ),
                   ),
               ],
             ),
@@ -199,10 +219,7 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
                 color: dialogColor,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .outline
-                      .withValues(alpha: 0.5),
+                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
                   width: 2,
                 ),
               ),
@@ -355,27 +372,24 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
     return Column(
       children: [
         _buildRGBSlider('R', (color.r * 255.0).round(), Colors.red, (value) {
-          onChanged(Color.fromRGBO(value, (color.g * 255.0).round(),
-              (color.b * 255.0).round(), alpha));
+          onChanged(
+              Color.fromRGBO(value, (color.g * 255.0).round(), (color.b * 255.0).round(), alpha));
         }),
         const SizedBox(height: 16),
         _buildRGBSlider('G', (color.g * 255.0).round(), Colors.green, (value) {
-          onChanged(Color.fromRGBO((color.r * 255.0).round(), value,
-              (color.b * 255.0).round(), alpha));
+          onChanged(
+              Color.fromRGBO((color.r * 255.0).round(), value, (color.b * 255.0).round(), alpha));
         }),
         const SizedBox(height: 16),
         _buildRGBSlider('B', (color.b * 255.0).round(), Colors.blue, (value) {
-          onChanged(Color.fromRGBO((color.r * 255.0).round(),
-              (color.g * 255.0).round(), value, alpha));
+          onChanged(
+              Color.fromRGBO((color.r * 255.0).round(), (color.g * 255.0).round(), value, alpha));
         }),
         if (widget.enableAlpha) ...[
           const SizedBox(height: 16),
           _buildAlphaSlider((color.a * 255.0).round(), (value) {
-            onChanged(Color.fromRGBO(
-                (color.r * 255.0).round(),
-                (color.g * 255.0).round(),
-                (color.b * 255.0).round(),
-                value / 255.0));
+            onChanged(Color.fromRGBO((color.r * 255.0).round(), (color.g * 255.0).round(),
+                (color.b * 255.0).round(), value / 255.0));
           }),
         ],
       ],
@@ -440,8 +454,7 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
     );
   }
 
-  Widget _buildRGBSlider(
-      String label, int value, Color sliderColor, ValueChanged<int> onChanged) {
+  Widget _buildRGBSlider(String label, int value, Color sliderColor, ValueChanged<int> onChanged) {
     return Row(
       children: [
         SizedBox(
@@ -492,10 +505,8 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
   }
 
   Color _getContrastColor(Color color) {
-    double luminance = (0.299 * color.r * 255.0 +
-            0.587 * color.g * 255.0 +
-            0.114 * color.b * 255.0) /
-        255;
+    double luminance =
+        (0.299 * color.r * 255.0 + 0.587 * color.g * 255.0 + 0.114 * color.b * 255.0) / 255;
     return luminance > 0.5 ? Colors.black : Colors.white;
   }
 }

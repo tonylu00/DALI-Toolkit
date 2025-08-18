@@ -175,9 +175,12 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
       appBar: AppBar(
         title: Text('sequence.editor.title'.tr()),
         actions: [
-          // 顶部按钮改为添加步骤
-          IconButton(
-              onPressed: _addStep, tooltip: 'sequence.add_step'.tr(), icon: const Icon(Icons.add)),
+          // 宽屏仍在顶部添加步骤；窄屏改为浮动按钮
+          if (!isNarrow)
+            IconButton(
+                onPressed: _addStep,
+                tooltip: 'sequence.add_step'.tr(),
+                icon: const Icon(Icons.add)),
           if (runner?.isRunning == true)
             IconButton(
                 onPressed: _stop, tooltip: 'sequence.stop'.tr(), icon: const Icon(Icons.stop))
@@ -200,6 +203,13 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
         ],
       ),
       body: isNarrow ? _buildNarrowBody(seq) : _buildWideBody(seq),
+      floatingActionButton: isNarrow
+          ? FloatingActionButton(
+              onPressed: _addStep,
+              tooltip: 'sequence.add_step'.tr(),
+              child: const Icon(Icons.add),
+            )
+          : null,
       // 原浮动添加步骤按钮移除，顶部已替换为添加步骤
     );
   }
