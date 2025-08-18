@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import '../toast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 import 'base.dart';
@@ -14,6 +15,9 @@ class DaliAddr {
   final StreamController<int> _selectedDeviceController = StreamController<int>.broadcast();
   List<int> onlineDevices = [];
   bool isSearching = false;
+  // 扫描范围记忆（应用生命周期内）
+  int scanRangeStart = 0;
+  int scanRangeEnd = 63;
 
   /// 便于直接操作 isAllocAddr, lastAllocAddr 等字段
   bool get isAllocAddr => base.isAllocAddr;
@@ -396,83 +400,184 @@ class DaliAddr {
   void showDevicesDialog(BuildContext context) {
     final currentContext = context;
     showDialog(
-      context: currentContext,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Online Devices').tr(),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: StreamBuilder<List<int>>(
-              stream: onlineDevicesStream,
-              builder: (context, snapshot) {
-                // 根据 isSearching 与当前已发现设备数决定显示内容，避免在无结果时一直转圈
-                final devices = snapshot.data ?? onlineDevices;
-                if (isSearching) {
-                  if (devices.isEmpty) {
-                    // 扫描中但尚未发现设备
-                    return Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
+        context: currentContext,
+        builder: (BuildContext context) {
+          bool broadcastMode = base.selectedAddress == base.broadcast;
+          return StatefulBuilder(
+            builder: (ctx, setState) {
+              Widget scanButton = ElevatedButton.icon(
+                onPressed: () {
+                  if (isSearching) {
+                    stopSearch();
+                  } else {
+                    if (scanRangeStart > scanRangeEnd) {
+                      final t = scanRangeStart;
+                      scanRangeStart = scanRangeEnd;
+                      scanRangeEnd = t;
+                    }
+                    searchAddrRange(start: scanRangeStart, end: scanRangeEnd);
+                  }
+                  setState(() {}); // 更新按钮状态
+                },
+                icon: Icon(isSearching ? Icons.stop : Icons.search),
+                label: Text(
+                    isSearching ? 'device_search.stop_scan'.tr() : 'device_search.start_scan'.tr()),
+                style: isSearching
+                    ? ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                      )
+                    : null,
+              );
+              return AlertDialog(
+                title: Row(
+                  children: [
+                    Expanded(child: const Text('Online Devices').tr()),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Checkbox(
+                          value: broadcastMode,
+                          onChanged: (v) {
+                            // 勾选进入广播模式；取消勾选需要有设备可选
+                            if (v == true) {
+                              stopSearch();
+                              base.selectedAddress = base.broadcast;
+                              _selectedDeviceController.add(base.selectedAddress);
+                              broadcastMode = true;
+                              setState(() {});
+                              return;
+                            }
+                            // 取消广播模式
+                            final devices = onlineDevices;
+                            if (devices.isEmpty) {
+                              // 没有设备，不能取消，保持广播
+                              // 使用自定义 Toast 替换 SnackBar 提示
+                              ToastManager()
+                                  .showInfoToast('device_search.cannot_exit_broadcast_no_devices');
+                              setState(() {});
+                              return;
+                            }
+                            // 如果用户之前没有选过单个设备，则默认选中第一个
+                            if (base.selectedAddress == base.broadcast) {
+                              base.selectedAddress = devices.first;
+                              _selectedDeviceController.add(base.selectedAddress);
+                            }
+                            broadcastMode = false;
+                            setState(() {});
+                          },
+                        ),
+                        Text('device_search.broadcast'.tr()),
+                      ],
+                    ),
+                  ],
+                ),
+                content: SizedBox(
+                  width: 460,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
                         children: [
-                          const SizedBox(width: 32, height: 32, child: CircularProgressIndicator()),
-                          const SizedBox(height: 12),
-                          Text('short_addr_manager.scanning').tr(),
+                          Expanded(
+                            child: TextFormField(
+                              initialValue: scanRangeStart.toString(),
+                              decoration:
+                                  InputDecoration(labelText: 'device_search.range_start'.tr()),
+                              keyboardType: TextInputType.number,
+                              onChanged: (v) {
+                                final n = int.tryParse(v) ?? scanRangeStart;
+                                if (n >= 0 && n <= 63) scanRangeStart = n;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextFormField(
+                              initialValue: scanRangeEnd.toString(),
+                              decoration:
+                                  InputDecoration(labelText: 'device_search.range_end'.tr()),
+                              keyboardType: TextInputType.number,
+                              onChanged: (v) {
+                                final n = int.tryParse(v) ?? scanRangeEnd;
+                                if (n >= 0 && n <= 63) scanRangeEnd = n;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          scanButton,
                         ],
                       ),
-                    );
-                  }
-                  // 扫描中且已有部分设备 => 显示列表并在顶部展示一个轻量进度指示
-                  return Column(
-                    children: [
-                      LinearProgressIndicator(minHeight: 3),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       Expanded(
-                        child: _buildDevicesList(devices, context),
+                        child: StreamBuilder<List<int>>(
+                          stream: onlineDevicesStream,
+                          builder: (context, snapshot) {
+                            final devices = snapshot.data ?? onlineDevices;
+                            if (isSearching && devices.isEmpty) {
+                              return Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const SizedBox(
+                                        width: 36, height: 36, child: CircularProgressIndicator()),
+                                    const SizedBox(height: 12),
+                                    Text('short_addr_manager.scanning').tr(),
+                                  ],
+                                ),
+                              );
+                            }
+                            if (!isSearching && devices.isEmpty) {
+                              return Center(child: Text('short_addr_manager.empty').tr());
+                            }
+                            return ListView.builder(
+                              itemCount: devices.length,
+                              itemBuilder: (c, i) {
+                                final a = devices[i];
+                                final selected = !broadcastMode && a == base.selectedAddress;
+                                return ListTile(
+                                  selected: selected,
+                                  selectedColor: Theme.of(context).colorScheme.primary,
+                                  selectedTileColor:
+                                      Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                                  title: Text('Device $a'),
+                                  onTap: () {
+                                    if (broadcastMode) {
+                                      // 禁止在广播模式选择设备
+                                      // 使用 ScaffoldMessenger 显示简易提示；若有 ToastManager 可替换
+                                      ToastManager()
+                                          .showInfoToast('device_search.broadcast_selected_toast');
+                                      return;
+                                    }
+                                    base.selectedAddress = a;
+                                    _selectedDeviceController.add(a);
+                                    setState(() {});
+                                  },
+                                );
+                              },
+                            );
+                          },
+                        ),
                       ),
                     ],
-                  );
-                }
-                // 非扫描状态
-                if (devices.isEmpty) {
-                  // 扫描结束仍无设备
-                  return Center(child: Text('short_addr_manager.empty').tr());
-                }
-                return _buildDevicesList(devices, context);
-              },
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                isSearching = false;
-                Navigator.of(context).pop();
-              },
-              child: const Text('Close').tr(),
-            ),
-          ],
-        );
-      },
-    );
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      stopSearch();
+                      Navigator.of(context).pop();
+                    },
+                    child: Text('Close').tr(),
+                  )
+                ],
+              );
+            },
+          );
+        });
   }
 
-  /// 构建设备列表（提取方法以复用）
-  Widget _buildDevicesList(List<int> devices, BuildContext dialogContext) {
-    return ListView.builder(
-      itemCount: devices.length,
-      itemBuilder: (context, index) {
-        final addr = devices[index];
-        return ListTile(
-          title: Text('Device $addr'),
-          onTap: () {
-            base.selectedAddress = addr;
-            _selectedDeviceController.add(addr);
-            isSearching = false;
-            Navigator.of(dialogContext).pop();
-          },
-        );
-      },
-    );
-  }
+  // _buildDevicesList 已内联至对话框逻辑，移除旧方法
 
   void dispose() {
     _onlineDevicesController.close();

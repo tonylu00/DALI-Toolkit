@@ -52,17 +52,6 @@ class DeviceControlButtonsWidget extends StatelessWidget {
               icon: Icons.settings_ethernet,
               color: Colors.blue,
             ),
-            _buildElevatedButton(
-              context: context,
-              onPressed: () {
-                if (!_checkDeviceConnection()) return;
-                Dali.instance.addr?.searchAddr();
-                Dali.instance.addr?.showDevicesDialog(context);
-              },
-              label: 'Search',
-              icon: Icons.search,
-              color: Colors.orange,
-            ),
           ],
         ),
         const SizedBox(height: 16),
