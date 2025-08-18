@@ -97,7 +97,7 @@ class BleManager implements Connection {
           readBuffer = value;
           _handleBusMonitor(value);
         };
-  debugPrint('Connected to $deviceId');
+        debugPrint('Connected to $deviceId');
       } else if (error != null) {
         debugPrint('Error: $error');
       } else {
@@ -105,7 +105,7 @@ class BleManager implements Connection {
         readBuffer = null;
         ConnectionManager.instance.updateConnectionStatus(false);
         ConnectionManager.instance.resetBusStatus();
-  ConnectionManager.instance.updateGatewayType(-1);
+        ConnectionManager.instance.updateGatewayType(-1);
       }
     });
     await disconnect();
