@@ -1,5 +1,6 @@
 import '/connection/manager.dart';
 import '/connection/connection.dart';
+import '/utils/navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -125,22 +126,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
     );
   }
 
-  bool isRouteActive(BuildContext context, String routeName) {
-    bool isActive = false;
-    Navigator.popUntil(context, (route) {
-      if (route.settings.name == routeName) {
-        isActive = true;
-      }
-      return true;
-    });
-    return isActive;
-  }
-
-  void navigateToPage(BuildContext context, String routeName) {
-    if (!isRouteActive(context, routeName)) {
-      Navigator.restorablePushNamed(context, routeName);
-    }
-  }
+  // 统一使用 utils/navigation.dart 中的 navigateToPage
 
   Widget _buildDrawer(BuildContext context) {
     return Drawer(
@@ -183,6 +169,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
             selected: widget.currentPage == 'Home',
             onTap: () {
               if (widget.currentPage != 'Home') {
+                Navigator.pop(context); // 关闭抽屉
                 navigateToPage(context, '/home');
               }
             },
@@ -192,6 +179,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
             selected: widget.currentPage == 'Settings',
             onTap: () {
               if (widget.currentPage != 'Settings') {
+                Navigator.pop(context); // 关闭抽屉
                 navigateToPage(context, '/settings');
               }
             },
@@ -201,7 +189,8 @@ class BaseScaffoldState extends State<BaseScaffold> {
             selected: widget.currentPage == 'ShortAddressManager',
             onTap: () {
               if (widget.currentPage != 'ShortAddressManager') {
-                Navigator.pushNamed(context, '/shortAddressManager');
+                Navigator.pop(context); // 关闭抽屉
+                navigateToPage(context, '/shortAddressManager');
               }
             },
           ),
@@ -210,7 +199,8 @@ class BaseScaffoldState extends State<BaseScaffold> {
             selected: widget.currentPage == 'SequenceEditor',
             onTap: () {
               if (widget.currentPage != 'SequenceEditor') {
-                Navigator.pushNamed(context, '/sequenceEditor');
+                Navigator.pop(context); // 关闭抽屉
+                navigateToPage(context, '/sequenceEditor');
               }
             },
           ),

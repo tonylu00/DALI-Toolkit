@@ -321,8 +321,14 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
             key: ValueKey(s.id),
             decoration: BoxDecoration(
               border: Border(
-                bottom:
-                    BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.3), width: 0.5),
+                bottom: BorderSide(
+                    color: () {
+                      final c = Theme.of(context).dividerColor;
+                      final baseAlpha = c.a; // 0-255
+                      final newAlpha = (baseAlpha * 0.3).clamp(0, 255).toInt();
+                      return c.withValues(alpha: newAlpha / 255);
+                    }(),
+                    width: 0.5),
               ),
             ),
             child: ListTile(
@@ -334,7 +340,13 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
               title: Text(s.type.label(), maxLines: 1, overflow: TextOverflow.ellipsis),
               subtitle: Text(meta,
                   style: TextStyle(
-                      color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6),
+                      color: () {
+                        final c = Theme.of(context).textTheme.bodySmall?.color;
+                        if (c == null) return null;
+                        final baseAlpha = c.a; // 0-255
+                        final newAlpha = (baseAlpha * 0.6).clamp(0, 255).toInt();
+                        return c.withValues(alpha: newAlpha / 255);
+                      }(),
                       fontSize: 12)),
               trailing: Wrap(
                 spacing: 4,

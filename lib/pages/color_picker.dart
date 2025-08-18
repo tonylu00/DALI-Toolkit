@@ -238,20 +238,23 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
             ),
             const SizedBox(height: 20),
 
-            // 颜色选择器内容
-            Flexible(
-              child: MediaQuery.of(context).size.width >= 600
-                  ? _buildWideScreenLayout(dialogColor, (color) {
-                      setState(() {
-                        dialogColor = color;
-                      });
-                    })
-                  : _buildNarrowScreenLayout(mode, dialogColor, (color) {
-                      setState(() {
-                        dialogColor = color;
-                      });
-                    }),
-            ),
+            // 颜色选择器内容：窄屏固定高度，三种模式切换高度一致
+            Builder(builder: (context) {
+              final isWide = MediaQuery.of(context).size.width >= 600;
+              const double narrowPickerHeight = 340; // 可按需微调
+              return Flexible(
+                child: isWide
+                    ? _buildWideScreenLayout(dialogColor, (color) {
+                        setState(() => dialogColor = color);
+                      })
+                    : SizedBox(
+                        height: narrowPickerHeight,
+                        child: _buildNarrowScreenLayout(mode, dialogColor, (color) {
+                          setState(() => dialogColor = color);
+                        }),
+                      ),
+              );
+            }),
 
             const SizedBox(height: 20),
 
