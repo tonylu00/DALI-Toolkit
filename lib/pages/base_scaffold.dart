@@ -196,6 +196,15 @@ class BaseScaffoldState extends State<BaseScaffold> {
               }
             },
           ),
+          ListTile(
+            title: const Text('short_addr_manager.title').tr(),
+            selected: widget.currentPage == 'ShortAddressManager',
+            onTap: () {
+              if (widget.currentPage != 'ShortAddressManager') {
+                Navigator.pushNamed(context, '/shortAddressManager');
+              }
+            },
+          ),
         ],
       ),
     );

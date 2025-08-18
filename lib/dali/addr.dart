@@ -9,7 +9,8 @@ import 'log.dart';
 
 class DaliAddr {
   final DaliBase base;
-  final StreamController<List<int>> _onlineDevicesController = StreamController<List<int>>.broadcast();
+  final StreamController<List<int>> _onlineDevicesController =
+      StreamController<List<int>>.broadcast();
   final StreamController<int> _selectedDeviceController = StreamController<int>.broadcast();
   List<int> onlineDevices = [];
   bool isSearching = false;
@@ -64,6 +65,28 @@ class DaliAddr {
     }
     debugPrint('INFO [searchAddr]: done. online devices: $onlineDevices');
     isSearching = false; // Reset the flag when the search is done
+  }
+
+  /// 新增: 按自定义起止地址扫描 (inclusive)
+  Future<void> searchAddrRange({int start = 0, int end = 63}) async {
+    if (start < 0) start = 0;
+    if (end > 63) end = 63; // 物理限制
+    if (start > end) {
+      debugPrint('WARN [searchAddrRange]: invalid range start>$end');
+      return;
+    }
+    isSearching = true;
+    onlineDevices.clear();
+    for (int i = start; i <= end; i++) {
+      if (!isSearching) break;
+      final status = await base.getOnlineStatus(i);
+      if (status) {
+        onlineDevices.add(i);
+        _onlineDevicesController.add(List<int>.from(onlineDevices));
+      }
+    }
+    debugPrint('INFO [searchAddrRange]: done range [$start,$end] devices: $onlineDevices');
+    isSearching = false;
   }
 
   void stopSearch() {
@@ -228,7 +251,7 @@ class DaliAddr {
     int addr = ad + 1;
     int retL = l;
     for (int i = 0; i < 12; i++) {
-      if (!isAllocAddr) return addr-1;
+      if (!isAllocAddr) return addr - 1;
       retL++;
       if (retL > 255) break;
       bool ok = await base.compare(h, m, retL);
