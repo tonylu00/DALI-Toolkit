@@ -71,7 +71,7 @@ class TcpClient implements Connection {
   }
 
   @override
-  void showDevicesDialog(BuildContext context) {
+  void openDeviceSelection(BuildContext context) {
     throw UnimplementedError();
   }
 

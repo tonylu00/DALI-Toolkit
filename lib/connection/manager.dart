@@ -44,12 +44,12 @@ class ConnectionManager extends ChangeNotifier {
     }
   }
 
-  void showDeviceSelectionDialog(BuildContext context) async {
+  void openDeviceSelection(BuildContext context) async {
     final perfs = await SharedPreferences.getInstance();
     final connectionMethod = perfs.getString('connectionMethod') ?? 'BLE';
     if (connectionMethod == 'BLE' && _connection is BleManager) {
       if (!context.mounted) return;
-      _connection.showDevicesDialog(context);
+      _connection.openDeviceSelection(context);
     } else {
       // Show dialog for IP selection
     }

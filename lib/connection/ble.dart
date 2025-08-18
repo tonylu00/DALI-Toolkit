@@ -212,7 +212,7 @@ class BleManager implements Connection {
   }
 
   @override
-  void showDevicesDialog(BuildContext context) {
+  void openDeviceSelection(BuildContext context) {
     startScan();
     final currentContext = context;
     showDialog(

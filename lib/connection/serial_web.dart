@@ -236,7 +236,7 @@ class SerialWebManager implements Connection {
   }
 
   @override
-  void showDevicesDialog(BuildContext context) {
+  void openDeviceSelection(BuildContext context) {
     final currentContext = context;
 
     showDialog(

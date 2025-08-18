@@ -15,7 +15,7 @@ class DeviceStatusWidget extends StatelessWidget {
           onTap: () {
             // 仅打开设备列表，不自动扫描
             if (!ConnectionManager.instance.ensureReadyForOperation()) return;
-            Dali.instance.addr?.showDevicesDialog(context);
+            Dali.instance.addr?.openDeviceSelectionPage(context);
           },
           borderRadius: BorderRadius.circular(12.0),
           child: Container(

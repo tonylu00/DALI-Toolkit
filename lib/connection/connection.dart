@@ -11,7 +11,7 @@ abstract class Connection {
   Future<void> startScan();
   void stopScan();
   bool isDeviceConnected();
-  void showDevicesDialog(BuildContext context);
+  void openDeviceSelection(BuildContext context);
   void renameDeviceDialog(BuildContext context, String currentName);
   Uint8List? readBuffer;
   String get connectedDeviceId;
