@@ -38,6 +38,7 @@ class DaliGwFeature {
   DaliGwFeature(this.gatewayType);
   bool get addressAllocation => (gatewayType <= 1);
   bool get programableGwAddress => (gatewayType == 3);
+  bool get supportStatusReport => (gatewayType == 0);
 }
 
 class DaliBase extends DaliComm {

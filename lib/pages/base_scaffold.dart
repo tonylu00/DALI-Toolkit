@@ -57,7 +57,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('DALI Inspector', style: TextStyle(fontSize: 18)).tr(),
+            const Text('DALI Toolkit', style: TextStyle(fontSize: 18)).tr(),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [

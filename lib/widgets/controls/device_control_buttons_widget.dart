@@ -1,21 +1,13 @@
 import 'package:flutter/material.dart';
 import '/dali/dali.dart';
 import '/dali/log.dart';
-import '/toast.dart';
 import '/connection/manager.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 class DeviceControlButtonsWidget extends StatelessWidget {
   const DeviceControlButtonsWidget({super.key});
 
-  bool _checkDeviceConnection() {
-    final connection = ConnectionManager.instance.connection;
-    if (connection.isDeviceConnected() == false) {
-      ToastManager().showErrorToast('Device not connected');
-      return false;
-    }
-    return true;
-  }
+  bool _checkDeviceConnection() => ConnectionManager.instance.ensureReadyForOperation();
 
   @override
   Widget build(BuildContext context) {
@@ -31,8 +23,7 @@ class DeviceControlButtonsWidget extends StatelessWidget {
               context: context,
               onPressed: () {
                 if (!_checkDeviceConnection()) return;
-                Dali.instance.base
-                    ?.recallMaxLevel(Dali.instance.base!.selectedAddress);
+                Dali.instance.base?.recallMaxLevel(Dali.instance.base!.selectedAddress);
               },
               label: 'ON',
               icon: Icons.lightbulb,

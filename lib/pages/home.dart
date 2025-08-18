@@ -37,12 +37,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   }
 
   bool _checkDeviceConnection() {
-    final connection = ConnectionManager.instance.connection;
-    if (connection.isDeviceConnected() == false) {
-      ToastManager().showErrorToast('Device not connected');
-      return false;
-    }
-    return true;
+    return ConnectionManager.instance.ensureReadyForOperation();
   }
 
   Future<void> _readBrightness() async {

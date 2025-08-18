@@ -5,6 +5,7 @@ import 'ble.dart';
 import 'serial_ip.dart';
 import 'connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '/toast.dart';
 
 class ConnectionManager extends ChangeNotifier {
   static ConnectionManager? _instance;
@@ -13,6 +14,9 @@ class ConnectionManager extends ChangeNotifier {
   int gatewayType = -1; // 未知
   String _busStatus = 'normal'; // normal / abnormal
   Timer? _busRecoverTimer;
+  DateTime? _lastToastTime;
+  String? _lastToastMsg;
+  Duration toastThrottle = const Duration(seconds: 2);
 
   static ConnectionManager get instance {
     _instance ??= ConnectionManager();
@@ -66,17 +70,28 @@ class ConnectionManager extends ChangeNotifier {
     final conn = _connection;
     try {
       // 参考 DaliComm.checkGatewayType 逻辑，避免直接依赖产生循环导入
-      List<int> bytes1 = [0x01, 0x00, 0x00]; // USB
+      List<int> bytes1 = [0x01, 0x00, 0x00]; // USB type 0
       // 默认 gateway 地址 0
       int gateway = 0;
-      List<int> bytes2 = [0x28, 0x01, gateway, 0x11, 0x00, 0x00, 0xff]; // Legacy
-      List<int> bytes3 = [0x28, 0x01, gateway, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff]; // New
+      List<int> bytes2 = [0x28, 0x01, gateway, 0x11, 0x00, 0x00, 0xff]; // Legacy type 1
+      List<int> bytes3 = [
+        0x28,
+        0x01,
+        gateway,
+        0x11,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0xff
+      ]; // New type 2
 
       await conn.send(Uint8List.fromList(bytes1));
       await Future.delayed(const Duration(milliseconds: 100));
       Uint8List? data = await conn.read(2, timeout: 100);
-      if (data != null && data.length == 2 && data[0] == 0x01 && data[1] == 0x00) {
-        gatewayType = 1; // USB
+      if ((data != null && data.isNotEmpty) && (data[0] == 0x01 || data[0] == 0x05)) {
+        gatewayType = 0; // USB
         notifyListeners();
         debugPrint("Gateway type detected: USB");
         return;
@@ -86,7 +101,7 @@ class ConnectionManager extends ChangeNotifier {
       await Future.delayed(const Duration(milliseconds: 100));
       data = await conn.read(2, timeout: 100);
       if (data != null && data.length == 2 && data[0] == gateway && data[1] >= 0) {
-        gatewayType = 2; // Legacy 485
+        gatewayType = 1; // Legacy 485
         notifyListeners();
         debugPrint("Gateway type detected: Legacy 485");
         return;
@@ -96,7 +111,7 @@ class ConnectionManager extends ChangeNotifier {
       await Future.delayed(const Duration(milliseconds: 100));
       data = await conn.read(2, timeout: 100);
       if (data != null && data.length == 2 && data[0] == gateway && data[1] >= 0) {
-        gatewayType = 3; // New 485
+        gatewayType = 2; // New 485
         notifyListeners();
         debugPrint("Gateway type detected: New 485");
         return;
@@ -111,6 +126,48 @@ class ConnectionManager extends ChangeNotifier {
   }
 
   String get busStatus => _busStatus;
+
+  bool canOperateBus() {
+    // 可扩展加入其它条件（如连接状态、网关类型等）
+    return _busStatus != 'abnormal';
+  }
+
+  /// 统一检查：设备连接 + 总线正常
+  bool ensureReadyForOperation({bool showToast = true}) {
+    final connected = _connection.isDeviceConnected();
+    if (!connected) {
+      if (showToast) {
+        debugPrint('Device not connected');
+        _showToastSafe('Device not connected');
+      }
+      return false;
+    }
+    if (!canOperateBus()) {
+      if (showToast) {
+        debugPrint('Bus abnormal');
+        _showToastSafe('Bus abnormal');
+      }
+      return false;
+    }
+    return true;
+  }
+
+  void _showToastSafe(String msg) {
+    try {
+      final now = DateTime.now();
+      if (_lastToastTime != null && _lastToastMsg == msg) {
+        if (now.difference(_lastToastTime!) < toastThrottle) {
+          // 节流：相同消息短时间内不再弹
+          return;
+        }
+      }
+      _lastToastTime = now;
+      _lastToastMsg = msg;
+      ToastManager().showErrorToast(msg);
+    } catch (e) {
+      debugPrint('Toast show failed: $e');
+    }
+  }
 
   void markBusAbnormal({Duration recoverAfter = const Duration(seconds: 5)}) {
     if (_busStatus == 'abnormal') {

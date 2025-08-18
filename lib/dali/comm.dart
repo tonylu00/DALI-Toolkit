@@ -45,6 +45,11 @@ class DaliComm {
   Future<void> write(List<int> data) async {
     Connection conn = manager.connection;
     debugPrint("dali:write: $data");
+    // 总线异常时阻止发送
+    if (!ConnectionManager.instance.canOperateBus()) {
+      debugPrint('dali:write: blocked due to bus abnormal');
+      return;
+    }
     await conn.send(Uint8List.fromList(data));
   }
 
@@ -125,6 +130,10 @@ class DaliComm {
   }
 
   Future<void> sendRawNew(int a, int b, {int? d, int? g, bool needVerify = false}) async {
+    if (!ConnectionManager.instance.canOperateBus()) {
+      debugPrint('dali:sendRawNew blocked (bus abnormal)');
+      return;
+    }
     int delays = d ?? sendDelays;
     int addr = a;
     int cmd = b;
@@ -156,6 +165,10 @@ class DaliComm {
 
   /// Send DALI extended command, which needs to be sent two times in 100ms.
   Future<void> sendExtRaw(int a, int b, {int? d, int? g}) async {
+    if (!ConnectionManager.instance.canOperateBus()) {
+      debugPrint('dali:sendExtRaw blocked (bus abnormal)');
+      return;
+    }
     int gwAddr = g ?? gw;
     int delays = d ?? extDelays;
     int addr = a;
@@ -167,6 +180,10 @@ class DaliComm {
   }
 
   Future<void> sendExtRawNew(int a, int b, {int? d, int? g}) async {
+    if (!ConnectionManager.instance.canOperateBus()) {
+      debugPrint('dali:sendExtRawNew blocked (bus abnormal)');
+      return;
+    }
     int delays = d ?? extDelays;
     int addr = a;
     int cmd = b;
@@ -177,6 +194,10 @@ class DaliComm {
   }
 
   Future<int> queryRaw(int a, int b, {int? d, int? g}) async {
+    if (!ConnectionManager.instance.canOperateBus()) {
+      debugPrint('dali:queryRaw blocked (bus abnormal)');
+      return -2; // treat as no response
+    }
     int delays = d ?? queryDelays;
     int addr = a;
     int cmd = b;
@@ -210,6 +231,10 @@ class DaliComm {
 
   /// send DALI command (need response)
   Future<int> queryRawNew(int a, int b, {int? d, int? g}) async {
+    if (!ConnectionManager.instance.canOperateBus()) {
+      debugPrint('dali:queryRawNew blocked (bus abnormal)');
+      return -2;
+    }
     int delays = d ?? queryDelays;
     int addr = a;
     int cmd = b;

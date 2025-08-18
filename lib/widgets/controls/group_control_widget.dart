@@ -19,20 +19,12 @@ class GroupControlWidget extends StatefulWidget {
 }
 
 class _GroupControlWidgetState extends State<GroupControlWidget> {
-  bool _checkDeviceConnection() {
-    final connection = ConnectionManager.instance.connection;
-    if (connection.isDeviceConnected() == false) {
-      ToastManager().showErrorToast('Device not connected');
-      return false;
-    }
-    return true;
-  }
+  bool _checkDeviceConnection() => ConnectionManager.instance.ensureReadyForOperation();
 
   Future<void> _readGroup() async {
     if (!_checkDeviceConnection()) return;
 
-    int group =
-        await Dali.instance.base!.getGroup(Dali.instance.base!.selectedAddress);
+    int group = await Dali.instance.base!.getGroup(Dali.instance.base!.selectedAddress);
     List<bool> newCheckboxes = List.from(widget.groupCheckboxes);
 
     for (int i = 0; i < 16; i++) {
@@ -51,8 +43,7 @@ class _GroupControlWidgetState extends State<GroupControlWidget> {
         group |= (1 << i);
       }
     }
-    await Dali.instance.base!
-        .setGroup(Dali.instance.base!.selectedAddress, group);
+    await Dali.instance.base!.setGroup(Dali.instance.base!.selectedAddress, group);
     ToastManager().showDoneToast('Group configuration saved');
   }
 
@@ -74,8 +65,7 @@ class _GroupControlWidgetState extends State<GroupControlWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedCount =
-        widget.groupCheckboxes.where((selected) => selected).length;
+    final selectedCount = widget.groupCheckboxes.where((selected) => selected).length;
 
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -114,8 +104,7 @@ class _GroupControlWidgetState extends State<GroupControlWidget> {
                 ],
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(12),
@@ -161,16 +150,10 @@ class _GroupControlWidgetState extends State<GroupControlWidget> {
           // 组选择网格
           Container(
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .surfaceContainerHighest
-                  .withValues(alpha: 0.3),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .outline
-                    .withValues(alpha: 0.2),
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
               ),
             ),
             padding: const EdgeInsets.all(8),
@@ -200,10 +183,8 @@ class _GroupControlWidgetState extends State<GroupControlWidget> {
                   icon: const Icon(Icons.download, size: 18),
                   label: Text('Read'.tr()),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        Theme.of(context).colorScheme.primaryContainer,
-                    foregroundColor:
-                        Theme.of(context).colorScheme.onPrimaryContainer,
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),

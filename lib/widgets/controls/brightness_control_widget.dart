@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '/dali/dali.dart';
-import '/toast.dart';
 import '/connection/manager.dart';
 import '/utils/colour_track_shape.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -17,27 +16,18 @@ class BrightnessControlWidget extends StatefulWidget {
   });
 
   @override
-  State<BrightnessControlWidget> createState() =>
-      _BrightnessControlWidgetState();
+  State<BrightnessControlWidget> createState() => _BrightnessControlWidgetState();
 }
 
 class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
   Timer? _debounce;
 
-  bool _checkDeviceConnection() {
-    final connection = ConnectionManager.instance.connection;
-    if (connection.isDeviceConnected() == false) {
-      ToastManager().showErrorToast('Device not connected');
-      return false;
-    }
-    return true;
-  }
+  bool _checkDeviceConnection() => ConnectionManager.instance.ensureReadyForOperation();
 
   Future<void> _readBrightness() async {
     if (!_checkDeviceConnection()) return;
 
-    final bright = await Dali.instance.base!
-        .getBright(Dali.instance.base!.selectedAddress);
+    final bright = await Dali.instance.base!.getBright(Dali.instance.base!.selectedAddress);
     if (bright == null || bright < 0 || bright > 254) {
       return;
     }
@@ -50,8 +40,7 @@ class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
     widget.onBrightnessChanged(value);
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 50), () {
-      Dali.instance.base!
-          .setBright(Dali.instance.base!.selectedAddress, value.toInt());
+      Dali.instance.base!.setBright(Dali.instance.base!.selectedAddress, value.toInt());
     });
   }
 
@@ -102,8 +91,7 @@ class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
               Row(
                 children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(12),
@@ -111,9 +99,7 @@ class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
                     child: Text(
                       '${widget.brightness.toInt()}',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onPrimaryContainer,
+                            color: Theme.of(context).colorScheme.onPrimaryContainer,
                             fontWeight: FontWeight.bold,
                           ),
                     ),
@@ -127,10 +113,8 @@ class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
                     ),
                     tooltip: 'Read'.tr(),
                     style: IconButton.styleFrom(
-                      backgroundColor: Theme.of(context)
-                          .colorScheme
-                          .primaryContainer
-                          .withValues(alpha: 0.3),
+                      backgroundColor:
+                          Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
                     ),
                   ),
                 ],
@@ -145,15 +129,11 @@ class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
                 trackHeight: 8.0,
                 activeTrackColor: Colors.transparent,
                 inactiveTrackColor: Colors.transparent,
-                trackShape:
-                    GradientTrackShape(colors: [Colors.black, Colors.white]),
+                trackShape: GradientTrackShape(colors: [Colors.black, Colors.white]),
                 thumbColor: Theme.of(context).colorScheme.primary,
-                overlayColor:
-                    Theme.of(context).colorScheme.primary.withAlpha(32),
-                thumbShape:
-                    const RoundSliderThumbShape(enabledThumbRadius: 14.0),
-                overlayShape:
-                    const RoundSliderOverlayShape(overlayRadius: 20.0),
+                overlayColor: Theme.of(context).colorScheme.primary.withAlpha(32),
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 14.0),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 20.0),
                 valueIndicatorShape: const PaddleSliderValueIndicatorShape(),
                 valueIndicatorColor: Theme.of(context).colorScheme.primary,
                 valueIndicatorTextStyle: TextStyle(
@@ -198,10 +178,7 @@ class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
         decoration: BoxDecoration(
           color: isSelected
               ? Theme.of(context).colorScheme.primaryContainer
-              : Theme.of(context)
-                  .colorScheme
-                  .surfaceContainerHighest
-                  .withValues(alpha: 0.5),
+              : Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected

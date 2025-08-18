@@ -174,6 +174,10 @@ class BleManager implements Connection {
 
   @override
   Future<Uint8List?> read(int len, {int timeout = 200}) async {
+    if (!ConnectionManager.instance.canOperateBus()) {
+      debugPrint('ble:read blocked (bus abnormal)');
+      return null;
+    }
     if (!isDeviceConnected()) if (!await restoreExistConnection()) return null;
     try {
       final value = await UniversalBle.readValue(connectedDeviceId, serviceUuid, readUuid,
@@ -188,6 +192,10 @@ class BleManager implements Connection {
 
   @override
   Future<void> send(Uint8List value) async {
+    if (!ConnectionManager.instance.canOperateBus()) {
+      debugPrint('ble:send blocked (bus abnormal)');
+      return;
+    }
     if (!isDeviceConnected()) if (!await restoreExistConnection()) return;
     int retry = 0;
     while (retry < 3) {
