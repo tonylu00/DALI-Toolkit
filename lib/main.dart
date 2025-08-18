@@ -15,7 +15,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dali/dali.dart';
 
 FirebaseAnalytics analytics = FirebaseAnalytics.instance;
-Color themeColor = Colors.blue;
+// VS Code 默认蓝色 #007ACC 作为应用默认主题色
+Color themeColor = const Color(0xFF007ACC);
 bool isDarkMode = false;
 final navigatorKey = GlobalKey<NavigatorState>();
 Dali dali = Dali.instance;
@@ -24,7 +25,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
-  int colorValue = prefs.getInt('themeColor') ?? DaliColor.toInt(Colors.blue);
+  // 如果还没有保存的主题色，使用 VS Code 蓝 #007ACC
+  int colorValue = prefs.getInt('themeColor') ?? DaliColor.toInt(const Color(0xFF007ACC));
   themeColor = Color(colorValue);
   isDarkMode = prefs.getBool('isDarkMode') ?? false;
   Firebase.initializeApp(
@@ -76,7 +78,7 @@ class MyAppState extends State<MyApp> {
         useMaterial3: true,
       ),
       darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.lightBlue, brightness: Brightness.dark),
+        colorScheme: ColorScheme.fromSeed(seedColor: _themeColor, brightness: Brightness.dark),
         useMaterial3: true,
       ),
       themeMode: _themeMode,
