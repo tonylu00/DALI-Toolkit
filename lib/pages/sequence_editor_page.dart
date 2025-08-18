@@ -339,15 +339,10 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
                   : Text('${index + 1}'),
               title: Text(s.type.label(), maxLines: 1, overflow: TextOverflow.ellipsis),
               subtitle: Text(meta,
-                  style: TextStyle(
-                      color: () {
-                        final c = Theme.of(context).textTheme.bodySmall?.color;
-                        if (c == null) return null;
-                        final baseAlpha = c.a; // 0-255
-                        final newAlpha = (baseAlpha * 0.6).clamp(0, 255).toInt();
-                        return c.withValues(alpha: newAlpha / 255);
-                      }(),
-                      fontSize: 12)),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        // 跟随主题，不再手动调低透明度，确保暗色模式下对比度充足
+                        fontSize: 12,
+                      )),
               trailing: Wrap(
                 spacing: 4,
                 children: [

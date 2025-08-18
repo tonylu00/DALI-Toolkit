@@ -45,7 +45,7 @@ class DarkModeSettingState extends State<DarkModeSetting> {
       child: SettingsItem(
         title: 'Dark Mode',
         icon: Icons.dark_mode,
-        subtitle: 'Toggle between light and dark theme',
+        subtitle: 'settings.dark_mode.subtitle',
         control: Switch(
           value: _isDarkMode,
           onChanged: (value) {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_localization/easy_localization.dart'; // still used for hintText translations
 import 'settings_card.dart';
 import 'settings_item.dart';
 
@@ -33,10 +33,8 @@ class DelaysSettingState extends State<DelaysSetting> {
   Future<void> _loadDelays() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _sendDelaysController.text =
-          (prefs.getInt('sendDelays') ?? 50).toString();
-      _queryDelaysController.text =
-          (prefs.getInt('queryDelays') ?? 50).toString();
+      _sendDelaysController.text = (prefs.getInt('sendDelays') ?? 50).toString();
+      _queryDelaysController.text = (prefs.getInt('queryDelays') ?? 50).toString();
       _extDelaysController.text = (prefs.getInt('extDelays') ?? 100).toString();
     });
   }
@@ -44,16 +42,13 @@ class DelaysSettingState extends State<DelaysSetting> {
   Future<void> _saveDelays() async {
     final prefs = await SharedPreferences.getInstance();
     if (_sendDelaysController.text.isNotEmpty) {
-      await prefs.setInt(
-          'sendDelays', int.tryParse(_sendDelaysController.text) ?? 50);
+      await prefs.setInt('sendDelays', int.tryParse(_sendDelaysController.text) ?? 50);
     }
     if (_queryDelaysController.text.isNotEmpty) {
-      await prefs.setInt(
-          'queryDelays', int.tryParse(_queryDelaysController.text) ?? 50);
+      await prefs.setInt('queryDelays', int.tryParse(_queryDelaysController.text) ?? 50);
     }
     if (_extDelaysController.text.isNotEmpty) {
-      await prefs.setInt(
-          'extDelays', int.tryParse(_extDelaysController.text) ?? 100);
+      await prefs.setInt('extDelays', int.tryParse(_extDelaysController.text) ?? 100);
     }
   }
 
@@ -65,7 +60,7 @@ class DelaysSettingState extends State<DelaysSetting> {
           child: SettingsItem(
             title: 'Send Delays',
             icon: Icons.send,
-            subtitle: 'Delay between send commands (ms)',
+            subtitle: 'settings.delays.send.subtitle',
             control: SizedBox(
               width: 100,
               child: TextField(
@@ -92,7 +87,7 @@ class DelaysSettingState extends State<DelaysSetting> {
           child: SettingsItem(
             title: 'Query Delays',
             icon: Icons.query_stats,
-            subtitle: 'Delay between query commands (ms)',
+            subtitle: 'settings.delays.query.subtitle',
             control: SizedBox(
               width: 100,
               child: TextField(
@@ -119,7 +114,7 @@ class DelaysSettingState extends State<DelaysSetting> {
           child: SettingsItem(
             title: 'Extend Delays',
             icon: Icons.access_time,
-            subtitle: 'Extended delay for complex operations (ms)',
+            subtitle: 'settings.delays.extend.subtitle',
             control: SizedBox(
               width: 100,
               child: TextField(

@@ -50,7 +50,7 @@ class ConnectionMethodSettingState extends State<ConnectionMethodSetting> {
       child: SettingsItem(
         title: 'Connection Method',
         icon: Icons.settings_ethernet,
-        subtitle: 'Select your preferred connection method',
+        subtitle: 'settings.connection.subtitle',
         control: SizedBox(
           width: 120,
           child: DropdownButton<String>(

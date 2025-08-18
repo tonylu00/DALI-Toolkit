@@ -43,7 +43,7 @@ class ThemeColorSettingState extends State<ThemeColorSetting> {
       child: SettingsItem(
         title: 'Theme Color',
         icon: Icons.palette,
-        subtitle: 'Customize your theme color',
+        subtitle: 'settings.theme_color.subtitle',
         control: MyColorPicker(
           onColorChanged: (color) {
             _saveSelectedThemeColor(color);

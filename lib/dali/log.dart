@@ -11,7 +11,8 @@ class DaliLog {
   }
 
   final List<String> _logMessages = [];
-  final StreamController<List<String>> _logStreamController = StreamController<List<String>>.broadcast();
+  final StreamController<List<String>> _logStreamController =
+      StreamController<List<String>>.broadcast();
 
   void addLog(String message) {
     _logMessages.add(message);
@@ -68,7 +69,6 @@ class DaliLog {
             ),
             TextButton(
               onPressed: () {
-                onCanceled();
                 Navigator.of(context).pop();
               },
               child: const Text('Close').tr(),

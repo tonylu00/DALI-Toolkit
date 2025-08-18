@@ -57,10 +57,7 @@ class AddressingSettingsState extends State<AddressingSettings> {
               Container(
                 padding: const EdgeInsets.all(8.0),
                 decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.1),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8.0),
                 ),
                 child: Icon(
@@ -71,12 +68,12 @@ class AddressingSettingsState extends State<AddressingSettings> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Addressing Settings',
+                'Addressing Settings'.tr(),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-              ).tr(),
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -86,10 +83,7 @@ class AddressingSettingsState extends State<AddressingSettings> {
               Container(
                 padding: const EdgeInsets.all(6.0),
                 decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.1),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6.0),
                 ),
                 child: Icon(
@@ -104,20 +98,19 @@ class AddressingSettingsState extends State<AddressingSettings> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Remove all addresses',
+                      'Remove all addresses'.tr(),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
-                    ).tr(),
+                    ),
                     const SizedBox(height: 2),
                     Text(
-                      'Clear device addressing before new setup',
+                      'settings.addressing.remove.subtitle'.tr(),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
-                    ).tr(),
+                    ),
                   ],
                 ),
               ),
@@ -146,10 +139,7 @@ class AddressingSettingsState extends State<AddressingSettings> {
               Container(
                 padding: const EdgeInsets.all(6.0),
                 decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.1),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6.0),
                 ),
                 child: Icon(
@@ -164,20 +154,19 @@ class AddressingSettingsState extends State<AddressingSettings> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Close Light',
+                      'Close Light'.tr(),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
-                    ).tr(),
+                    ),
                     const SizedBox(height: 2),
                     Text(
-                      'Turn off lights during addressing',
+                      'settings.addressing.close_light.subtitle'.tr(),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
-                    ).tr(),
+                    ),
                   ],
                 ),
               ),

@@ -38,7 +38,7 @@ class DimmingCurveSettingState extends State<DimmingCurveSetting> {
       child: SettingsItem(
         title: 'Dimming Curve',
         icon: Icons.tune,
-        subtitle: 'Choose brightness curve type',
+        subtitle: 'settings.dimming_curve.subtitle',
         control: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

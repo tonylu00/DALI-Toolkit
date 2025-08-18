@@ -12,7 +12,7 @@ class LanguageSetting extends StatelessWidget {
       child: SettingsItem(
         title: 'Language',
         icon: Icons.language,
-        subtitle: 'Choose your preferred language',
+        subtitle: 'settings.language.subtitle',
         control: DropdownButton<Locale?>(
           value: context.locale,
           items: [

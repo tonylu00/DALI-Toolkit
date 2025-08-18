@@ -348,18 +348,16 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
       children: [
         Row(
           children: [
+            // 扫描/停止 合并为一个切换按钮
             ElevatedButton.icon(
-              onPressed: _scanning ? null : _startScan,
-              icon: const Icon(Icons.search),
-              label: Text('short_addr_manager.scan').tr(),
+              onPressed: _scanning ? _stopScan : _startScan,
+              icon: Icon(_scanning ? Icons.stop : Icons.search),
+              label: Text(_scanning ? 'short_addr_manager.stop' : 'short_addr_manager.scan').tr(),
+              style: _scanning
+                  ? ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error)
+                  : null,
             ),
             const SizedBox(width: 8),
-            if (_scanning)
-              ElevatedButton.icon(
-                onPressed: _stopScan,
-                icon: const Icon(Icons.stop),
-                label: Text('short_addr_manager.stop').tr(),
-              ),
             const SizedBox(width: 8),
             SizedBox(
               width: 55,
