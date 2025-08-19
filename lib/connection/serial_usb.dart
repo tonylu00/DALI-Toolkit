@@ -42,6 +42,8 @@ class SerialUsbConnection implements Connection {
   Timer? _reconnectTimer;
   Timer? _portMonitorTimer;
 
+  bool _suppressResetAttempts = false; // 防止自动重连时被重置计数
+
   @override
   bool isDeviceConnected() => _port != null && _port!.isOpen;
 
@@ -76,13 +78,28 @@ class SerialUsbConnection implements Connection {
   void _scheduleReconnect() {
     if (!_autoReconnectEnabled) return; // not enabled
     if (_manuallyDisconnected) return; // user initiated
-    if (_currentReconnectAttempts >= _autoReconnectMaxAttempts) return; // exceed
+    if (_currentReconnectAttempts >= _autoReconnectMaxAttempts) {
+      debugPrint('Serial USB auto-reconnect reached max attempts: $_currentReconnectAttempts');
+      // 放弃后清空设备 ID，通知上层
+      if (connectedDeviceId.isNotEmpty) {
+        // 完整断开，清除保存的路径（不再 keepSavedPath）
+        _internalDisconnect(manual: false, keepSavedPath: false);
+      }
+      _manuallyDisconnected = true; // 防止继续调度
+      return; // exceed
+    }
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(Duration(milliseconds: _autoReconnectInterval), () async {
       _currentReconnectAttempts++;
       debugPrint('Serial USB auto-reconnect attempt: $_currentReconnectAttempts');
       final target = connectedDeviceId.isNotEmpty ? connectedDeviceId : await _getSavedDevice();
-      if (target.isEmpty) return;
+      if (target.isEmpty) {
+        // 没有目标，直接视为失败并清空
+        _internalDisconnect(manual: false, keepSavedPath: false);
+        _manuallyDisconnected = true;
+        return;
+      }
+      _suppressResetAttempts = true; // 下次 connect 不重置计数
       await connect(target);
       if (isDeviceConnected()) {
         debugPrint('Serial USB auto-reconnect success');
@@ -103,13 +120,19 @@ class SerialUsbConnection implements Connection {
     await _loadReconnectPrefs();
     // 连接流程开始前确保标记为非手动断开（允许后续自动重连）
     _manuallyDisconnected = false;
-    _currentReconnectAttempts = 0;
+    if (!_suppressResetAttempts) {
+      _currentReconnectAttempts = 0; // 正常用户触发连接重置计数
+    } else {
+      // 自动重连路径，仅使用一次后释放
+      _suppressResetAttempts = false;
+    }
     // 仅当当前已连接时执行清理，且不要标记为 manual（否则后续 scheduleReconnect 会被阻断）
     if (isDeviceConnected() || _port != null) {
       await _internalDisconnect(manual: false, keepSavedPath: true);
     }
     int attempts = 0;
-    while (attempts < 3) {
+    final int maxAttemptsThisRound = _suppressResetAttempts ? 1 : 3; // 自动重连只尝试一次
+    while (attempts < maxAttemptsThisRound) {
       attempts++;
       try {
         // address 直接是设备路径/名称，若是索引则解析
@@ -128,7 +151,7 @@ class SerialUsbConnection implements Connection {
         final sp = SerialPort(devicePath);
         if (!sp.openReadWrite()) {
           debugPrint('Failed to open $devicePath: ${SerialPort.lastError}');
-          if (attempts >= 3) ToastManager().showErrorToast('USB open failed');
+          if (attempts >= maxAttemptsThisRound) ToastManager().showErrorToast('USB open failed');
           await Future.delayed(const Duration(milliseconds: 300));
           continue;
         }
@@ -157,8 +180,8 @@ class SerialUsbConnection implements Connection {
         _manuallyDisconnected = false;
         return; // success
       } catch (e) {
-        debugPrint('Serial USB connect attempt $attempts error: $e');
-        if (attempts >= 3) {
+        debugPrint('Serial USB connect attempt $attempts/$maxAttemptsThisRound error: $e');
+        if (attempts >= maxAttemptsThisRound) {
           ToastManager().showErrorToast('USB connect failed');
           ConnectionManager.instance.updateConnectionStatus(false);
           return;
@@ -178,8 +201,10 @@ class SerialUsbConnection implements Connection {
   }
 
   void _handleData(Uint8List data) {
-    // 累积到 readBuffer
     if (data.isEmpty) return;
+    // 先回调原始数据（确保上层能及时收到分片），再累积
+    _onDataReceived?.call(data);
+    // 累积到 readBuffer
     if (readBuffer == null || readBuffer!.isEmpty) {
       readBuffer = Uint8List.fromList(data);
     } else {
@@ -188,9 +213,21 @@ class SerialUsbConnection implements Connection {
       merged.setAll(readBuffer!.length, data);
       readBuffer = merged;
     }
-    _onDataReceived?.call(data);
+    _handleBusMonitor(data);
     debugPrint('USB recv: ${data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ')}');
     _tryCompletePendingRead();
+  }
+
+  void _handleBusMonitor(Uint8List chunk) {
+    final manager = ConnectionManager.instance;
+    if (manager.gatewayType != 0) return; // only for type0
+    if (chunk.length < 2) return;
+    for (int i = 0; i < chunk.length - 1; i++) {
+      if (chunk[i] == 0xff && chunk[i + 1] == 0xfd) {
+        manager.markBusAbnormal();
+        break;
+      }
+    }
   }
 
   @override
@@ -215,15 +252,19 @@ class SerialUsbConnection implements Connection {
   Future<Uint8List?> read(int length, {int timeout = 200}) async {
     if (!isDeviceConnected()) return null;
     // 快速路径：缓冲已有
-    if (readBuffer != null && readBuffer!.length >= length) {
-      final out = Uint8List.fromList(readBuffer!.sublist(0, length));
-      final remain = readBuffer!.length - length;
-      readBuffer = remain > 0 ? Uint8List.fromList(readBuffer!.sublist(length)) : null;
-      return out;
+    if (readBuffer != null && readBuffer!.isNotEmpty) {
+      if (readBuffer!.length >= length) {
+        final out = Uint8List.fromList(readBuffer!.sublist(0, length));
+        final remain = readBuffer!.length - length;
+        readBuffer = remain > 0 ? Uint8List.fromList(readBuffer!.sublist(length)) : null;
+        return out;
+      } else {
+        // 若缓冲不足，继续等待，但先复制当前（用于超时返回）
+      }
     }
-    // 若已有挂起读取，先取消（或直接复用策略）。这里选择取消旧的以避免等待链表复杂性。
+    // 取消旧挂起
     if (_pendingRead != null && !(_pendingRead!.isCompleted)) {
-      _pendingRead!.complete(null); // 让旧调用返回 null
+      _pendingRead!.complete(null);
     }
     _pendingReadTimer?.cancel();
 
@@ -232,9 +273,17 @@ class SerialUsbConnection implements Connection {
     _pendingReadLength = length;
     _pendingReadTimer = Timer(Duration(milliseconds: timeout), () {
       if (!completer.isCompleted) {
+        // 超时：如果缓冲里有任意数据则返回部分，否则 null
+        Uint8List? partial;
+        if (readBuffer != null && readBuffer!.isNotEmpty) {
+          final take = readBuffer!.length < length ? readBuffer!.length : length;
+          partial = Uint8List.fromList(readBuffer!.sublist(0, take));
+          final remain = readBuffer!.length - take;
+          readBuffer = remain > 0 ? Uint8List.fromList(readBuffer!.sublist(take)) : null;
+        }
         _pendingRead = null;
         _pendingReadLength = null;
-        completer.complete(null);
+        completer.complete(partial);
       }
     });
 
