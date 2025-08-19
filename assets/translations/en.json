@@ -148,6 +148,8 @@
   ,"settings.delays.extend.subtitle":"Extended delay for complex operations (ms)"
   ,"settings.addressing.remove.subtitle":"Clear device addressing before new setup"
   ,"settings.addressing.close_light.subtitle":"Turn off lights during addressing"
+    ,"settings.remember_internal_page.title":"Remember Last Internal Page"
+    ,"settings.remember_internal_page.subtitle":"Re-enter large layout at the last internal page you visited"
   ,"No logs available":"No logs available"
   ,"Bus abnormal":"Bus abnormal"
   ,"Device not connected":"Device not connected"

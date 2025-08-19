@@ -59,7 +59,7 @@ class SettingsPageState extends State<SettingsPage> {
           const DelaysSetting(),
           const AddressingSettings(),
           const SizedBox(height: 12),
-          _RememberInternalPageSwitch(),
+          const RememberInternalPageSetting(),
           const SizedBox(height: 20), // 添加底部间距
         ],
       ),
@@ -69,21 +69,20 @@ class SettingsPageState extends State<SettingsPage> {
   }
 }
 
-class _RememberInternalPageSwitch extends StatefulWidget {
-  const _RememberInternalPageSwitch();
+class RememberInternalPageSetting extends StatefulWidget {
+  const RememberInternalPageSetting({super.key});
   @override
-  State<_RememberInternalPageSwitch> createState() => _RememberInternalPageSwitchState();
+  State<RememberInternalPageSetting> createState() => _RememberInternalPageSettingState();
 }
 
-class _RememberInternalPageSwitchState extends State<_RememberInternalPageSwitch> {
+class _RememberInternalPageSettingState extends State<RememberInternalPageSetting> {
   final prefs = InternalPagePrefs.instance;
+
   @override
   void initState() {
     super.initState();
     prefs.addListener(_onChanged);
-    if (!prefs.loaded) {
-      prefs.load();
-    }
+    if (!prefs.loaded) prefs.load();
   }
 
   @override
@@ -98,11 +97,16 @@ class _RememberInternalPageSwitchState extends State<_RememberInternalPageSwitch
 
   @override
   Widget build(BuildContext context) {
-    return SwitchListTile(
-      title: Text('记住上次功能区页面'),
-      subtitle: Text('开启后，大尺寸模式重新进入会定位到上次停留的内部页面'),
-      value: prefs.remember,
-      onChanged: (v) => prefs.setRemember(v),
+    return SettingsCard(
+      child: SettingsItem(
+        title: 'settings.remember_internal_page.title',
+        subtitle: 'settings.remember_internal_page.subtitle',
+        icon: Icons.history_toggle_off,
+        control: Switch(
+          value: prefs.remember,
+            onChanged: (v) => prefs.setRemember(v),
+        ),
+      ),
     );
   }
 }

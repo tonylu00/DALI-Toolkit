@@ -246,6 +246,8 @@
   ,"settings.delays.extend.subtitle":"复杂操作使用的额外延时 (毫秒)"
   ,"settings.addressing.remove.subtitle":"新建前清空设备地址分配"
   ,"settings.addressing.close_light.subtitle":"地址分配期间关闭灯光"
+  ,"settings.remember_internal_page.title":"记住上次功能区页面"
+  ,"settings.remember_internal_page.subtitle":"重新进入大尺寸模式时定位到上次停留的内部页面"
   ,"No logs available":"暂无日志"
   ,"Bus abnormal":"总线异常"
   ,"ip.dialog.title":"IP 连接"

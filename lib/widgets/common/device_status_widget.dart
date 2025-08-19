@@ -4,7 +4,9 @@ import '/connection/manager.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 class DeviceStatusWidget extends StatelessWidget {
-  const DeviceStatusWidget({super.key});
+  const DeviceStatusWidget({super.key, this.clickable = true});
+
+  final bool clickable;
 
   @override
   Widget build(BuildContext context) {
@@ -12,11 +14,13 @@ class DeviceStatusWidget extends StatelessWidget {
       stream: Dali.instance.addr!.selectedDeviceStream,
       builder: (context, snapshot) {
         return InkWell(
-          onTap: () {
-            // 仅打开设备列表，不自动扫描
-            if (!ConnectionManager.instance.ensureReadyForOperation()) return;
-            Dali.instance.addr?.openDeviceSelectionPage(context);
-          },
+          onTap: !clickable
+              ? null
+              : () {
+                  // 仅打开设备列表，不自动扫描
+                  if (!ConnectionManager.instance.ensureReadyForOperation()) return;
+                  Dali.instance.addr?.openDeviceSelectionPage(context);
+                },
           borderRadius: BorderRadius.circular(12.0),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),

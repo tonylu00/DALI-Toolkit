@@ -93,8 +93,8 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    // Device Status
-                    const DeviceStatusWidget(),
+                    // Device Status (disable tap in embedded ultra-wide layout)
+                    DeviceStatusWidget(clickable: !widget.embedded),
 
                     // Device Control Buttons
                     const DeviceControlButtonsWidget(),
