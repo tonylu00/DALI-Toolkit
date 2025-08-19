@@ -115,18 +115,34 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
       const SizedBox(width: 8),
       scanBtn,
     ]);
-    final broadcastToggle = Row(mainAxisSize: MainAxisSize.min, children: [
-      Checkbox(value: broadcastMode, onChanged: _toggleBroadcast),
-      Text('device_search.broadcast'.tr()),
-    ]);
+    final titleRow = widget.showTitle
+        ? Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child:
+                      Text('Online Devices', style: Theme.of(context).textTheme.titleMedium).tr(),
+                ),
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  Checkbox(value: broadcastMode, onChanged: _toggleBroadcast),
+                  Text('device_search.broadcast'.tr()),
+                ])
+              ],
+            ),
+          )
+        : Row(
+            children: [
+              const Spacer(),
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                Checkbox(value: broadcastMode, onChanged: _toggleBroadcast),
+                Text('device_search.broadcast'.tr()),
+              ])
+            ],
+          );
     final column = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      if (widget.showTitle)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
-          child: Text('Online Devices', style: Theme.of(context).textTheme.titleMedium).tr(),
-        ),
-      broadcastToggle,
-      const SizedBox(height: 12),
+      titleRow,
+      const SizedBox(height: 4),
       rangeInputs,
     ]);
     return column;

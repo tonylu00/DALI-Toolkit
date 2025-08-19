@@ -7,6 +7,7 @@ import '/pages/home.dart';
 import '/pages/settings.dart';
 import '/pages/short_address_manager_page.dart';
 import '/pages/sequence_editor_page.dart';
+import '/pages/about_page.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -145,16 +146,6 @@ class BaseScaffoldState extends State<BaseScaffold> {
         builder: (c) => const MyHomePage(title: '', embedded: true),
       ),
       _PageSpec(
-        key: 'Settings',
-        label: 'Settings'.tr(),
-        icon: Icons.settings_outlined,
-        builder: (c) => SettingsPage(
-          embedded: true,
-          onThemeModeChanged: (v) {}, // 主题切换在嵌入模式下可后续注入
-          onThemeColorChanged: (_) {},
-        ),
-      ),
-      _PageSpec(
         key: 'ShortAddressManager',
         label: 'short_addr_manager.title'.tr(),
         icon: Icons.format_list_numbered,
@@ -168,6 +159,22 @@ class BaseScaffoldState extends State<BaseScaffold> {
         label: 'Sequence Editor'.tr(),
         icon: Icons.list_alt_outlined,
         builder: (c) => const SequenceEditorPage(embedded: true),
+      ),
+      _PageSpec(
+        key: 'Settings',
+        label: 'Settings'.tr(),
+        icon: Icons.settings_outlined,
+        builder: (c) => SettingsPage(
+          embedded: true,
+          onThemeModeChanged: (v) {},
+          onThemeColorChanged: (_) {},
+        ),
+      ),
+      _PageSpec(
+        key: 'About',
+        label: 'About'.tr(),
+        icon: Icons.info_outline,
+        builder: (c) => const AboutPage(embedded: true),
       ),
     ];
 
@@ -391,19 +398,6 @@ class BaseScaffoldState extends State<BaseScaffold> {
             },
           ),
           ListTile(
-            title: const Text('Settings').tr(),
-            selected: widget.currentPage == 'Settings',
-            onTap: () {
-              if (isUltraLarge) {
-                _changeInternalPage('Settings');
-                Navigator.pop(context);
-              } else if (widget.currentPage != 'Settings') {
-                Navigator.pop(context);
-                navigateToPage(context, '/settings');
-              }
-            },
-          ),
-          ListTile(
             title: const Text('short_addr_manager.title').tr(),
             selected: widget.currentPage == 'ShortAddressManager',
             onTap: () {
@@ -426,6 +420,32 @@ class BaseScaffoldState extends State<BaseScaffold> {
               } else if (widget.currentPage != 'SequenceEditor') {
                 Navigator.pop(context);
                 navigateToPage(context, '/sequenceEditor');
+              }
+            },
+          ),
+          ListTile(
+            title: const Text('Settings').tr(),
+            selected: widget.currentPage == 'Settings',
+            onTap: () {
+              if (isUltraLarge) {
+                _changeInternalPage('Settings');
+                Navigator.pop(context);
+              } else if (widget.currentPage != 'Settings') {
+                Navigator.pop(context);
+                navigateToPage(context, '/settings');
+              }
+            },
+          ),
+          ListTile(
+            title: const Text('About').tr(),
+            selected: widget.currentPage == 'About',
+            onTap: () {
+              if (isUltraLarge) {
+                _changeInternalPage('About');
+                Navigator.pop(context);
+              } else if (widget.currentPage != 'About') {
+                Navigator.pop(context);
+                navigateToPage(context, '/about');
               }
             },
           ),
