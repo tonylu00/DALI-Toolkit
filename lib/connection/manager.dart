@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'ble.dart';
 import 'serial_ip.dart';
+import 'serial_usb.dart';
 import 'connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '/toast.dart';
@@ -36,8 +37,12 @@ class ConnectionManager extends ChangeNotifier {
     } else if (connectionMethod == 'TCP') {
       _connection = TcpClient();
     } else if (connectionMethod == 'USB') {
-      // Initialize USB connection if needed
-      // _connection = UsbConnection();
+      if (_connection is SerialUsbConnection) {
+        debugPrint('USB connection already initialized');
+        return;
+      }
+      debugPrint('Initializing USB serial connection');
+      _connection = SerialUsbConnection();
     } else {
       debugPrint('Unknown connection method: $connectionMethod');
       return;
@@ -47,11 +52,13 @@ class ConnectionManager extends ChangeNotifier {
   void openDeviceSelection(BuildContext context) async {
     final perfs = await SharedPreferences.getInstance();
     final connectionMethod = perfs.getString('connectionMethod') ?? 'BLE';
-    if (connectionMethod == 'BLE' && _connection is BleManager) {
-      if (!context.mounted) return;
+    if (!context.mounted) return;
+    if ((connectionMethod == 'BLE' && _connection is BleManager) ||
+        (connectionMethod == 'USB' && _connection is SerialUsbConnection) ||
+        (connectionMethod == 'TCP' && _connection is TcpClient)) {
       _connection.openDeviceSelection(context);
     } else {
-      // Show dialog for IP selection
+      // 其它类型暂未实现
     }
   }
 
