@@ -23,8 +23,15 @@ class _GroupControlWidgetState extends State<GroupControlWidget> {
 
   Future<void> _readGroup() async {
     if (!_checkDeviceConnection()) return;
-
+    if (Dali.instance.base!.selectedAddress > 63) {
+      ToastManager().showErrorToast('Operation not supported');
+      return;
+    }
     int group = await Dali.instance.base!.getGroup(Dali.instance.base!.selectedAddress);
+    if (group < 0) {
+      ToastManager().showErrorToast('Failed to read group configuration');
+      return;
+    }
     List<bool> newCheckboxes = List.from(widget.groupCheckboxes);
 
     for (int i = 0; i < 16; i++) {

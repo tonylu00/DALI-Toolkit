@@ -364,6 +364,9 @@ class DaliBase extends DaliComm {
   Future<int> getGroup(int a) async {
     int h = await getGroupH(a);
     int l = await getGroupL(a);
+    if (h < 0 || l < 0) {
+      return -1; // Error in reading group
+    }
     return h * 256 + l;
   }
 
