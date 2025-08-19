@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   desktop_window
   firebase_core
   flutter_libserialport
+  permission_handler_windows
   universal_ble
 )
 

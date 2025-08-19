@@ -8,6 +8,10 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'manager.dart';
 import 'connection.dart';
 import '../widgets/common/rename_device_dialog.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:io' show Platform;
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 class BleManager implements Connection {
   static final List<BleDevice> _scanResults = [];
@@ -38,17 +42,17 @@ class BleManager implements Connection {
 
   @override
   Future<void> startScan() async {
-    // Skip Bluetooth availability check on Web platform
     if (!kIsWeb) {
-      AvailabilityState state = await UniversalBle.getBluetoothAvailabilityState();
-      // Start scan only if Bluetooth is powered on
-      if (state == AvailabilityState.poweredOn) {
-        debugPrint('Bluetooth is powered on');
-      } else {
+      final state = await UniversalBle.getBluetoothAvailabilityState();
+      if (state != AvailabilityState.poweredOn) {
         debugPrint('Bluetooth is not powered on');
         return;
       }
     }
+    await _startScanCore();
+  }
+
+  Future<void> _startScanCore() async {
     _scanResults.clear();
     _uniqueDeviceIds.clear();
     UniversalBle.onScanResult = (bleDevice) {
@@ -62,11 +66,7 @@ class BleManager implements Connection {
       }
     };
     await disconnect();
-    UniversalBle.startScan(
-      scanFilter: ScanFilter(
-        withServices: [serviceUuid],
-      ),
-    );
+    UniversalBle.startScan(scanFilter: ScanFilter(withServices: [serviceUuid]));
   }
 
   @override
@@ -212,10 +212,152 @@ class BleManager implements Connection {
 
   @override
   void openDeviceSelection(BuildContext context) {
-    startScan();
-    final currentContext = context;
+    _showPermissionRationaleThenScan(context);
+  }
+
+  @override
+  void renameDeviceDialog(BuildContext context, String currentName) {
+    if (!isDeviceConnected()) return;
+
+    RenameDeviceDialog.show(
+      context,
+      currentName: currentName,
+      connectedDeviceId: connectedDeviceId,
+      sendCommand: (data) => send(data),
+    );
+  }
+
+  @override
+  void onReceived(void Function(Uint8List) onData) {
+    UniversalBle.onValueChange = (String deviceId, String characteristicId, Uint8List value) {
+      _handleBusMonitor(value);
+      onData(value);
+    };
+  }
+
+  Future<bool> restoreExistConnection() async {
+    if (connectedDeviceId.isEmpty) {
+      List<BleDevice> devices = await UniversalBle.getSystemDevices(withServices: [serviceUuid]);
+      if (devices.isEmpty) {
+        ConnectionManager.instance.updateConnectionStatus(false);
+        return false;
+      }
+      for (BleDevice device in devices) {
+        connectedDeviceId = device.deviceId;
+        debugPrint('Restore connection from ${device.deviceId}');
+      }
+    } else {
+      debugPrint('Already connected to $connectedDeviceId');
+    }
+    ConnectionManager.instance.updateConnectionStatus(true);
+    return true;
+  }
+
+  static List<BleDevice> get scanResults => _scanResults;
+
+  // Ensure correct runtime permissions for BLE scanning.
+  // Android 12+ (SDK 31+) needs bluetoothScan & bluetoothConnect.
+  // Android 11 and below need location (fine) permission.
+  Future<bool> _ensurePermissions() async {
+    try {
+      if (kIsWeb || !Platform.isAndroid) return true;
+      final androidInfo = await DeviceInfoPlugin().androidInfo;
+      final sdkInt = androidInfo.version.sdkInt;
+      if (sdkInt >= 31) {
+        // Android 12+
+        final scan = await Permission.bluetoothScan.request();
+        final connect = await Permission.bluetoothConnect.request();
+        if (scan.isGranted && connect.isGranted) return true;
+        if (scan.isPermanentlyDenied || connect.isPermanentlyDenied) openAppSettings();
+        return false;
+      } else {
+        // Android 11 及以下
+        final loc = await Permission.location.request();
+        if (loc.isGranted) return true;
+        if (loc.isPermanentlyDenied) openAppSettings();
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Error requesting permissions: $e');
+      return false;
+    }
+  }
+
+  Future<void> _showPermissionRationaleThenScan(BuildContext context) async {
+    // 如果是 Web 直接打开扫描
+    if (kIsWeb) {
+      await _startScanCore();
+      _showScanDialog(context);
+      return;
+    }
+    // 仅 Android 需要解释；其它平台直接扫描
+    if (!Platform.isAndroid) {
+      await _startScanCore();
+      _showScanDialog(context);
+      return;
+    }
+    // 先判断是否已经全部权限 OK
+    bool preGranted = await _permissionsAlreadyGranted();
+    if (preGranted) {
+      await _startScanCore();
+      _showScanDialog(context);
+      return;
+    }
+    // 说明对话框
     showDialog(
-      context: currentContext,
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('权限请求').tr(),
+          content:
+              const Text('需要蓝牙扫描与连接权限 (Android 12+)，或定位权限 (Android 11 及以下) 来搜索并连接到网关设备。请授予以继续。')
+                  .tr(),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                // 用户拒绝，不再弹系统权限，提示 toast
+                Fluttertoast.showToast(msg: tr('权限被取消，无法扫描设备'));
+              },
+              child: const Text('取消').tr(),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                bool ok = await _ensurePermissions();
+                if (!ok) {
+                  Fluttertoast.showToast(msg: tr('未授予权限，无法扫描设备'));
+                  return;
+                }
+                await _startScanCore();
+                _showScanDialog(context);
+              },
+              child: const Text('继续').tr(),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<bool> _permissionsAlreadyGranted() async {
+    if (kIsWeb || !Platform.isAndroid) return true;
+    final androidInfo = await DeviceInfoPlugin().androidInfo;
+    final sdkInt = androidInfo.version.sdkInt;
+    if (sdkInt >= 31) {
+      final scan = await Permission.bluetoothScan.status;
+      final connect = await Permission.bluetoothConnect.status;
+      return scan.isGranted && connect.isGranted;
+    } else {
+      final loc = await Permission.location.status;
+      return loc.isGranted;
+    }
+  }
+
+  void _showScanDialog(BuildContext context) {
+    showDialog(
+      context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('BLE Devices').tr(),
@@ -263,44 +405,4 @@ class BleManager implements Connection {
       },
     );
   }
-
-  @override
-  void renameDeviceDialog(BuildContext context, String currentName) {
-    if (!isDeviceConnected()) return;
-
-    RenameDeviceDialog.show(
-      context,
-      currentName: currentName,
-      connectedDeviceId: connectedDeviceId,
-      sendCommand: (data) => send(data),
-    );
-  }
-
-  @override
-  void onReceived(void Function(Uint8List) onData) {
-    UniversalBle.onValueChange = (String deviceId, String characteristicId, Uint8List value) {
-      _handleBusMonitor(value);
-      onData(value);
-    };
-  }
-
-  Future<bool> restoreExistConnection() async {
-    if (connectedDeviceId.isEmpty) {
-      List<BleDevice> devices = await UniversalBle.getSystemDevices(withServices: [serviceUuid]);
-      if (devices.isEmpty) {
-        ConnectionManager.instance.updateConnectionStatus(false);
-        return false;
-      }
-      for (BleDevice device in devices) {
-        connectedDeviceId = device.deviceId;
-        debugPrint('Restore connection from ${device.deviceId}');
-      }
-    } else {
-      debugPrint('Already connected to $connectedDeviceId');
-    }
-    ConnectionManager.instance.updateConnectionStatus(true);
-    return true;
-  }
-
-  static List<BleDevice> get scanResults => _scanResults;
 }

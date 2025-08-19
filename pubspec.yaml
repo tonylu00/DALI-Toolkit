@@ -38,6 +38,8 @@ dependencies:
   #linux_serial: ^0.2.3+6
   #usb_serial: ^0.5.2 # usb serial for android
   #dart_periphery: ^0.9.12 # serial for linux
+  permission_handler: ^11.3.1 # runtime permissions
+  device_info_plus: ^10.1.0 # to detect Android SDK for permission logic
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
