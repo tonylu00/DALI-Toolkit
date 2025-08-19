@@ -11,8 +11,9 @@ import 'base_scaffold.dart';
 import '../widgets/widgets.dart';
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+  const MyHomePage({super.key, required this.title, this.embedded = false});
   final String title;
+  final bool embedded; // 大尺寸模式由外部 BaseScaffold 承载
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -82,84 +83,83 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    return BaseScaffold(
-      currentPage: 'Home',
-      body: Row(
-        children: <Widget>[
-          Expanded(
-            child: Stack(
-              children: <Widget>[
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      // Device Status
-                      const DeviceStatusWidget(),
+    final content = Row(
+      children: <Widget>[
+        Expanded(
+          child: Stack(
+            children: <Widget>[
+              SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    // Device Status
+                    const DeviceStatusWidget(),
 
-                      // Device Control Buttons
-                      const DeviceControlButtonsWidget(),
+                    // Device Control Buttons
+                    const DeviceControlButtonsWidget(),
 
-                      // Read Operation Buttons
-                      ReadOperationButtonsWidget(
-                        onReadBrightness: _readBrightness,
-                        onReadColorTemperature: _readColorTemperature,
-                        onReadColor: _readColor,
-                      ),
+                    // Read Operation Buttons
+                    ReadOperationButtonsWidget(
+                      onReadBrightness: _readBrightness,
+                      onReadColorTemperature: _readColorTemperature,
+                      onReadColor: _readColor,
+                    ),
 
-                      // Brightness Control
-                      BrightnessControlWidget(
-                        brightness: brightness,
-                        onBrightnessChanged: (value) {
-                          setState(() {
-                            brightness = value;
-                          });
-                        },
-                      ),
+                    // Brightness Control
+                    BrightnessControlWidget(
+                      brightness: brightness,
+                      onBrightnessChanged: (value) {
+                        setState(() {
+                          brightness = value;
+                        });
+                      },
+                    ),
 
-                      // Color Temperature Control
-                      ColorTemperatureControlWidget(
-                        colorTemperature: colorTemperature,
-                        onColorTemperatureChanged: (value) {
-                          setState(() {
-                            colorTemperature = value;
-                          });
-                        },
-                      ),
+                    // Color Temperature Control
+                    ColorTemperatureControlWidget(
+                      colorTemperature: colorTemperature,
+                      onColorTemperatureChanged: (value) {
+                        setState(() {
+                          colorTemperature = value;
+                        });
+                      },
+                    ),
 
-                      // Color Control
-                      ColorControlWidget(
-                        color: color,
-                        onColorChanged: (newColor) {
-                          setState(() {
-                            color = newColor;
-                          });
-                        },
-                      ),
+                    // Color Control
+                    ColorControlWidget(
+                      color: color,
+                      onColorChanged: (newColor) {
+                        setState(() {
+                          color = newColor;
+                        });
+                      },
+                    ),
 
-                      // Group Control
-                      GroupControlWidget(
-                        groupCheckboxes: groupCheckboxes,
-                        onGroupCheckboxesChanged: (newCheckboxes) {
-                          setState(() {
-                            groupCheckboxes = newCheckboxes;
-                          });
-                        },
-                      ),
+                    // Group Control
+                    GroupControlWidget(
+                      groupCheckboxes: groupCheckboxes,
+                      onGroupCheckboxesChanged: (newCheckboxes) {
+                        setState(() {
+                          groupCheckboxes = newCheckboxes;
+                        });
+                      },
+                    ),
 
-                      // Toast Test Buttons (only in debug)
-                      if (kDebugMode) const ToastTestButtonsWidget(),
+                    // Toast Test Buttons (only in debug)
+                    if (kDebugMode) const ToastTestButtonsWidget(),
 
-                      // Bottom spacing
-                      const SizedBox(height: 20),
-                    ],
-                  ),
+                    // Bottom spacing
+                    const SizedBox(height: 20),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
+    if (widget.embedded) return content; // 嵌入模式返回纯内容
+    return BaseScaffold(currentPage: 'Home', body: content);
   }
 }

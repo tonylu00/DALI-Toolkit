@@ -5,10 +5,21 @@ import '../widgets/short_address_manager.dart';
 
 class ShortAddressManagerPage extends StatelessWidget {
   final DaliAddr daliAddr;
-  const ShortAddressManagerPage({super.key, required this.daliAddr});
+  final bool embedded;
+  const ShortAddressManagerPage({super.key, required this.daliAddr, this.embedded = false});
 
   @override
   Widget build(BuildContext context) {
+    final content = Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: ShortAddressManager(
+        daliAddr: daliAddr,
+        onScanResult: (list) {
+          // 可在此处广播或处理扫描结果
+        },
+      ),
+    );
+    if (embedded) return content;
     return Scaffold(
       appBar: AppBar(
         title: const Text('short_addr_manager.title').tr(),
@@ -16,21 +27,11 @@ class ShortAddressManagerPage extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'short_addr_manager.scan'.tr(),
-            onPressed: () {
-              // 访问内部 state 触发扫描: 使用 GlobalKey 更优, 这里给出简单回调方式
-            },
+            onPressed: () {},
           )
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: ShortAddressManager(
-          daliAddr: daliAddr,
-          onScanResult: (list) {
-            // 可在此处广播或处理扫描结果
-          },
-        ),
-      ),
+      body: content,
     );
   }
 }

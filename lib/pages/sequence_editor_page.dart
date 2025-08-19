@@ -8,7 +8,8 @@ import '../toast.dart';
 
 /// 指令序列编辑页面
 class SequenceEditorPage extends StatefulWidget {
-  const SequenceEditorPage({super.key});
+  final bool embedded;
+  const SequenceEditorPage({super.key, this.embedded = false});
   @override
   State<SequenceEditorPage> createState() => _SequenceEditorPageState();
 }
@@ -175,11 +176,12 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
     final seq = current!;
     final media = MediaQuery.of(context);
     final isNarrow = media.size.width < 600; // 自适应阈值
+    final content = isNarrow ? _buildNarrowBody(seq) : _buildWideBody(seq);
+    if (widget.embedded) return content;
     return Scaffold(
       appBar: AppBar(
         title: Text('sequence.editor.title'.tr()),
         actions: [
-          // 宽屏仍在顶部添加步骤；窄屏改为浮动按钮
           if (!isNarrow)
             IconButton(
                 onPressed: _addStep,
@@ -206,7 +208,7 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
           )
         ],
       ),
-      body: isNarrow ? _buildNarrowBody(seq) : _buildWideBody(seq),
+      body: content,
       floatingActionButton: isNarrow
           ? FloatingActionButton(
               onPressed: _addStep,
@@ -214,7 +216,6 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
               child: const Icon(Icons.add),
             )
           : null,
-      // 原浮动添加步骤按钮移除，顶部已替换为添加步骤
     );
   }
 

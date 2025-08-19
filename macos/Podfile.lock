@@ -1,4 +1,6 @@
 PODS:
+  - desktop_window (0.0.1):
+    - FlutterMacOS
   - Firebase/Analytics (11.4.0):
     - Firebase/Core
   - Firebase/Core (11.4.0):
@@ -124,6 +126,7 @@ PODS:
     - FlutterMacOS
 
 DEPENDENCIES:
+  - desktop_window (from `Flutter/ephemeral/.symlinks/plugins/desktop_window/macos`)
   - firebase_analytics (from `Flutter/ephemeral/.symlinks/plugins/firebase_analytics/macos`)
   - firebase_core (from `Flutter/ephemeral/.symlinks/plugins/firebase_core/macos`)
   - firebase_remote_config (from `Flutter/ephemeral/.symlinks/plugins/firebase_remote_config/macos`)
@@ -148,6 +151,8 @@ SPEC REPOS:
     - PromisesObjC
 
 EXTERNAL SOURCES:
+  desktop_window:
+    :path: Flutter/ephemeral/.symlinks/plugins/desktop_window/macos
   firebase_analytics:
     :path: Flutter/ephemeral/.symlinks/plugins/firebase_analytics/macos
   firebase_core:
@@ -162,6 +167,7 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/universal_ble/darwin
 
 SPEC CHECKSUMS:
+  desktop_window: de6acd6053564bdccd9f4b9473d25bf4f2ad9bdf
   Firebase: cf1b19f21410b029b6786a54e9764a0cacad3c99
   firebase_analytics: fed86e1d48cd897708df526db04971fc2b1b3f58
   firebase_core: 14e47e659f61e64000927bf2c1f96f1a10349443

@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../toast.dart';
 import '../../dali/addr.dart';
+import '../../connection/manager.dart';
 
 /// 可复用设备选择面板，可嵌入页面 / 抽屉 / 横屏布局。
 class DeviceSelectionPanel extends StatefulWidget {
@@ -31,6 +32,13 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
   }
 
   void _toggleScan() {
+    // 若是开始扫描，先做连接与总线前置检查（内部会 toast 提示）
+    if (!addr.isSearching) {
+      final ok = ConnectionManager.instance.ensureReadyForOperation();
+      if (!ok) {
+        return; // 失败直接返回，不进入 setState 切换按钮
+      }
+    }
     setState(() {
       if (addr.isSearching) {
         addr.stopSearch();
