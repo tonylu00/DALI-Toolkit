@@ -104,7 +104,7 @@ class _RememberInternalPageSettingState extends State<RememberInternalPageSettin
         icon: Icons.history_toggle_off,
         control: Switch(
           value: prefs.remember,
-            onChanged: (v) => prefs.setRemember(v),
+          onChanged: (v) => prefs.setRemember(v),
         ),
       ),
     );

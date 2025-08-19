@@ -312,10 +312,11 @@ class SerialUsbConnection implements Connection {
   }
 
   Future<void> _internalDisconnect({required bool manual, bool keepSavedPath = false}) async {
-    if (manual)
+    if (manual) {
       _manuallyDisconnected = true;
-    else
+    } else {
       _manuallyDisconnected = false;
+    }
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
     try {
