@@ -7,6 +7,7 @@ import 'package:easy_localization/easy_localization.dart';
 import '/toast.dart';
 import 'connection.dart';
 import 'manager.dart';
+import 'dart:io' show Platform;
 
 /// USB 串口实现 (Desktop / Linux / macOS / Windows)
 class SerialUsbConnection implements Connection {
@@ -33,6 +34,14 @@ class SerialUsbConnection implements Connection {
   int? _pendingReadLength;
   Timer? _pendingReadTimer;
 
+  bool _autoReconnectEnabled = true;
+  int _autoReconnectInterval = 2000; // ms
+  int _autoReconnectMaxAttempts = 5;
+  int _currentReconnectAttempts = 0;
+  bool _manuallyDisconnected = false;
+  Timer? _reconnectTimer;
+  Timer? _portMonitorTimer;
+
   @override
   bool isDeviceConnected() => _port != null && _port!.isOpen;
 
@@ -57,9 +66,48 @@ class SerialUsbConnection implements Connection {
     _isScanning = false; // 轮询方式下可加入 Timer.cancel
   }
 
+  Future<void> _loadReconnectPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    _autoReconnectEnabled = prefs.getBool('autoReconnectEnabled') ?? true;
+    _autoReconnectInterval = prefs.getInt('autoReconnectInterval') ?? 2000;
+    _autoReconnectMaxAttempts = prefs.getInt('autoReconnectMaxAttempts') ?? 5;
+  }
+
+  void _scheduleReconnect() {
+    if (!_autoReconnectEnabled) return; // not enabled
+    if (_manuallyDisconnected) return; // user initiated
+    if (_currentReconnectAttempts >= _autoReconnectMaxAttempts) return; // exceed
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(Duration(milliseconds: _autoReconnectInterval), () async {
+      _currentReconnectAttempts++;
+      debugPrint('Serial USB auto-reconnect attempt: $_currentReconnectAttempts');
+      final target = connectedDeviceId.isNotEmpty ? connectedDeviceId : await _getSavedDevice();
+      if (target.isEmpty) return;
+      await connect(target);
+      if (isDeviceConnected()) {
+        debugPrint('Serial USB auto-reconnect success');
+        _currentReconnectAttempts = 0;
+      } else {
+        _scheduleReconnect();
+      }
+    });
+  }
+
+  Future<String> _getSavedDevice() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('serialUsbPath') ?? '';
+  }
+
   @override
   Future<void> connect(String address, {int port = 0}) async {
-    await disconnect();
+    await _loadReconnectPrefs();
+    // 连接流程开始前确保标记为非手动断开（允许后续自动重连）
+    _manuallyDisconnected = false;
+    _currentReconnectAttempts = 0;
+    // 仅当当前已连接时执行清理，且不要标记为 manual（否则后续 scheduleReconnect 会被阻断）
+    if (isDeviceConnected() || _port != null) {
+      await _internalDisconnect(manual: false, keepSavedPath: true);
+    }
     int attempts = 0;
     while (attempts < 3) {
       attempts++;
@@ -99,15 +147,14 @@ class SerialUsbConnection implements Connection {
         final prefs = await SharedPreferences.getInstance();
         prefs.setString('serialUsbPath', devicePath);
 
-        _reader = SerialPortReader(sp, timeout: 50);
-        _subscription = _reader!.stream.listen(_handleData, onError: (e) {
-          debugPrint('Serial read error: $e');
-        }, onDone: () {
-          debugPrint('Serial stream done');
-        }, cancelOnError: false);
+        _attachReader(sp);
 
         debugPrint('Serial USB connected: $devicePath');
         unawaited(ConnectionManager.instance.ensureGatewayType());
+        // After successful connection:
+        _startPortMonitor();
+        // 确保成功连接后不被视为手动断开
+        _manuallyDisconnected = false;
         return; // success
       } catch (e) {
         debugPrint('Serial USB connect attempt $attempts error: $e');
@@ -119,6 +166,15 @@ class SerialUsbConnection implements Connection {
         await Future.delayed(const Duration(milliseconds: 500));
       }
     }
+  }
+
+  void _attachReader(SerialPort sp) {
+    _reader = SerialPortReader(sp, timeout: 50);
+    _subscription = _reader!.stream.listen(_handleData, onError: (e) {
+      _handlePortClosedOrError(e);
+    }, onDone: () {
+      _handlePortClosedOrError();
+    }, cancelOnError: false);
   }
 
   void _handleData(Uint8List data) {
@@ -192,35 +248,6 @@ class SerialUsbConnection implements Connection {
     _onDataReceived = onData;
   }
 
-  @override
-  Future<void> disconnect() async {
-    try {
-      await _subscription?.cancel();
-      _subscription = null;
-      _reader = null;
-      _pendingReadTimer?.cancel();
-      if (_pendingRead != null && !(_pendingRead!.isCompleted)) {
-        _pendingRead!.complete(null);
-      }
-      _pendingRead = null;
-      _pendingReadLength = null;
-      if (_port != null) {
-        if (_port!.isOpen) {
-          _port!.close();
-        }
-        _port!.dispose();
-        _port = null;
-      }
-      readBuffer = null;
-      connectedDeviceId = '';
-      ConnectionManager.instance.updateConnectionStatus(false);
-      ConnectionManager.instance.updateGatewayType(-1);
-      debugPrint('Serial USB disconnected');
-    } catch (e) {
-      debugPrint('Serial USB disconnect error: $e');
-    }
-  }
-
   void _tryCompletePendingRead() {
     if (_pendingRead == null || _pendingReadLength == null) return;
     if (readBuffer == null || readBuffer!.length < _pendingReadLength!) return;
@@ -233,6 +260,105 @@ class SerialUsbConnection implements Connection {
     _pendingRead = null;
     _pendingReadLength = null;
     if (!c.isCompleted) c.complete(out);
+  }
+
+  Future<void> _internalDisconnect({required bool manual, bool keepSavedPath = false}) async {
+    if (manual)
+      _manuallyDisconnected = true;
+    else
+      _manuallyDisconnected = false;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    try {
+      await _subscription?.cancel();
+      _subscription = null;
+      _reader = null;
+      _pendingReadTimer?.cancel();
+      if (_pendingRead != null && !(_pendingRead!.isCompleted)) {
+        _pendingRead!.complete(null);
+      }
+      _pendingRead = null;
+      _pendingReadLength = null;
+      if (_port != null) {
+        try {
+          if (_port!.isOpen) {
+            _port!.close();
+          }
+        } catch (_) {}
+        try {
+          _port!.dispose();
+        } catch (_) {}
+        _port = null;
+      }
+      readBuffer = null;
+      if (!keepSavedPath) connectedDeviceId = '';
+      ConnectionManager.instance.updateConnectionStatus(false);
+      ConnectionManager.instance.updateGatewayType(-1);
+      debugPrint('Serial USB ${manual ? 'manual' : 'auto'} disconnected');
+    } catch (e) {
+      debugPrint('Serial USB internal disconnect error: $e');
+    } finally {
+      if (!manual && !_autoReconnectEnabled) {
+        _manuallyDisconnected = true; // prevent schedule if disabled
+      }
+      if (_port == null) _stopPortMonitor();
+    }
+  }
+
+  void _startPortMonitor() {
+    if (!Platform.isMacOS && !Platform.isLinux && !Platform.isWindows) return; // desktop only
+    _portMonitorTimer?.cancel();
+    _portMonitorTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_port == null || !_port!.isOpen) return; // not connected
+      List<String> now = [];
+      try {
+        now = SerialPort.availablePorts;
+      } catch (_) {}
+      final path = connectedDeviceId;
+      if (path.isEmpty) return;
+      final present = now.contains(path);
+      if (!present) {
+        debugPrint('Serial USB device removed (poll)');
+        // physical removal; treat as error/closed
+        _handlePhysicalRemoval();
+      }
+    });
+  }
+
+  void _stopPortMonitor() {
+    _portMonitorTimer?.cancel();
+    _portMonitorTimer = null;
+  }
+
+  void _handlePhysicalRemoval() async {
+    // Force close if still open to release resources
+    try {
+      if (_port != null && _port!.isOpen) {
+        _port!.close();
+      }
+    } catch (_) {}
+    if (_autoReconnectEnabled) {
+      _internalDisconnect(manual: false, keepSavedPath: true);
+      _scheduleReconnect();
+    } else {
+      await disconnect();
+    }
+  }
+
+  @override
+  Future<void> disconnect() async {
+    await _internalDisconnect(manual: true);
+  }
+
+  void _handlePortClosedOrError([Object? e]) async {
+    if (e != null) debugPrint('Serial USB port error/closed: $e');
+    if (_port != null && _port!.isOpen) return; // still open
+    if (!_autoReconnectEnabled) {
+      await _internalDisconnect(manual: false);
+      return;
+    }
+    await _internalDisconnect(manual: false, keepSavedPath: true);
+    _scheduleReconnect();
   }
 
   @override
