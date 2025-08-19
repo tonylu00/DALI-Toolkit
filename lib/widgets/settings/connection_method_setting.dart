@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '/connection/manager.dart';
 import 'settings_card.dart';
 import 'settings_item.dart';
@@ -20,8 +21,9 @@ class ConnectionMethodSettingState extends State<ConnectionMethodSetting> {
     if (!Platform.isIOS) {
       methods.add('USB');
     }
-    if (Platform.isAndroid || Platform.isLinux) {
-      methods.add('TCP');
+    // 除 web 外都支持 IP
+    if (!kIsWeb) {
+      methods.add('IP');
     }
     return methods;
   }
@@ -84,7 +86,10 @@ class ConnectionMethodSettingState extends State<ConnectionMethodSetting> {
     setState(() {
       _selectedConnectionMethod = method;
     });
-    _saveSelectedConnectionMethod(method);
+    // 兼容旧 TCP/UDP -> IP
+    String stored = method;
+    if (method == 'TCP' || method == 'UDP') stored = 'IP';
+    _saveSelectedConnectionMethod(stored);
     ConnectionManager.instance.init();
   }
 }

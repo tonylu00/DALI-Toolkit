@@ -90,7 +90,7 @@ class BleManager implements Connection {
           prefs.setString('deviceId', deviceId);
         });
         UniversalBle.discoverServices(deviceId);
-        UniversalBle.setNotifiable(deviceId, serviceUuid, readUuid, BleInputProperty.notification);
+        UniversalBle.subscribeNotifications(deviceId, serviceUuid, readUuid);
         UniversalBle.onValueChange = (String deviceId, String characteristicId, Uint8List value) {
           debugPrint(
               'HEX Value changed: ${value.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ')}');
@@ -163,12 +163,12 @@ class BleManager implements Connection {
     if (deviceId.isEmpty) {
       return;
     }
-    UniversalBle.writeValue(
+    UniversalBle.write(
       deviceId,
       serviceUuid,
       writeUuid,
       Uint8List.fromList(command.codeUnits),
-      BleOutputProperty.withoutResponse,
+      withoutResponse: true,
     );
   }
 
@@ -180,7 +180,7 @@ class BleManager implements Connection {
     }
     if (!isDeviceConnected()) if (!await restoreExistConnection()) return null;
     try {
-      final value = await UniversalBle.readValue(connectedDeviceId, serviceUuid, readUuid,
+      final value = await UniversalBle.read(connectedDeviceId, serviceUuid, readUuid,
           timeout: Duration(milliseconds: timeout));
       debugPrint('Read value: $value');
       return value;
@@ -201,8 +201,7 @@ class BleManager implements Connection {
     while (retry < 3) {
       retry++;
       try {
-        await UniversalBle.writeValue(
-            connectedDeviceId, serviceUuid, writeUuid, value, BleOutputProperty.withResponse);
+        await UniversalBle.write(connectedDeviceId, serviceUuid, writeUuid, value);
       } catch (e) {
         debugPrint('Error writing characteristic: $e');
         continue;

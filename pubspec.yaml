@@ -53,6 +53,7 @@ dependencies:
   flutter_launcher_icons: "^0.14.3"
   web: ^1.1.1
   desktop_window: ^0.4.0
+  provider: ^6.0.0
 
 dev_dependencies:
   flutter_test:

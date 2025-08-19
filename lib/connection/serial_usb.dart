@@ -59,52 +59,65 @@ class SerialUsbConnection implements Connection {
 
   @override
   Future<void> connect(String address, {int port = 0}) async {
-    try {
-      await disconnect();
-      // address 直接是设备路径/名称，若是索引则解析
-      String devicePath = address;
-      if (!_availablePorts.contains(devicePath)) {
-        final idx = int.tryParse(address);
-        if (idx != null && idx >= 0 && idx < _availablePorts.length) {
-          devicePath = _availablePorts[idx];
+    await disconnect();
+    int attempts = 0;
+    while (attempts < 3) {
+      attempts++;
+      try {
+        // address 直接是设备路径/名称，若是索引则解析
+        String devicePath = address;
+        if (!_availablePorts.contains(devicePath)) {
+          final idx = int.tryParse(address);
+          if (idx != null && idx >= 0 && idx < _availablePorts.length) {
+            devicePath = _availablePorts[idx];
+          }
         }
+        if (!_availablePorts.contains(devicePath)) {
+          debugPrint('Invalid serial device: $address');
+          ToastManager().showErrorToast('Invalid serial device');
+          return;
+        }
+        final sp = SerialPort(devicePath);
+        if (!sp.openReadWrite()) {
+          debugPrint('Failed to open $devicePath: ${SerialPort.lastError}');
+          if (attempts >= 3) ToastManager().showErrorToast('USB open failed');
+          await Future.delayed(const Duration(milliseconds: 300));
+          continue;
+        }
+        final config = SerialPortConfig()
+          ..baudRate = 9600
+          ..bits = 8
+          ..parity = 0
+          ..stopBits = 1
+          ..setFlowControl(SerialPortFlowControl.none);
+        sp.config = config;
+
+        _port = sp;
+        connectedDeviceId = devicePath;
+        ConnectionManager.instance.updateConnectionStatus(true);
+
+        final prefs = await SharedPreferences.getInstance();
+        prefs.setString('serialUsbPath', devicePath);
+
+        _reader = SerialPortReader(sp, timeout: 50);
+        _subscription = _reader!.stream.listen(_handleData, onError: (e) {
+          debugPrint('Serial read error: $e');
+        }, onDone: () {
+          debugPrint('Serial stream done');
+        }, cancelOnError: false);
+
+        debugPrint('Serial USB connected: $devicePath');
+        unawaited(ConnectionManager.instance.ensureGatewayType());
+        return; // success
+      } catch (e) {
+        debugPrint('Serial USB connect attempt $attempts error: $e');
+        if (attempts >= 3) {
+          ToastManager().showErrorToast('USB connect failed');
+          ConnectionManager.instance.updateConnectionStatus(false);
+          return;
+        }
+        await Future.delayed(const Duration(milliseconds: 500));
       }
-      if (!_availablePorts.contains(devicePath)) {
-        debugPrint('Invalid serial device: $address');
-        return;
-      }
-      final sp = SerialPort(devicePath);
-      if (!sp.openReadWrite()) {
-        debugPrint('Failed to open $devicePath: ${SerialPort.lastError}');
-        return;
-      }
-      // 基本参数 (9600 8N1) 可按需配置
-      final config = SerialPortConfig()
-        ..baudRate = 9600
-        ..bits = 8
-        ..parity = 0
-        ..stopBits = 1
-        ..setFlowControl(SerialPortFlowControl.none);
-      sp.config = config;
-
-      _port = sp;
-      connectedDeviceId = devicePath;
-      ConnectionManager.instance.updateConnectionStatus(true);
-
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setString('serialUsbPath', devicePath);
-
-      _reader = SerialPortReader(sp, timeout: 50);
-      _subscription = _reader!.stream.listen(_handleData, onError: (e) {
-        debugPrint('Serial read error: $e');
-      }, onDone: () {
-        debugPrint('Serial stream done');
-      }, cancelOnError: false);
-
-      debugPrint('Serial USB connected: $devicePath');
-    } catch (e) {
-      debugPrint('Serial USB connect error: $e');
-      ConnectionManager.instance.updateConnectionStatus(false);
     }
   }
 
@@ -201,6 +214,7 @@ class SerialUsbConnection implements Connection {
       readBuffer = null;
       connectedDeviceId = '';
       ConnectionManager.instance.updateConnectionStatus(false);
+      ConnectionManager.instance.updateGatewayType(-1);
       debugPrint('Serial USB disconnected');
     } catch (e) {
       debugPrint('Serial USB disconnect error: $e');

@@ -225,7 +225,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
           PopupMenuButton<String>(
             onSelected: (String result) async {
               if (result == 'Option 1') {
-                connection.openDeviceSelection(context);
+                ConnectionManager.instance.openDeviceSelection(context);
               } else if (result == 'Option 2') {
                 connection.disconnect();
               } else if (result == 'Option 3') {

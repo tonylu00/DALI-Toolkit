@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '/main.dart';
 import 'base_scaffold.dart';
 import '../widgets/widgets.dart';
+import '../widgets/settings/gateway_type_card.dart';
 import '/utils/internal_page_prefs.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -43,6 +44,7 @@ class SettingsPageState extends State<SettingsPage> {
       child: Column(
         children: [
           const ConnectionMethodSetting(),
+          const GatewayTypeCard(),
           const DimmingCurveSetting(),
           ThemeColorSetting(
             onThemeColorChanged: widget.onThemeColorChanged,
