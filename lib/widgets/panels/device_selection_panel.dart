@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../toast.dart';
 import '../../dali/addr.dart';
 import '../../connection/manager.dart';
@@ -19,6 +20,9 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
   late int rangeStart;
   late int rangeEnd;
   late bool broadcastMode;
+  late TextEditingController _addrInputCtrl; // 手动输入地址 (0-63)
+  bool _groupAddr = false; // 是否组地址 (addr + 64)
+  DateTime? _lastToastTime;
 
   @override
   void initState() {
@@ -26,9 +30,24 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
     rangeStart = addr.scanRangeStart;
     rangeEnd = addr.scanRangeEnd;
     broadcastMode = addr.base.selectedAddress == addr.base.broadcast;
+    final sel = addr.base.selectedAddress;
+    if (sel >= 64 && sel < 127) {
+      _groupAddr = true;
+      _addrInputCtrl = TextEditingController(text: (sel - 64).toString());
+    } else {
+      _groupAddr = false;
+      _addrInputCtrl =
+          TextEditingController(text: sel == addr.base.broadcast ? '0' : sel.toString());
+    }
     addr.searchStateStream.listen((_) {
       if (mounted) setState(() {});
     });
+  }
+
+  @override
+  void dispose() {
+    _addrInputCtrl.dispose();
+    super.dispose();
   }
 
   void _toggleScan() {
@@ -62,22 +81,33 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
       addr.selectDevice(addr.base.selectedAddress);
       setState(() {
         broadcastMode = true;
+        // 广播模式下不使用组地址
+        _groupAddr = false;
       });
       return;
     }
-    final devices = addr.onlineDevices;
-    if (devices.isEmpty) {
-      ToastManager().showInfoToast('device_search.cannot_exit_broadcast_no_devices');
-      setState(() {});
-      return;
-    }
-    if (addr.base.selectedAddress == addr.base.broadcast) {
-      addr.base.selectedAddress = devices.first;
-      addr.selectDevice(addr.base.selectedAddress);
-    }
+    // 退出广播：若有在线设备选第一个，否则选0
+    final devices = List<int>.from(addr.onlineDevices)..sort();
+    int newAddr = devices.isNotEmpty ? devices.first : 0;
+    addr.base.selectedAddress = newAddr;
+    addr.selectDevice(newAddr);
     setState(() {
       broadcastMode = false;
+      _groupAddr = false;
+      _addrInputCtrl.text = newAddr.toString();
     });
+  }
+
+  void _toggleGroupAddr(bool? v) {
+    if (broadcastMode) return; // 广播下不可用
+    final newVal = v ?? false;
+    if (newVal != _groupAddr) {
+      setState(() {
+        _groupAddr = newVal;
+        // 切换组地址时清空输入框，不立即改变已存地址 (等待用户再次输入)
+        _addrInputCtrl.clear();
+      });
+    }
   }
 
   Widget _buildControls(bool wide) {
@@ -125,6 +155,26 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
                       Text('Online Devices', style: Theme.of(context).textTheme.titleMedium).tr(),
                 ),
                 Row(mainAxisSize: MainAxisSize.min, children: [
+                  SizedBox(
+                    width: 72,
+                    child: TextField(
+                      controller: _addrInputCtrl,
+                      enabled: !broadcastMode,
+                      decoration: const InputDecoration(
+                        labelText: 'Addr',
+                        isDense: true,
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: _onAddrChanged,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Row(children: [
+                    Checkbox(value: _groupAddr, onChanged: broadcastMode ? null : _toggleGroupAddr),
+                    Text('device_search.group_addr'.tr()),
+                  ]),
+                  const SizedBox(width: 8),
                   Checkbox(value: broadcastMode, onChanged: _toggleBroadcast),
                   Text('device_search.broadcast'.tr()),
                 ])
@@ -135,6 +185,23 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
             children: [
               const Spacer(),
               Row(mainAxisSize: MainAxisSize.min, children: [
+                SizedBox(
+                  width: 72,
+                  child: TextField(
+                    controller: _addrInputCtrl,
+                    enabled: !broadcastMode,
+                    decoration: const InputDecoration(labelText: 'Addr', isDense: true),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onChanged: _onAddrChanged,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Row(children: [
+                  Checkbox(value: _groupAddr, onChanged: broadcastMode ? null : _toggleGroupAddr),
+                  Text('device_search.group_addr'.tr()),
+                ]),
+                const SizedBox(width: 8),
                 Checkbox(value: broadcastMode, onChanged: _toggleBroadcast),
                 Text('device_search.broadcast'.tr()),
               ])
@@ -146,6 +213,40 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
       rangeInputs,
     ]);
     return column;
+  }
+
+  void _onAddrChanged(String value) {
+    if (broadcastMode) return; // 广播模式不处理
+    final text = value.trim();
+    if (text.isEmpty) {
+      _throttleToast('address.input.empty');
+      return;
+    }
+    final v = int.tryParse(text);
+    if (v == null) {
+      _throttleToast('address.input.empty');
+      return;
+    }
+    final max = _groupAddr ? 15 : 63;
+    if (v < 0 || v > max) {
+      _throttleToast(_groupAddr ? 'address.input.invalid_group' : 'address.input.invalid_single');
+      return;
+    }
+    // 合法，更新
+    final actual = _groupAddr ? v + 64 : v;
+    addr.base.selectedAddress = actual;
+    addr.selectDevice(actual);
+    setState(() {});
+  }
+
+  void _throttleToast(String key) {
+    final now = DateTime.now();
+    if (_lastToastTime != null &&
+        now.difference(_lastToastTime!) < const Duration(milliseconds: 800)) {
+      return; // 节流
+    }
+    _lastToastTime = now;
+    ToastManager().showErrorToast(key.tr());
   }
 
   Widget _buildDeviceList() {
@@ -181,6 +282,9 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
                 }
                 addr.base.selectedAddress = a;
                 addr.selectDevice(a);
+                if (!_groupAddr) {
+                  _addrInputCtrl.text = a.toString();
+                }
                 setState(() {});
               },
             );

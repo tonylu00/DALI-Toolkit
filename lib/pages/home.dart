@@ -9,6 +9,7 @@ import 'base_scaffold.dart';
 
 // Import the new widget components
 import '../widgets/widgets.dart';
+import '../utils/broadcast_read_prefs.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title, this.embedded = false});
@@ -32,10 +33,22 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     Dali.instance.addr!.selectedDeviceStream.listen((address) {
       setState(() {});
     });
+    BroadcastReadPrefs.instance.addListener(_onPrefsChanged);
+    BroadcastReadPrefs.instance.load();
     ToastManager().init();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ToastManager().showInfoToast('Initialization complete');
     });
+  }
+
+  @override
+  void dispose() {
+    BroadcastReadPrefs.instance.removeListener(_onPrefsChanged);
+    super.dispose();
+  }
+
+  void _onPrefsChanged() {
+    if (mounted) setState(() {});
   }
 
   bool _checkDeviceConnection() {
@@ -83,6 +96,10 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final selAddr = Dali.instance.base!.selectedAddress;
+    final allowBroadcast = BroadcastReadPrefs.instance.allow;
+    final bool isReadable = selAddr <= 63 || allowBroadcast; // 普通读取条件
+    final bool canReadGroup = selAddr <= 63 || allowBroadcast; // 组读取同条件 (地址>63 禁止)
     final content = Row(
       children: <Widget>[
         Expanded(
@@ -101,6 +118,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
                     // Read Operation Buttons
                     ReadOperationButtonsWidget(
+                      isReadable: isReadable,
                       onReadBrightness: _readBrightness,
                       onReadColorTemperature: _readColorTemperature,
                       onReadColor: _readColor,
@@ -109,6 +127,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                     // Brightness Control
                     BrightnessControlWidget(
                       brightness: brightness,
+                      isReadable: isReadable,
                       onBrightnessChanged: (value) {
                         setState(() {
                           brightness = value;
@@ -119,6 +138,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                     // Color Temperature Control
                     ColorTemperatureControlWidget(
                       colorTemperature: colorTemperature,
+                      isReadable: isReadable,
                       onColorTemperatureChanged: (value) {
                         setState(() {
                           colorTemperature = value;
@@ -129,6 +149,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                     // Color Control
                     ColorControlWidget(
                       color: color,
+                      isReadable: isReadable,
                       onColorChanged: (newColor) {
                         setState(() {
                           color = newColor;
@@ -139,6 +160,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                     // Group Control
                     GroupControlWidget(
                       groupCheckboxes: groupCheckboxes,
+                      canRead: canReadGroup,
                       onGroupCheckboxesChanged: (newCheckboxes) {
                         setState(() {
                           groupCheckboxes = newCheckboxes;

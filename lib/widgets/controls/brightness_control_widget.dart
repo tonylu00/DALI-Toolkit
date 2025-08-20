@@ -8,10 +8,12 @@ import 'package:easy_localization/easy_localization.dart';
 class BrightnessControlWidget extends StatefulWidget {
   final double brightness;
   final ValueChanged<double> onBrightnessChanged;
+  final bool isReadable;
 
   const BrightnessControlWidget({
     super.key,
     required this.brightness,
+    required this.isReadable,
     required this.onBrightnessChanged,
   });
 
@@ -106,7 +108,7 @@ class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    onPressed: _readBrightness,
+                    onPressed: widget.isReadable ? _readBrightness : null,
                     icon: Icon(
                       Icons.refresh,
                       color: Theme.of(context).colorScheme.primary,

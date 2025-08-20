@@ -5,6 +5,7 @@ import 'base_scaffold.dart';
 import '../widgets/widgets.dart';
 import '../widgets/settings/gateway_type_card.dart';
 import '../widgets/settings/auto_reconnect_setting.dart';
+import '../widgets/settings/allow_broadcast_read_setting.dart';
 import '/utils/internal_page_prefs.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -58,6 +59,7 @@ class SettingsPageState extends State<SettingsPage> {
           const LanguageSetting(),
           const DelaysSetting(),
           const AddressingSettings(),
+          const AllowBroadcastReadSetting(),
           const SizedBox(height: 12),
           const RememberInternalPageSetting(),
           const SizedBox(height: 20), // 添加底部间距

@@ -7,10 +7,12 @@ import 'package:easy_localization/easy_localization.dart';
 class GroupControlWidget extends StatefulWidget {
   final List<bool> groupCheckboxes;
   final ValueChanged<List<bool>> onGroupCheckboxesChanged;
+  final bool canRead;
 
   const GroupControlWidget({
     super.key,
     required this.groupCheckboxes,
+    required this.canRead,
     required this.onGroupCheckboxesChanged,
   });
 
@@ -186,7 +188,7 @@ class _GroupControlWidgetState extends State<GroupControlWidget> {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: _readGroup,
+                  onPressed: widget.canRead ? _readGroup : null,
                   icon: const Icon(Icons.download, size: 18),
                   label: Text('Read'.tr()),
                   style: ElevatedButton.styleFrom(

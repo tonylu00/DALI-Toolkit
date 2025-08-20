@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 class ReadOperationButtonsWidget extends StatelessWidget {
+  final bool isReadable;
   final VoidCallback onReadBrightness;
   final VoidCallback onReadColorTemperature;
   final VoidCallback onReadColor;
 
   const ReadOperationButtonsWidget({
     super.key,
+    required this.isReadable,
     required this.onReadBrightness,
     required this.onReadColorTemperature,
     required this.onReadColor,
@@ -95,7 +97,7 @@ class ReadOperationButtonsWidget extends StatelessWidget {
     VoidCallback onPressed,
   ) {
     return OutlinedButton.icon(
-      onPressed: onPressed,
+      onPressed: isReadable ? onPressed : null,
       icon: Icon(icon, size: 18, color: color),
       label: Text(
         label.tr(),

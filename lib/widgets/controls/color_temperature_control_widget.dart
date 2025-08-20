@@ -8,10 +8,12 @@ import 'package:easy_localization/easy_localization.dart';
 class ColorTemperatureControlWidget extends StatefulWidget {
   final double colorTemperature;
   final ValueChanged<double> onColorTemperatureChanged;
+  final bool isReadable;
 
   const ColorTemperatureControlWidget({
     super.key,
     required this.colorTemperature,
+    required this.isReadable,
     required this.onColorTemperatureChanged,
   });
 
@@ -110,7 +112,7 @@ class _ColorTemperatureControlWidgetState extends State<ColorTemperatureControlW
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    onPressed: _readColorTemperature,
+                    onPressed: widget.isReadable ? _readColorTemperature : null,
                     icon: Icon(
                       Icons.refresh,
                       color: Colors.orange,

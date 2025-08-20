@@ -8,10 +8,12 @@ import 'package:easy_localization/easy_localization.dart';
 class ColorControlWidget extends StatefulWidget {
   final Color color;
   final ValueChanged<Color> onColorChanged;
+  final bool isReadable;
 
   const ColorControlWidget({
     super.key,
     required this.color,
+    required this.isReadable,
     required this.onColorChanged,
   });
 
@@ -81,7 +83,7 @@ class _ColorControlWidgetState extends State<ColorControlWidget> {
                 ],
               ),
               IconButton(
-                onPressed: _readColor,
+                onPressed: widget.isReadable ? _readColor : null,
                 icon: Icon(
                   Icons.refresh,
                   color: Theme.of(context).colorScheme.primary,
