@@ -156,8 +156,8 @@ class ConnectionManager extends ChangeNotifier {
     final connected = _connection.isDeviceConnected();
     if (!connected) {
       if (showToast) {
-        debugPrint('Device not connected');
-        _showToastSafe('Device not connected');
+        debugPrint('connection.disconnected');
+        _showToastSafe('connection.disconnected'.tr());
       }
       return false;
     }
@@ -466,7 +466,7 @@ class ConnectionManager extends ChangeNotifier {
               if (!connecting)
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('Close').tr(),
+                  child: const Text('common.close').tr(),
                 )
               else
                 TextButton(

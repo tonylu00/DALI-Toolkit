@@ -75,7 +75,7 @@ class _ColorControlWidgetState extends State<ColorControlWidget> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Color'.tr(),
+                    'color.title'.tr(),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -88,7 +88,7 @@ class _ColorControlWidgetState extends State<ColorControlWidget> {
                   Icons.refresh,
                   color: Theme.of(context).colorScheme.primary,
                 ),
-                tooltip: 'Read'.tr(),
+                tooltip: 'common.read'.tr(),
                 style: IconButton.styleFrom(
                   backgroundColor:
                       Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
@@ -143,7 +143,7 @@ class _ColorControlWidgetState extends State<ColorControlWidget> {
           const SizedBox(height: 16),
           // 预设颜色快捷按钮
           Text(
-            'Presets'.tr(),
+            'common.presets'.tr(),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,

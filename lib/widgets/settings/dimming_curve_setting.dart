@@ -12,7 +12,7 @@ class DimmingCurveSetting extends StatefulWidget {
 }
 
 class DimmingCurveSettingState extends State<DimmingCurveSetting> {
-  String _selectedDimmingCurve = 'Linear';
+  String _selectedDimmingCurve = 'linear';
 
   @override
   void initState() {
@@ -23,7 +23,7 @@ class DimmingCurveSettingState extends State<DimmingCurveSetting> {
   Future<void> _loadSelectedDimmingCurve() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _selectedDimmingCurve = prefs.getString('dimmingCurve') ?? 'Linear';
+      _selectedDimmingCurve = prefs.getString('dimmingCurve') ?? 'linear';
     });
   }
 
@@ -36,23 +36,23 @@ class DimmingCurveSettingState extends State<DimmingCurveSetting> {
   Widget build(BuildContext context) {
     return SettingsCard(
       child: SettingsItem(
-        title: 'Dimming Curve',
+        title: 'settings.dimming_curve.title',
         icon: Icons.tune,
         subtitle: 'settings.dimming_curve.subtitle',
         control: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             SettingsOptionButton(
-              label: 'Linear',
+              label: 'curve.linear',
               width: 100,
-              isSelected: _selectedDimmingCurve == 'Linear',
-              onTap: () => _selectDimmingCurve('Linear'),
+              isSelected: _selectedDimmingCurve == 'linear',
+              onTap: () => _selectDimmingCurve('linear'),
             ),
             SettingsOptionButton(
-              label: 'Logarithmic',
+              label: 'curve.logarithmic',
               width: 100,
-              isSelected: _selectedDimmingCurve == 'Logarithmic',
-              onTap: () => _selectDimmingCurve('Logarithmic'),
+              isSelected: _selectedDimmingCurve == 'logarithmic',
+              onTap: () => _selectDimmingCurve('logarithmic'),
             ),
           ],
         ),

@@ -9,7 +9,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Login'.tr(),
+      title: 'auth.login'.tr(),
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -37,7 +37,7 @@ class LoginPageState extends State<LoginPage> {
       debugPrint('Form is valid and privacy policy agreed to.');
       final loginForm = _formKey.currentState as FormState;
       final username = _usernameController.text;
-final password = _passwordController.text;
+      final password = _passwordController.text;
       debugPrint('Username: $username');
       debugPrint('Password: $password');
       final loginInfo = [username, password];
@@ -63,21 +63,21 @@ final password = _passwordController.text;
             children: <Widget>[
               TextFormField(
                 controller: _usernameController,
-                decoration: InputDecoration(labelText: 'Username'.tr()),
+                decoration: InputDecoration(labelText: 'user.username'.tr()),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your username'.tr();
+                    return 'validation.username_required'.tr();
                   }
                   return null;
                 },
               ),
               TextFormField(
                 controller: _passwordController,
-                decoration: InputDecoration(labelText: 'Password'.tr()),
+                decoration: InputDecoration(labelText: 'user.password'.tr()),
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your password'.tr();
+                    return 'validation.password_required'.tr();
                   }
                   return null;
                 },
@@ -99,7 +99,7 @@ final password = _passwordController.text;
                         // Open privacy policy link
                       },
                       child: Text(
-                        'I agree to the Privacy Policy'.tr(),
+                        'auth.agree_privacy_policy'.tr(),
                         style: TextStyle(
                           decoration: TextDecoration.underline,
                           color: Colors.blue,
@@ -113,7 +113,7 @@ final password = _passwordController.text;
               Center(
                 child: ElevatedButton(
                   onPressed: _submitForm,
-                  child: Text('Login').tr(),
+                  child: Text('auth.login').tr(),
                 ),
               ),
             ],

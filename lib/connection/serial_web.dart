@@ -243,7 +243,7 @@ class SerialWebManager implements Connection {
       context: currentContext,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Serial Ports').tr(),
+          title: const Text('serial.ports.title').tr(),
           content: SizedBox(
             width: double.maxFinite,
             child: Column(
@@ -252,8 +252,8 @@ class SerialWebManager implements Connection {
                 // 请求新串口权限按钮
                 ListTile(
                   leading: const Icon(Icons.add),
-                  title: const Text('Request New Port').tr(),
-                  subtitle: const Text('Grant access to a new serial port').tr(),
+                  title: const Text('serial.request_new_port.title').tr(),
+                  subtitle: const Text('serial.request_new_port.subtitle').tr(),
                   onTap: () {
                     Navigator.of(context).pop();
                     connect("request");
@@ -269,9 +269,9 @@ class SerialWebManager implements Connection {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
                       } else if (snapshot.hasError) {
-                        return Center(child: Text('Error occurred').tr());
+                        return Center(child: Text('common.error_occurred').tr());
                       } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return Center(child: Text('No authorized ports found').tr());
+                        return Center(child: Text('serial.no_authorized_ports').tr());
                       } else {
                         return ListView.builder(
                           shrinkWrap: true,
@@ -282,8 +282,9 @@ class SerialWebManager implements Connection {
                             return ListTile(
                               leading: const Icon(Icons.usb),
                               title: Text('Serial Port $index'),
-                              subtitle: Text('Vendor ID: ${info.usbVendorId ?? 'Unknown'}\n'
-                                  'Product ID: ${info.usbProductId ?? 'Unknown'}'),
+                              subtitle:
+                                  Text('Vendor ID: ${info.usbVendorId ?? 'common.unknown'.tr()}\n'
+                                      'Product ID: ${info.usbProductId ?? 'common.unknown'.tr()}'),
                               onTap: () {
                                 Navigator.of(context).pop();
                                 connect(index.toString());
@@ -303,7 +304,7 @@ class SerialWebManager implements Connection {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('Close').tr(),
+              child: const Text('common.close').tr(),
             ),
           ],
         );
@@ -318,7 +319,7 @@ class SerialWebManager implements Connection {
   void renameDeviceDialog(BuildContext context, String currentName) {
     // Web Serial API 不支持重命名设备
     // 改为 toast 提示
-    ToastManager().showInfoToast('Device renaming is not supported for web serial ports'.tr());
+    ToastManager().showInfoToast('serial.rename_not_supported_web'.tr());
   }
 
   Future<void> connectToSavedDevice() async {

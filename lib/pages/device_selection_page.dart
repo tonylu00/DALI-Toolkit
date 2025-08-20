@@ -16,7 +16,7 @@ class DeviceSelectionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Online Devices').tr()),
+      appBar: AppBar(title: const Text('device.online_list.title').tr()),
       body: DeviceSelectionPanel(daliAddr: daliAddr),
     );
   }

@@ -94,7 +94,7 @@ class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Brightness'.tr(),
+                    'brightness.title'.tr(),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -124,7 +124,7 @@ class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
                       Icons.refresh,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    tooltip: 'Read'.tr(),
+                    tooltip: 'common.read'.tr(),
                     style: IconButton.styleFrom(
                       backgroundColor:
                           Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),

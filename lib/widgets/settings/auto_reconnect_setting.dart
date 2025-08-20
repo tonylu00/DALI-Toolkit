@@ -53,7 +53,7 @@ class _AutoReconnectSettingState extends State<AutoReconnectSetting> {
       children: [
         SettingsCard(
           child: SettingsItem(
-            title: 'Auto Reconnect',
+            title: 'settings.autoReconnect.title',
             icon: Icons.usb,
             subtitle: 'settings.autoReconnect.subtitle',
             control: Switch(
@@ -68,7 +68,7 @@ class _AutoReconnectSettingState extends State<AutoReconnectSetting> {
         if (_enabled) ...[
           SettingsCard(
             child: SettingsItem(
-              title: 'Reconnect Interval (ms)',
+              title: 'settings.autoReconnect.interval.title',
               icon: Icons.timer,
               subtitle: 'settings.autoReconnect.interval.subtitle',
               control: SizedBox(
@@ -77,7 +77,7 @@ class _AutoReconnectSettingState extends State<AutoReconnectSetting> {
                   controller: _intervalController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    hintText: 'Interval'.tr(),
+                    hintText: 'common.interval'.tr(),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -90,7 +90,7 @@ class _AutoReconnectSettingState extends State<AutoReconnectSetting> {
           ),
           SettingsCard(
             child: SettingsItem(
-              title: 'Max Attempts',
+              title: 'common.max_attempts',
               icon: Icons.repeat,
               subtitle: 'settings.autoReconnect.maxAttempts.subtitle',
               control: SizedBox(
@@ -99,7 +99,7 @@ class _AutoReconnectSettingState extends State<AutoReconnectSetting> {
                   controller: _maxAttemptsController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    hintText: 'Attempts'.tr(),
+                    hintText: 'common.attempts'.tr(),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),

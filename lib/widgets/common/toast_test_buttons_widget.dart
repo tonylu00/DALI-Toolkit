@@ -33,7 +33,7 @@ class ToastTestButtonsWidget extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'Toast Notifications Test'.tr(),
+                'toast.test.title'.tr(),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -47,38 +47,38 @@ class ToastTestButtonsWidget extends StatelessWidget {
             children: [
               _buildToastButton(
                 context,
-                'Loading',
+                'common.loading',
                 Icons.hourglass_empty,
                 Colors.blue,
-                () => ToastManager().showLoadingToast("Loading..."),
+                () => ToastManager().showLoadingToast('common.loading'.tr()),
               ),
               _buildToastButton(
                 context,
-                'Done',
+                'common.done',
                 Icons.check_circle,
                 Colors.green,
-                () => ToastManager().showDoneToast("Done"),
+                () => ToastManager().showDoneToast('common.done'.tr()),
               ),
               _buildToastButton(
                 context,
-                'Error',
+                'common.error',
                 Icons.error,
                 Colors.red,
-                () => ToastManager().showErrorToast("Error"),
+                () => ToastManager().showErrorToast('common.error'.tr()),
               ),
               _buildToastButton(
                 context,
-                'Warning',
+                'common.warning',
                 Icons.warning,
                 Colors.orange,
-                () => ToastManager().showWarningToast("Warning"),
+                () => ToastManager().showWarningToast('common.warning'.tr()),
               ),
               _buildToastButton(
                 context,
-                'Info',
+                'common.info',
                 Icons.info,
                 Colors.blue,
-                () => ToastManager().showInfoToast("Info"),
+                () => ToastManager().showInfoToast('common.info'.tr()),
               ),
             ],
           ),
@@ -97,8 +97,8 @@ class ToastTestButtonsWidget extends StatelessWidget {
     return ElevatedButton.icon(
       onPressed: onPressed,
       icon: Icon(icon, size: 16),
-      label: Text(
-        label.tr(),
+  label: Text(
+  label.tr(),
         style: const TextStyle(fontSize: 12),
       ),
       style: ElevatedButton.styleFrom(

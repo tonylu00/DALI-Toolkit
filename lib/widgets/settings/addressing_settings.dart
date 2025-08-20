@@ -68,7 +68,7 @@ class AddressingSettingsState extends State<AddressingSettings> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Addressing Settings'.tr(),
+                'addressing.settings.title'.tr(),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.primary,
@@ -98,7 +98,7 @@ class AddressingSettingsState extends State<AddressingSettings> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Remove all addresses'.tr(),
+                      'addressing.remove_all'.tr(),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                             color: Theme.of(context).colorScheme.onSurface,
@@ -154,7 +154,7 @@ class AddressingSettingsState extends State<AddressingSettings> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Close Light'.tr(),
+                      'addressing.close_light'.tr(),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                             color: Theme.of(context).colorScheme.onSurface,

@@ -28,7 +28,7 @@ class DeviceControlButtonsWidget extends StatelessWidget {
                   await Dali.instance.base?.recallMaxLevel(Dali.instance.base!.selectedAddress);
                 });
               },
-              label: 'ON',
+              label: 'common.on',
               icon: Icons.lightbulb,
               color: Colors.green,
             ),
@@ -40,7 +40,7 @@ class DeviceControlButtonsWidget extends StatelessWidget {
                   await Dali.instance.base?.off(Dali.instance.base!.selectedAddress);
                 });
               },
-              label: 'OFF',
+              label: 'common.off',
               icon: Icons.lightbulb_outline,
               color: Colors.red,
             ),
@@ -55,7 +55,7 @@ class DeviceControlButtonsWidget extends StatelessWidget {
                   Dali.instance.addr?.stopAllocAddr();
                 });
               },
-              label: 'Addressing',
+              label: 'addressing.title',
               icon: Icons.settings_ethernet,
               color: Colors.blue,
             ),
@@ -74,7 +74,7 @@ class DeviceControlButtonsWidget extends StatelessWidget {
                   await Dali.instance.base?.reset(Dali.instance.base!.selectedAddress);
                 });
               },
-              label: 'Reset',
+              label: 'common.reset',
               icon: Icons.restart_alt,
             ),
           ],

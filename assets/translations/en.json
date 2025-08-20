@@ -1,34 +1,59 @@
 {
-  "DALI Toolkit":"DALI Toolkit",
-  "DT1 Emergency Test":"DT1 Emergency Test",
-  "Gateway Address":"Gateway Address",
-  "Device Address":"Device Address",
-  "Device Type":"Device Type",
-  "Emergency Test Configuration":"Emergency Test Configuration",
-  "Current Selection":"Current Selection",
-  "Start Emergency Test":"Start Emergency Test",
-  "Device Information":"Device Information",
-  "Test Status":"Test Status",
-  "Start Test":"Start Test",
-  "Stop Test":"Stop Test",
-  "Ready":"Ready",
-  "Starting test...":"Starting test...",
-  "Test completed successfully":"Test completed successfully",
+  "app.title":"DALI Toolkit",
+  "test.dt1.title":"DT1 Emergency Test",
+  "test.dt1.gateway_address":"Gateway Address",
+  "test.dt1.device_info":"Device Information",
+  "device.address":"Device Address",
+  "device.type":"Device Type",
+  "test.dt1.config":"Emergency Test Configuration",
+  "test.dt1.current_selection":"Current Selection",
+  "test.dt1.start":"Start Emergency Test",
+  "test.dt1.status":"Test Status",
+  "test.dt1.start_button":"Start Test",
+  "test.dt1.stop_button":"Stop Test",
+  "common.ready":"Ready",
+  "test.dt1.starting":"Starting test...",
+  "test.dt1.success":"Test completed successfully",
   "oldAddr": "Old Address",
   "newAddr": "New Address",
-  "Test failed or timed out":"Test failed or timed out",
-  "Test stopped by user":"Test stopped by user",
-  "Test error: {}":"Test error: {}",
-  "Close":"Close",
-  "Enter new name":"Enter new name",
-  "Rename Device":"Rename Device",
-  "Device name too long":"Device name too long",
-  "Only ASCII characters are allowed":"Only ASCII characters are allowed",
-  "Device name cannot be empty":"Device name cannot be empty",
-  "Failed to save device name":"Failed to save device name",
-  "Test in progress... Please wait":"Test in progress... Please wait",
-  "Test in progress... ({}s)":"Test in progress... ({}/{}s)"
+  "test.dt1.failed_or_timeout":"Test failed or timed out",
+  "test.dt1.stopped_by_user":"Test stopped by user",
+  "test.dt1.error":"Test error: {message}",
+  "common.close":"Close",
+  "rename.enter_new_name":"Enter new name",
+  "rename.device_title":"Rename Device",
+  "rename.device_name_too_long":"Device name too long",
+  "validation.device_name_ascii_only":"Only ASCII characters are allowed",
+  "validation.device_name_required":"Device name cannot be empty",
+  "rename.save_failed":"Failed to save device name",
+  "test.dt1.in_progress_wait":"Test in progress... Please wait",
+  "test.dt1.in_progress_seconds":"Test in progress... ({elapsed}/{total}s)"
   ,"short_addr_manager.title":"Short Address Manager"
+  ,"color.wheel":"Color Wheel"
+  ,"color.grid":"Color Grid"
+  ,"color.rgb":"RGB"
+  ,"color.rgb_sliders":"RGB Sliders"
+  ,"color.picker_test.title":"Color Picker Test"
+  ,"theme.color.alpha_enabled":"Theme Color (Alpha Enabled)"
+  ,"theme.color.dali_alpha_disabled":"Dali Color (Alpha Disabled)"
+  ,"validation.username_required":"Please enter your username"
+  ,"validation.password_required":"Please enter your password"
+  ,"common.redetect":"Re-detect"
+  ,"common.interval":"Interval"
+  ,"common.attempts":"Attempts"
+  ,"common.max_attempts":"Max Attempts"
+  ,"gateway.type.title":"Gateway Type"
+  ,"gateway.type.subtitle":"Display and re-detect gateway type"
+  ,"common.error_occurred":"Error occurred"
+  ,"device.no_devices":"No devices"
+  ,"device.no_devices_found":"No devices found"
+  ,"common.unknown":"Unknown"
+  ,"serial.usb_devices.title":"USB Serial Devices"
+  ,"serial.ports.title":"Serial Ports"
+  ,"serial.request_new_port.title":"Request New Port"
+  ,"serial.request_new_port.subtitle":"Grant access to a new serial port"
+  ,"serial.no_authorized_ports":"No authorized ports found"
+  ,"serial.rename_not_supported_web":"Device renaming is not supported for web serial ports"
   ,"short_addr_manager.scan":"Scan"
   ,"short_addr_manager.stop":"Stop"
   ,"short_addr_manager.scanning":"Scanning..."
@@ -46,9 +71,9 @@
   ,"device_search.range_end":"End Address"
   ,"device_search.broadcast_selected_toast":"Broadcast mode: selecting a single device is disabled"
   ,"device_search.cannot_exit_broadcast_no_devices":"No devices available, staying in broadcast mode"
-  ,"short_addr_manager.count":"Count: {}"
-  ,"short_addr_manager.device_label":"Device {}"
-  ,"short_addr_manager.slot_label":"Slot {}"
+  ,"short_addr_manager.count":"Count: {count}"
+  ,"short_addr_manager.device_label":"Device {address}"
+  ,"short_addr_manager.slot_label":"Slot {index}"
   ,"short_addr_manager.apply_order":"Apply Order"
   ,"short_addr_manager.modify":"Modify"
   ,"short_addr_manager.modify_title":"Modify Short Address"
@@ -57,13 +82,13 @@
   ,"short_addr_manager.invalid_range":"Address must be 0-63"
   ,"short_addr_manager.duplicate_addr":"Address already exists"
   ,"short_addr_manager.modify_success":"Modify success"
-  ,"short_addr_manager.modify_fail":"Modify failed: {}"
+  ,"short_addr_manager.modify_fail":"Modify failed: {error}"
   ,"short_addr_manager.delete_title":"Delete Address"
-  ,"short_addr_manager.delete_confirm":"Confirm delete address {}?"
+  ,"short_addr_manager.delete_confirm":"Confirm delete address {address}?"
   ,"short_addr_manager.delete_success":"Delete success"
-  ,"short_addr_manager.delete_fail":"Delete failed: {}"
+  ,"short_addr_manager.delete_fail":"Delete failed: {error}"
   ,"short_addr_manager.reorder_success":"Reorder success"
-  ,"short_addr_manager.reorder_fail":"Reorder failed: {}"
+  ,"short_addr_manager.reorder_fail":"Reorder failed: {error}"
   ,"short_addr_manager.no_change":"No change"
   ,"short_addr_manager.temp_addr_fail":"No temp address available"
   ,"short_addr_manager.invalid_scan_range":"Invalid scan range"
@@ -78,9 +103,9 @@
   ,"short_addr_manager.unselect_all":"Unselect All"
   ,"short_addr_manager.batch_delete":"Batch Delete"
   ,"short_addr_manager.batch_delete_title":"Batch Delete"
-  ,"short_addr_manager.batch_delete_confirm":"Confirm delete {} selected addresses?"
+  ,"short_addr_manager.batch_delete_confirm":"Confirm delete {count} selected addresses?"
   ,"short_addr_manager.batch_delete_success":"Batch delete success"
-  ,"short_addr_manager.batch_delete_fail":"Batch delete failed: {}"
+  ,"short_addr_manager.batch_delete_fail":"Batch delete failed: {error}"
   ,"sequence.editor.title":"Sequence Editor"
   ,"sequence.sequences":"Sequences"
   ,"sequence.sequence.new":"New Sequence"
@@ -94,7 +119,7 @@
   ,"sequence.run":"Run"
   ,"sequence.stop":"Stop"
   ,"sequence.no_steps":"No steps"
-  ,"sequence.current_running":"Running step {} / {}"
+  ,"sequence.current_running":"Running step {current} / {total}"
   ,"sequence.cmd.setBright":"Set Brightness"
   ,"sequence.cmd.on":"Turn On"
   ,"sequence.cmd.off":"Turn Off"
@@ -129,19 +154,39 @@
   ,"sequence.summary.removeFromGroup":"Addr {addr} Remove Group {group}"
   ,"sequence.summary.setFadeTime":"Addr {addr} Fade Time {value}"
   ,"sequence.summary.setFadeRate":"Addr {addr} Fade Rate {value}"
+  ,"sequence.summary.group.setBright":"Group {addr} -> Level {level}"
+  ,"sequence.summary.group.on":"On Group {addr}"
+  ,"sequence.summary.group.off":"Off Group {addr}"
+  ,"sequence.summary.group.toScene":"Group {addr} Go To Scene {scene}"
+  ,"sequence.summary.group.setScene":"Group {addr} Store Scene {scene}"
+  ,"sequence.summary.group.removeScene":"Group {addr} Remove Scene {scene}"
+  ,"sequence.summary.group.addToGroup":"Group {addr} Add Group {group}"
+  ,"sequence.summary.group.removeFromGroup":"Group {addr} Remove Group {group}"
+  ,"sequence.summary.group.setFadeTime":"Group {addr} Fade Time {value}"
+  ,"sequence.summary.group.setFadeRate":"Group {addr} Fade Rate {value}"
+  ,"sequence.summary.group.deleteShortAddress":"Delete Group {addr}"
+  ,"sequence.summary.broadcast.setBright":"Broadcast -> Level {level}"
+  ,"sequence.summary.broadcast.on":"On Broadcast"
+  ,"sequence.summary.broadcast.off":"Off Broadcast"
+  ,"sequence.summary.broadcast.toScene":"Broadcast Go To Scene {scene}"
+  ,"sequence.summary.broadcast.setScene":"Broadcast Store Scene {scene}"
+  ,"sequence.summary.broadcast.removeScene":"Broadcast Remove Scene {scene}"
+  ,"sequence.summary.broadcast.addToGroup":"Broadcast Add Group {group}"
+  ,"sequence.summary.broadcast.removeFromGroup":"Broadcast Remove Group {group}"
+  ,"sequence.summary.broadcast.setFadeTime":"Broadcast Fade Time {value}"
+  ,"sequence.summary.broadcast.setFadeRate":"Broadcast Fade Rate {value}"
   ,"sequence.summary.wait":"Wait {ms} ms"
   ,"sequence.summary.modifyShortAddress":"Modify {oldAddr} -> {newAddr}"
   ,"sequence.summary.deleteShortAddress":"Delete Addr {addr}"
   ,"sequence.validation.field_required":"Field required"
   ,"sequence.validation.required":"Required"
-  ,"sequence.sequence.default_name":"Sequence {}"
-  ,"Sequence Editor":"Sequence Editor"
-  ,"Read Operations":"Read Operations"
-  ,"Color Temp":"Color Temp"
-  ,"Presets":"Presets"
-  ,"Clear All":"Clear All"
-  ,"Select All":"Select All"
-  ,"Toast Notifications Test":"Toast Notifications Test"
+  ,"sequence.sequence.default_name":"Sequence {index}"
+  ,"common.read_operations":"Read Operations"
+  ,"color.temp_short":"Color Temp"
+  ,"common.presets":"Presets"
+  ,"common.clear_all":"Clear All"
+  ,"common.select_all":"Select All"
+  ,"toast.test.title":"Toast Notifications Test"
   ,"settings.connection.subtitle":"Select your preferred connection method"
   ,"settings.dimming_curve.subtitle":"Choose brightness curve type"
   ,"settings.theme_color.subtitle":"Customize your theme color"
@@ -156,9 +201,8 @@
     ,"settings.remember_internal_page.subtitle":"Re-enter large layout at the last internal page you visited"
     ,"settings.allowBroadcastRead.title":"Allow Broadcast Read"
     ,"settings.allowBroadcastRead.subtitle":"Enable read operations when broadcast/group address (>63 or 127) selected"
-  ,"No logs available":"No logs available"
-  ,"Bus abnormal":"Bus abnormal"
-  ,"Device not connected":"Device not connected"
+  ,"log.no_logs":"No logs available"
+  ,"bus.abnormal":"Bus abnormal"
   ,"ip.dialog.title":"IP Connection"
   ,"ip.dialog.address":"IP / Host"
   ,"ip.dialog.port":"Port"
@@ -201,6 +245,8 @@
   ,"custom_key.summary.allocate":"Allocate all unaddressed devices"
   ,"custom_key.summary.reset_allocate":"Reset then allocate addresses"
   ,"custom_key.summary.toggleOnOff":"Toggle Addr {addr}"
+  ,"custom_key.summary.toggleOnOff.group":"Toggle Group {addr}"
+  ,"custom_key.summary.toggleOnOff.broadcast":"Toggle Broadcast"
   ,"custom_key.help.allocate":"Allocate short addresses for all unaddressed devices."
   ,"custom_key.help.reset_allocate":"Reset devices (optionally clear addresses) then allocate new addresses."
   ,"custom_key.group.create":"New Group"
@@ -229,4 +275,37 @@
   ,"colortemp.preset.natural":"Natural"
   ,"colortemp.preset.cool":"Cool"
   ,"colortemp.preset.daylight":"Daylight"
+  ,"brightness.title":"Brightness"
+  ,"color.title":"Color"
+  ,"color.temperature":"Color Temperature"
+  ,"group.config.title":"Group Configuration"
+  ,"common.read":"Read"
+  ,"common.write":"Write"
+  ,"common.on":"ON"
+  ,"common.off":"OFF"
+  ,"common.reset":"Reset"
+  ,"common.loading":"Loading"
+  ,"common.done":"Done"
+  ,"common.error":"Error"
+  ,"common.warning":"Warning"
+  ,"common.info":"Info"
+  ,"addressing.title":"Addressing"
+  ,"connection.disconnected":"Disconnected"
+  ,"theme.color.title":"Theme Color"
+  ,"theme.dark_mode.title":"Dark Mode"
+  ,"settings.dimming_curve.title":"Dimming Curve"
+  ,"curve.linear":"Linear"
+  ,"curve.logarithmic":"Logarithmic"
+  ,"common.edit":"Edit"
+  ,"delays.send.title":"Send Delays"
+  ,"delays.query.title":"Query Delays"
+  ,"delays.extend.title":"Extend Delays"
+  ,"init.complete":"Initialization complete"
+  ,"settings.autoReconnect.title":"Auto Reconnect"
+  ,"settings.autoReconnect.subtitle":"Automatically attempt to reconnect when disconnected"
+  ,"settings.autoReconnect.interval.title":"Reconnect Interval (ms)"
+  ,"settings.autoReconnect.interval.subtitle":"Delay between reconnect attempts"
+  ,"settings.autoReconnect.maxAttempts.title":"Max Attempts"
+  ,"settings.autoReconnect.maxAttempts.subtitle":"Maximum reconnect attempts before giving up"
+  ,"ble.device.title":"BLE Devices"
 }

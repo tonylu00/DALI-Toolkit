@@ -89,7 +89,7 @@ class _ColorTemperatureControlWidgetState extends State<ColorTemperatureControlW
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Color Temperature'.tr(),
+                    'color.temperature'.tr(),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -119,7 +119,7 @@ class _ColorTemperatureControlWidgetState extends State<ColorTemperatureControlW
                       Icons.refresh,
                       color: Colors.orange,
                     ),
-                    tooltip: 'Read'.tr(),
+                    tooltip: 'common.read'.tr(),
                     style: IconButton.styleFrom(
                       backgroundColor: Colors.orange.withValues(alpha: 0.1),
                     ),

@@ -41,7 +41,7 @@ class ThemeColorSettingState extends State<ThemeColorSetting> {
   Widget build(BuildContext context) {
     return SettingsCard(
       child: SettingsItem(
-        title: 'Theme Color',
+        title: 'theme.color.title',
         icon: Icons.palette,
         subtitle: 'settings.theme_color.subtitle',
         control: MyColorPicker(

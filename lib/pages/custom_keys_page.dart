@@ -349,7 +349,7 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
                                 ? Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.6)
                                 : null,
                             title: Text(k.actionType == CustomKeyActionType.toggleOnOff
-                                ? '$summary (${isToggleActive ? 'ON'.tr() : 'OFF'.tr()})'
+                                ? '$summary (${isToggleActive ? 'common.on'.tr() : 'common.off'.tr()})'
                                 : summary),
                             subtitle: k.name.isNotEmpty
                                 ? Text(k.name, style: Theme.of(context).textTheme.bodySmall)
@@ -413,7 +413,7 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
                                   if (k.actionType == CustomKeyActionType.toggleOnOff) ...[
                                     const SizedBox(height: 4),
                                     Text(
-                                      isToggleActive ? 'ON'.tr() : 'OFF'.tr(),
+                                      isToggleActive ? 'common.on'.tr() : 'common.off'.tr(),
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
@@ -456,8 +456,18 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
   }
 
   String _actionSummary(CustomKeyDefinition k) {
-    String addrStr(int v) => v == 127 ? 'sequence.field.broadcast'.tr() : v.toString();
-    final bool isGroupAddr = k.params.data['isGroupAddr'] == 1 && k.params.getInt('addr') != 127;
+    String addrStr(int v) => v.toString();
+    final int rawAddr = k.params.getInt('addr');
+    final bool isBroadcast = rawAddr == 127;
+    final bool isGroupAddr = k.params.data['isGroupAddr'] == 1 && !isBroadcast;
+    String variantPrefix;
+    if (isBroadcast) {
+      variantPrefix = 'sequence.summary.broadcast.';
+    } else if (isGroupAddr) {
+      variantPrefix = 'sequence.summary.group.';
+    } else {
+      variantPrefix = 'sequence.summary.';
+    }
     switch (k.actionType) {
       case CustomKeyActionType.runSequence:
         final seqId = k.params.get<String>('sequenceId');
@@ -472,110 +482,60 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
       case CustomKeyActionType.resetAndAllocate:
         return 'custom_key.summary.reset_allocate'.tr();
       case CustomKeyActionType.on:
-        {
-          String s =
-              'sequence.summary.on'.tr(namedArgs: {'addr': addrStr(k.params.getInt('addr'))});
-          if (isGroupAddr) {
-            s = s
-                .replaceAll('地址 ', '组 ')
-                .replaceAll('Addr ', 'Group ')
-                .replaceAll('Address ', 'Group ');
-          }
-          return s;
-        }
+        return isBroadcast
+            ? (variantPrefix + 'on').tr()
+            : (variantPrefix + 'on').tr(namedArgs: {'addr': addrStr(rawAddr)});
       case CustomKeyActionType.off:
-        {
-          String s =
-              'sequence.summary.off'.tr(namedArgs: {'addr': addrStr(k.params.getInt('addr'))});
-          if (isGroupAddr) {
-            s = s
-                .replaceAll('地址 ', '组 ')
-                .replaceAll('Addr ', 'Group ')
-                .replaceAll('Address ', 'Group ');
-          }
-          return s;
-        }
+        return isBroadcast
+            ? (variantPrefix + 'off').tr()
+            : (variantPrefix + 'off').tr(namedArgs: {'addr': addrStr(rawAddr)});
       case CustomKeyActionType.setBright:
-        {
-          String s = 'sequence.summary.setBright'.tr(namedArgs: {
-            'addr': addrStr(k.params.getInt('addr')),
-            'level': k.params.getInt('level').toString()
-          });
-          if (isGroupAddr) {
-            s = s
-                .replaceAll('地址 ', '组 ')
-                .replaceAll('Addr ', 'Group ')
-                .replaceAll('Address ', 'Group ');
-          }
-          return s;
-        }
+        return isBroadcast
+            ? (variantPrefix + 'setBright')
+                .tr(namedArgs: {'level': k.params.getInt('level').toString()})
+            : (variantPrefix + 'setBright').tr(namedArgs: {
+                'addr': addrStr(rawAddr),
+                'level': k.params.getInt('level').toString()
+              });
       case CustomKeyActionType.toScene:
-        {
-          String s = 'sequence.summary.toScene'.tr(namedArgs: {
-            'addr': addrStr(k.params.getInt('addr')),
-            'scene': k.params.getInt('scene').toString()
-          });
-          if (isGroupAddr) {
-            s = s
-                .replaceAll('地址 ', '组 ')
-                .replaceAll('Addr ', 'Group ')
-                .replaceAll('Address ', 'Group ');
-          }
-          return s;
-        }
+        return isBroadcast
+            ? (variantPrefix + 'toScene')
+                .tr(namedArgs: {'scene': k.params.getInt('scene').toString()})
+            : (variantPrefix + 'toScene').tr(namedArgs: {
+                'addr': addrStr(rawAddr),
+                'scene': k.params.getInt('scene').toString()
+              });
       case CustomKeyActionType.setScene:
-        {
-          String s = 'sequence.summary.setScene'.tr(namedArgs: {
-            'addr': addrStr(k.params.getInt('addr')),
-            'scene': k.params.getInt('scene').toString()
-          });
-          if (isGroupAddr) {
-            s = s
-                .replaceAll('地址 ', '组 ')
-                .replaceAll('Addr ', 'Group ')
-                .replaceAll('Address ', 'Group ');
-          }
-          return s;
-        }
+        return isBroadcast
+            ? (variantPrefix + 'setScene')
+                .tr(namedArgs: {'scene': k.params.getInt('scene').toString()})
+            : (variantPrefix + 'setScene').tr(namedArgs: {
+                'addr': addrStr(rawAddr),
+                'scene': k.params.getInt('scene').toString()
+              });
       case CustomKeyActionType.addToGroup:
-        {
-          String s = 'sequence.summary.addToGroup'.tr(namedArgs: {
-            'addr': addrStr(k.params.getInt('addr')),
-            'group': k.params.getInt('group').toString()
-          });
-          if (isGroupAddr) {
-            s = s
-                .replaceAll('地址 ', '组 ')
-                .replaceAll('Addr ', 'Group ')
-                .replaceAll('Address ', 'Group ');
-          }
-          return s;
-        }
+        return isBroadcast
+            ? (variantPrefix + 'addToGroup')
+                .tr(namedArgs: {'group': k.params.getInt('group').toString()})
+            : (variantPrefix + 'addToGroup').tr(namedArgs: {
+                'addr': addrStr(rawAddr),
+                'group': k.params.getInt('group').toString()
+              });
       case CustomKeyActionType.removeFromGroup:
-        {
-          String s = 'sequence.summary.removeFromGroup'.tr(namedArgs: {
-            'addr': addrStr(k.params.getInt('addr')),
-            'group': k.params.getInt('group').toString()
-          });
-          if (isGroupAddr) {
-            s = s
-                .replaceAll('地址 ', '组 ')
-                .replaceAll('Addr ', 'Group ')
-                .replaceAll('Address ', 'Group ');
-          }
-          return s;
-        }
+        return isBroadcast
+            ? (variantPrefix + 'removeFromGroup')
+                .tr(namedArgs: {'group': k.params.getInt('group').toString()})
+            : (variantPrefix + 'removeFromGroup').tr(namedArgs: {
+                'addr': addrStr(rawAddr),
+                'group': k.params.getInt('group').toString()
+              });
       case CustomKeyActionType.toggleOnOff:
-        {
-          String s = 'custom_key.summary.toggleOnOff'
-              .tr(namedArgs: {'addr': addrStr(k.params.getInt('addr'))});
-          if (isGroupAddr) {
-            s = s
-                .replaceAll('地址 ', '组 ')
-                .replaceAll('Addr ', 'Group ')
-                .replaceAll('Address ', 'Group ');
-          }
-          return s;
+        if (isBroadcast) {
+          return 'custom_key.summary.toggleOnOff.broadcast'.tr();
+        } else if (isGroupAddr) {
+          return 'custom_key.summary.toggleOnOff.group'.tr(namedArgs: {'addr': addrStr(rawAddr)});
+        } else {
+          return 'custom_key.summary.toggleOnOff'.tr(namedArgs: {'addr': addrStr(rawAddr)});
         }
     }
   }

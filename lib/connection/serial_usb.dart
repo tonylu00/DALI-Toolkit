@@ -417,7 +417,7 @@ class SerialUsbConnection implements Connection {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          title: const Text('USB Serial Devices').tr(),
+          title: const Text('serial.usb_devices.title').tr(),
           content: SizedBox(
             width: double.maxFinite,
             child: StreamBuilder<List<String>>(
@@ -426,7 +426,7 @@ class SerialUsbConnection implements Connection {
               builder: (context, snapshot) {
                 final ports = snapshot.data ?? [];
                 if (ports.isEmpty) {
-                  return Center(child: const Text('No devices').tr());
+                  return Center(child: const Text('device.no_devices').tr());
                 }
                 return ListView.builder(
                   shrinkWrap: true,
@@ -454,7 +454,7 @@ class SerialUsbConnection implements Connection {
             ),
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Close').tr(),
+              child: const Text('common.close').tr(),
             ),
           ],
         );

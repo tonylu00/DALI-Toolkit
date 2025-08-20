@@ -50,7 +50,7 @@ class ConnectionMethodSettingState extends State<ConnectionMethodSetting> {
   Widget build(BuildContext context) {
     return SettingsCard(
       child: SettingsItem(
-        title: 'Connection Method',
+        title: 'connection.method',
         icon: Icons.settings_ethernet,
         subtitle: 'settings.connection.subtitle',
         control: SizedBox(

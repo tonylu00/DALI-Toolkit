@@ -104,7 +104,7 @@ class _GroupControlWidgetState extends State<GroupControlWidget> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Group Configuration'.tr(),
+                    'group.config.title'.tr(),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -135,7 +135,7 @@ class _GroupControlWidgetState extends State<GroupControlWidget> {
                 child: OutlinedButton.icon(
                   onPressed: _clearAll,
                   icon: const Icon(Icons.clear_all, size: 16),
-                  label: Text('Clear All'.tr()),
+                  label: Text('common.clear_all'.tr()),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                   ),
@@ -146,7 +146,7 @@ class _GroupControlWidgetState extends State<GroupControlWidget> {
                 child: OutlinedButton.icon(
                   onPressed: _selectAll,
                   icon: const Icon(Icons.select_all, size: 16),
-                  label: Text('Select All'.tr()),
+                  label: Text('common.select_all'.tr()),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                   ),
@@ -189,7 +189,7 @@ class _GroupControlWidgetState extends State<GroupControlWidget> {
                 child: ElevatedButton.icon(
                   onPressed: widget.canRead ? _readGroup : null,
                   icon: const Icon(Icons.download, size: 18),
-                  label: Text('Read'.tr()),
+                  label: Text('common.read'.tr()),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                     foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
@@ -202,7 +202,7 @@ class _GroupControlWidgetState extends State<GroupControlWidget> {
                 child: ElevatedButton.icon(
                   onPressed: _writeGroup,
                   icon: const Icon(Icons.upload, size: 18),
-                  label: Text('Write'.tr()),
+                  label: Text('common.write'.tr()),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Theme.of(context).colorScheme.onPrimary,

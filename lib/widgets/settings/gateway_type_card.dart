@@ -10,7 +10,7 @@ class GatewayTypeCard extends StatelessWidget {
   String _typeLabel(int t) {
     switch (t) {
       case -1:
-        return 'Unknown';
+        return 'common.unknown'.tr();
       case 0:
         return 'Type 0 (USB)';
       case 1:
@@ -31,9 +31,9 @@ class GatewayTypeCard extends StatelessWidget {
         final label = _typeLabel(mgr.gatewayType);
         return SettingsCard(
           child: SettingsItem(
-            title: 'Gateway Type',
+            title: 'gateway.type.title',
             icon: Icons.usb_rounded,
-            subtitle: 'Display and re-detect gateway type',
+            subtitle: 'gateway.type.subtitle',
             control: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -44,7 +44,7 @@ class GatewayTypeCard extends StatelessWidget {
                     mgr.updateGatewayType(-1);
                     await mgr.ensureGatewayType();
                   },
-                  child: const Text('Re-detect').tr(),
+                  child: const Text('common.redetect').tr(),
                 )
               ],
             ),

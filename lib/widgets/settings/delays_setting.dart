@@ -58,7 +58,7 @@ class DelaysSettingState extends State<DelaysSetting> {
       children: [
         SettingsCard(
           child: SettingsItem(
-            title: 'Send Delays',
+            title: 'delays.send.title',
             icon: Icons.send,
             subtitle: 'settings.delays.send.subtitle',
             control: SizedBox(
@@ -67,7 +67,7 @@ class DelaysSettingState extends State<DelaysSetting> {
                 controller: _sendDelaysController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  hintText: 'Send Delays'.tr(),
+                  hintText: 'delays.send.title'.tr(),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -85,7 +85,7 @@ class DelaysSettingState extends State<DelaysSetting> {
         ),
         SettingsCard(
           child: SettingsItem(
-            title: 'Query Delays',
+            title: 'delays.query.title',
             icon: Icons.query_stats,
             subtitle: 'settings.delays.query.subtitle',
             control: SizedBox(
@@ -94,7 +94,7 @@ class DelaysSettingState extends State<DelaysSetting> {
                 controller: _queryDelaysController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  hintText: 'Query Delays'.tr(),
+                  hintText: 'delays.query.title'.tr(),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -112,7 +112,7 @@ class DelaysSettingState extends State<DelaysSetting> {
         ),
         SettingsCard(
           child: SettingsItem(
-            title: 'Extend Delays',
+            title: 'delays.extend.title',
             icon: Icons.access_time,
             subtitle: 'settings.delays.extend.subtitle',
             control: SizedBox(
@@ -121,7 +121,7 @@ class DelaysSettingState extends State<DelaysSetting> {
                 controller: _extDelaysController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  hintText: 'Extend Delays'.tr(),
+                  hintText: 'delays.extend.title'.tr(),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),

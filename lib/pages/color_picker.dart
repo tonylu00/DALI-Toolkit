@@ -93,7 +93,7 @@ class MyColorState extends State<MyColorPicker> {
         ),
       ),
       label: Text(
-        'Pick color'.tr(),
+        'color.pick'.tr(),
         style: TextStyle(color: foregroundColor),
       ),
       style: ElevatedButton.styleFrom(
@@ -173,7 +173,7 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
                 // 标题放在 Expanded 内，保证右侧按钮有压缩空间
                 Expanded(
                   child: Text(
-                    'Pick a color'.tr(),
+                    'color.pick'.tr(),
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -194,17 +194,17 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
                             ButtonSegment(
                               value: ColorPickerMode.wheel,
                               icon: const Icon(Icons.color_lens_outlined, size: 20),
-                              tooltip: 'Wheel'.tr(),
+                              tooltip: 'color.wheel'.tr(),
                             ),
                             ButtonSegment(
                               value: ColorPickerMode.grid,
                               icon: const Icon(Icons.grid_on_outlined, size: 20),
-                              tooltip: 'Grid'.tr(),
+                              tooltip: 'color.grid'.tr(),
                             ),
                             ButtonSegment(
                               value: ColorPickerMode.rgb,
                               icon: const Icon(Icons.tune, size: 20),
-                              tooltip: 'RGB'.tr(),
+                              tooltip: 'color.rgb'.tr(),
                             ),
                           ],
                           selected: {mode},
@@ -282,7 +282,7 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text('Cancel'.tr()),
+                  child: Text('common.cancel').tr(),
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton(
@@ -294,7 +294,7 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   ),
-                  child: Text('OK'.tr()),
+                  child: Text('common.ok').tr(),
                 ),
               ],
             ),
@@ -314,7 +314,7 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
           child: Column(
             children: [
               Text(
-                'Color Wheel'.tr(),
+                'color.wheel'.tr(),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
@@ -333,7 +333,7 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
           child: Column(
             children: [
               Text(
-                'Color Grid'.tr(),
+                'color.grid'.tr(),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
@@ -353,7 +353,7 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
           child: Column(
             children: [
               Text(
-                'RGB Sliders'.tr(),
+                'color.rgb_sliders'.tr(),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),

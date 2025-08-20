@@ -321,10 +321,10 @@ class DaliComm {
   /// Send brightness with DEC address
   Future<void> setBright(int a, int b, {int? t, int? d, int? g}) async {
     final prefs = await SharedPreferences.getInstance();
-    String curve = prefs.getString('dimmingCurve') ?? 'Linear';
+    String curve = prefs.getString('dimmingCurve') ?? 'linear';
     int addr = a * 2;
     int bright = b;
-    if (curve == 'Logarithmic') {
+    if (curve == 'logarithmic') {
       bright = brightnessToLog(b);
       //brightInt = (bright * 254).floor();
     }

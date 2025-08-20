@@ -36,7 +36,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
   static const double _kNavRailWidth = 72.0; // 大屏模式功能区导航宽
   static const double _kMinFunctionalWidth = 560.0; // 右侧功能区最小有效内容宽
   static const double _kExtraMargin = 32.0; // 余量（窗口边缘/滚动条等）
-  String _accountName = 'Not Logged In'.tr();
+  String _accountName = 'auth.not_logged_in'.tr();
   String _accountEmail = '';
   String? _internalPage; // 大尺寸模式当前功能区
   late final InternalPagePrefs _prefs;
@@ -142,7 +142,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
     final internalPages = <_PageSpec>[
       _PageSpec(
         key: 'Home',
-        label: 'Home'.tr(),
+        label: 'nav.home'.tr(),
         icon: Icons.home_outlined,
         builder: (c) => const MyHomePage(title: '', embedded: true),
       ),
@@ -157,13 +157,13 @@ class BaseScaffoldState extends State<BaseScaffold> {
       ),
       _PageSpec(
         key: 'SequenceEditor',
-        label: 'Sequence Editor'.tr(),
+        label: 'sequence.editor.title'.tr(),
         icon: Icons.list_alt_outlined,
         builder: (c) => const SequenceEditorPage(embedded: true),
       ),
       _PageSpec(
         key: 'Settings',
-        label: 'Settings'.tr(),
+        label: 'settings.title'.tr(),
         icon: Icons.settings_outlined,
         builder: (c) => SettingsPage(
           embedded: true,
@@ -173,7 +173,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
       ),
       _PageSpec(
         key: 'About',
-        label: 'About'.tr(),
+        label: 'nav.about'.tr(),
         icon: Icons.info_outline,
         builder: (c) => const AboutPage(embedded: true),
       ),
@@ -196,13 +196,14 @@ class BaseScaffoldState extends State<BaseScaffold> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('DALI Toolkit', style: TextStyle(fontSize: 18)).tr(),
+            const Text('app.title', style: TextStyle(fontSize: 18)).tr(),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(isConnected ? "Connected" : "Disconnected",
-                        style: const TextStyle(fontSize: 12))
-                    .tr(),
+                Text(
+                  isConnected ? 'connection.connected'.tr() : 'connection.disconnected'.tr(),
+                  style: const TextStyle(fontSize: 12),
+                ),
                 const SizedBox(height: 1),
                 Text(connection.type, style: const TextStyle(fontSize: 12)),
                 Text(connection.connectedDeviceId, style: const TextStyle(fontSize: 8)),
@@ -246,19 +247,19 @@ class BaseScaffoldState extends State<BaseScaffold> {
             itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
               PopupMenuItem<String>(
                 value: 'Option 1',
-                child: Text('Connect').tr(),
+                child: Text('connection.connect').tr(),
               ),
               PopupMenuItem<String>(
                 value: 'Option 2',
-                child: Text('Disconnect').tr(),
+                child: Text('connection.disconnect').tr(),
               ),
               PopupMenuItem<String>(
                 value: 'Option 3',
-                child: Text('Rename').tr(),
+                child: Text('common.rename').tr(),
               ),
               PopupMenuItem<String>(
                 value: 'Option 4',
-                child: Text('Show Log').tr(),
+                child: Text('log.show').tr(),
               ),
             ],
             icon: const Icon(Icons.more_vert),
@@ -365,7 +366,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
             accountEmail: Text(_accountEmail),
             currentAccountPicture: GestureDetector(
               onTap: () {
-                if (_accountName == 'Not Logged In'.tr()) {
+                if (_accountName == 'auth.not_logged_in'.tr()) {
                   Navigator.pushNamed(context, '/login').then((value) {
                     if (value != null) {
                       final List<String> loginInfo = value as List<String>;
@@ -373,7 +374,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
                     }
                   });
                 } else {
-                  _updateAccountInfo('Not Logged In'.tr(), '');
+                  _updateAccountInfo('auth.not_logged_in'.tr(), '');
                 }
               },
               child: CircleAvatar(
@@ -385,14 +386,14 @@ class BaseScaffoldState extends State<BaseScaffold> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Free').tr(),
+              Text('common.free').tr(),
               Icon(Icons.star_border, color: Theme.of(context).colorScheme.primary),
-              Text('${'Expires'.tr()}: 2099-12-31', style: const TextStyle(fontSize: 10)),
+              Text('${'common.expires'.tr()}: 2099-12-31', style: const TextStyle(fontSize: 10)),
             ],
           ),
           const Divider(),
           ListTile(
-            title: const Text('Home').tr(),
+            title: const Text('nav.home').tr(),
             selected: widget.currentPage == 'Home',
             onTap: () {
               if (isUltraLarge) {
@@ -418,7 +419,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
             },
           ),
           ListTile(
-            title: const Text('Sequence Editor').tr(),
+            title: const Text('sequence.editor.title').tr(),
             selected: widget.currentPage == 'SequenceEditor',
             onTap: () {
               if (isUltraLarge) {
@@ -431,7 +432,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
             },
           ),
           ListTile(
-            title: const Text('Settings').tr(),
+            title: const Text('settings.title').tr(),
             selected: widget.currentPage == 'Settings',
             onTap: () {
               if (isUltraLarge) {
@@ -444,7 +445,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
             },
           ),
           ListTile(
-            title: const Text('About').tr(),
+            title: const Text('nav.about').tr(),
             selected: widget.currentPage == 'About',
             onTap: () {
               if (isUltraLarge) {

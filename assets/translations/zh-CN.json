@@ -1,132 +1,164 @@
 {
-  "DALI Toolkit":"DALI工具箱",
-  "Not Logged In":"未登录",
-  "I agree to the Privacy Policy":"我同意隐私政策",
-  "Connection":"连接",
-  "Device":"设备",
-  "BLE Devices":"蓝牙设备",
-  "Dimming Curve":"调光曲线",
-  "Linear":"线性",
-  "Logarithmic":"对数",
-  "Pick a color":"选择颜色",
-  "Color Temperature":"色温",
-  "Color":"颜色",
-  "Brightness":"亮度",
-  "Theme Color":"主题颜色",
-  "Dark Mode":"深色模式",
-  "Pick color":"选择颜色",
-  "Addressing":"地址分配",
-  "Selected Address":"选中地址",
-  "Reset":"重置",
-  "Write":"写入",
-  "Group Configuration":"组配置",
-  "Show Log":"显示日志",
-  "Clear": "清除",
-  "Log":"日志",
-  "Info":"信息",
-  "Warning":"警告",
-  "Error":"错误",
-  "Done":"完成",
-  "Loading":"加载中",
-  "OK":"确定",
-  "Expires":"过期",
-  "Free":"免费",
-  "Initialization complete":"初始化完成",
-  "Device not connected":"设备未连接",
-  "Online Devices":"在线设备",
-  "Addressing Settings":"地址分配设置",
-  "Remove all addresses":"移除所有地址",
-  "Close Light":"关闭灯光",
-  "Extend Delays":"扩展延时",
-  "Query Delays":"查询延时",
-  "Send Delays":"发送延时",
-  "System Default":"系统默认",
-  "Group":"组",
-  "Scene":"场景",
-  "Device Type":"设备类型",
-  "Device Name":"设备名称",
-  "Device Address":"设备地址",
-  "Device Status":"设备状态",
-  "Connect":"连接",
-  "Disconnect":"断开",
-  "Connected":"已连接",
-  "Disconnected":"未连接",
-  "Rename":"重命名",
-  "Connection Method":"连接方式",
-  "Serial Port":"串口",
-  "Bluetooth":"蓝牙",
-  "Network":"网络",
-  "Home":"首页",
-  "About":"关于",
-  "Contact":"联系",
-  "Login":"登录",
-  "Logout":"登出",
-  "Register":"注册",
-  "Welcome":"欢迎",
-  "Settings":"设置",
-  "Language":"语言",
-  "Theme":"主题",
-  "Dark":"深色",
-  "Light":"浅色",
-  "System":"系统",
-  "Auto":"自动",
-  "Profile":"个人资料",
-  "Username":"用户名",
-  "Email":"邮箱",
-  "Password":"密码",
-  "Confirm Password":"确认密码",
-  "Save":"保存",
-  "Cancel":"取消",
-  "Edit":"编辑",
-  "Delete":"删除",
-  "Yes":"是",
-  "No":"否",
-  "Search":"搜索",
-  "Filter":"筛选",
-  "Sort":"排序",
-  "Ascending":"升序",
-  "Descending":"降序",
-  "Add":"添加",
-  "Remove":"移除",
-  "Close":"关闭",
-  "Open":"打开",
-  "Back":"返回",
-  "Next":"下一步",
-  "Previous":"上一步",
-  "Please wait...":"请稍等...",
-  "Please fill in all fields.":"请填写所有字段。",
-  "ON":"开",
-  "OFF":"关",
-  "Read Data":"读取数据",
-  "Write Data":"写入数据",
-  "Query":"查询",
-  "DALI":"DALI",
-  "Read":"读取",
-  "DT1 Emergency Test":"DT1应急测试",
-  "Gateway Address":"网关地址",
-  "Emergency Test Configuration":"应急测试配置",
-  "Current Selection":"当前选择",
-  "Use Selected Address":"使用选中地址",
-  "Start Emergency Test":"开始应急测试",
-  "Device Information":"设备信息",
-  "Test Status":"测试状态",
-  "Start Test":"开始测试",
-  "Stop Test":"停止测试",
-  "Ready":"就绪",
-  "Starting test...":"正在启动测试...",
-  "Test completed successfully":"测试成功完成",
-  "Test failed or timed out":"测试失败或超时",
-  "Test stopped by user":"用户停止测试",
-  "Test error: {}":"测试错误: {}",
-  "Enter new name":"输入新名称",
-  "Rename Device":"重命名设备",
-  "Device name too long":"设备名称过长",
-  "Only ASCII characters are allowed":"只允许ASCII字符",
-  "Device name cannot be empty":"设备名称不能为空",
-  "Failed to save device name":"保存设备名称失败",
-  "Test in progress... Please wait":"测试进行中...请等待",
-  "Test in progress... ({}s)":"测试进行中...({}/{}秒)"
-  ,"short_addr_manager.title":"短地址管理"
+  "app.title":"DALI工具箱",
+  "auth.not_logged_in":"未登录",
+  "auth.agree_privacy_policy":"我同意隐私政策",
+  "connection.title":"连接",
+  "device.title":"设备",
+  "connection.ble_devices":"蓝牙设备",
+  "settings.dimming_curve.title":"调光曲线",
+  "curve.linear":"线性",
+  "curve.logarithmic":"对数",
+  "color.pick":"选择颜色",
+  "color.temperature":"色温",
+  "color.title":"颜色",
+  "brightness.title":"亮度",
+  "theme.color.title":"主题颜色",
+  "theme.dark_mode.title":"深色模式",
+  "addressing.title":"地址分配",
+  "addressing.selected_address":"选中地址",
+  "common.reset":"重置",
+  "common.write":"写入",
+  "group.config.title":"组配置",
+  "log.show":"显示日志",
+  "common.clear":"清除",
+  "log.title":"日志",
+  "common.info":"信息",
+  "common.warning":"警告",
+  "common.error":"错误",
+  "common.done":"完成",
+  "common.loading":"加载中",
+  "common.ok":"确定",
+  "common.expires":"过期",
+  "common.free":"免费",
+  "init.complete":"初始化完成",
+  "device.not_connected":"设备未连接",
+  "device.online_list.title":"在线设备",
+  "addressing.settings.title":"地址分配设置",
+  "addressing.remove_all":"移除所有地址",
+  "addressing.close_light":"关闭灯光",
+  "delays.extend.title":"扩展延时",
+  "delays.query.title":"查询延时",
+  "delays.send.title":"发送延时",
+  "common.system_default":"系统默认",
+  "group.title":"组",
+  "scene.title":"场景",
+  "device.type":"设备类型",
+  "device.name":"设备名称",
+  "device.address":"设备地址",
+  "device.status":"设备状态",
+  "connection.connect":"连接",
+  "connection.disconnect":"断开",
+  "connection.connected":"已连接",
+  "connection.disconnected":"未连接",
+  "common.rename":"重命名",
+  "connection.method":"连接方式",
+  "connection.serial_port":"串口",
+  "connection.bluetooth":"蓝牙",
+  "connection.network":"网络",
+  "nav.home":"首页",
+  "nav.about":"关于",
+  "nav.contact":"联系",
+  "auth.login":"登录",
+  "auth.logout":"登出",
+  "auth.register":"注册",
+  "common.welcome":"欢迎",
+  "settings.title":"设置",
+  "settings.language.title":"语言",
+  "theme.title":"主题",
+  "theme.dark":"深色",
+  "theme.light":"浅色",
+  "theme.system":"系统",
+  "common.auto":"自动",
+  "user.profile":"个人资料",
+  "user.username":"用户名",
+  "user.email":"邮箱",
+  "user.password":"密码",
+  "user.password_confirm":"确认密码",
+  "common.save":"保存",
+  "common.cancel":"取消",
+  "common.edit":"编辑",
+  "common.delete":"删除",
+  "common.yes":"是",
+  "common.no":"否",
+  "common.search":"搜索",
+  "common.filter":"筛选",
+  "common.sort":"排序",
+  "common.ascending":"升序",
+  "common.descending":"降序",
+  "common.add":"添加",
+  "common.remove":"移除",
+  "common.close":"关闭",
+  "common.open":"打开",
+  "nav.back":"返回",
+  "nav.next":"下一步",
+  "nav.previous":"上一步",
+  "common.please_wait":"请稍等...",
+  "form.fill_all_fields":"请填写所有字段。",
+  "common.on":"开",
+  "common.off":"关",
+  "data.read_data":"读取数据",
+  "data.write_data":"写入数据",
+  "common.query":"查询",
+  "dali.title":"DALI",
+  "common.read":"读取",
+  "test.dt1.title":"DT1应急测试",
+  "test.dt1.gateway_address":"网关地址",
+  "test.dt1.config":"应急测试配置",
+  "test.dt1.current_selection":"当前选择",
+  "test.dt1.use_selected_address":"使用选中地址",
+  "test.dt1.start":"开始应急测试",
+  "test.dt1.device_info":"设备信息",
+  "test.dt1.status":"测试状态",
+  "test.dt1.start_button":"开始测试",
+  "test.dt1.stop_button":"停止测试",
+  "common.ready":"就绪",
+  "test.dt1.starting":"正在启动测试...",
+  "test.dt1.success":"测试成功完成",
+  "test.dt1.failed_or_timeout":"测试失败或超时",
+  "test.dt1.stopped_by_user":"用户停止测试",
+  "test.dt1.error":"测试错误: {message}",
+  "rename.enter_new_name":"输入新名称",
+  "rename.device_title":"重命名设备",
+  "rename.device_name_too_long":"设备名称过长",
+  "validation.device_name_ascii_only":"只允许ASCII字符",
+  "validation.device_name_required":"设备名称不能为空",
+  "rename.save_failed":"保存设备名称失败",
+  "test.dt1.in_progress_wait":"测试进行中...请等待",
+  "test.dt1.in_progress_seconds":"测试进行中...({elapsed}/{total}秒)",
+  "common.read_operations":"读取操作",
+  "color.temp_short":"色温",
+  "common.presets":"预设",
+  "common.clear_all":"清除全部",
+  "common.select_all":"全选",
+  "toast.test.title":"Toast 通知测试",
+  "log.no_logs":"暂无日志",
+  "bus.abnormal":"总线异常",
+  "short_addr_manager.title":"短地址管理"
+  ,"color.wheel":"颜色环"
+  ,"color.grid":"颜色网格"
+  ,"color.rgb":"RGB"
+  ,"color.rgb_sliders":"RGB 滑块"
+  ,"color.picker_test.title":"取色器测试"
+  ,"theme.color.alpha_enabled":"主题颜色(含透明度)"
+  ,"theme.color.dali_alpha_disabled":"DALI 颜色(禁用透明)"
+  ,"validation.username_required":"请输入用户名"
+  ,"validation.password_required":"请输入密码"
+  ,"common.redetect":"重新检测"
+  ,"common.interval":"间隔"
+  ,"common.attempts":"尝试次数"
+  ,"common.max_attempts":"最大尝试次数"
+  ,"gateway.type.title":"网关类型"
+  ,"gateway.type.subtitle":"显示并重新检测网关类型"
+  ,"common.error_occurred":"发生错误"
+  ,"device.no_devices":"暂无设备"
+  ,"device.no_devices_found":"未找到设备"
+  ,"common.unknown":"未知"
+  ,"serial.usb_devices.title":"USB 串口设备"
+  ,"serial.ports.title":"串口列表"
+  ,"serial.request_new_port.title":"请求新串口"
+  ,"serial.request_new_port.subtitle":"授予新串口访问权限"
+  ,"serial.no_authorized_ports":"没有已授权的串口"
+  ,"serial.rename_not_supported_web":"Web 串口不支持设备重命名"
   ,"short_addr_manager.scan":"扫描"
   ,"short_addr_manager.stop":"停止"
   ,"short_addr_manager.scanning":"正在扫描..."
@@ -144,9 +176,9 @@
   ,"device_search.range_end":"结束地址"
   ,"device_search.broadcast_selected_toast":"当前为广播模式，无法选择单个设备"
   ,"device_search.cannot_exit_broadcast_no_devices":"暂无设备，保持广播模式"
-  ,"short_addr_manager.count":"数量: {}"
-  ,"short_addr_manager.device_label":"设备 {}"
-  ,"short_addr_manager.slot_label":"槽位 {}"
+  ,"short_addr_manager.count":"数量: {count}"
+  ,"short_addr_manager.device_label":"设备 {address}"
+  ,"short_addr_manager.slot_label":"槽位 {index}"
   ,"short_addr_manager.apply_order":"应用排序"
   ,"short_addr_manager.modify":"修改"
   ,"short_addr_manager.modify_title":"修改短地址"
@@ -155,13 +187,13 @@
   ,"short_addr_manager.invalid_range":"地址必须在 0-63"
   ,"short_addr_manager.duplicate_addr":"地址已存在"
   ,"short_addr_manager.modify_success":"修改成功"
-  ,"short_addr_manager.modify_fail":"修改失败: {}"
+  ,"short_addr_manager.modify_fail":"修改失败: {error}"
   ,"short_addr_manager.delete_title":"删除短地址"
-  ,"short_addr_manager.delete_confirm":"确认删除地址 {}?"
+  ,"short_addr_manager.delete_confirm":"确认删除地址 {address}?"
   ,"short_addr_manager.delete_success":"删除成功"
-  ,"short_addr_manager.delete_fail":"删除失败: {}"
+  ,"short_addr_manager.delete_fail":"删除失败: {error}"
   ,"short_addr_manager.reorder_success":"重排序成功"
-  ,"short_addr_manager.reorder_fail":"重排序失败: {}"
+  ,"short_addr_manager.reorder_fail":"重排序失败: {error}"
   ,"short_addr_manager.no_change":"没有变化"
   ,"short_addr_manager.temp_addr_fail":"无可用临时地址"
   ,"short_addr_manager.invalid_scan_range":"扫描范围无效"
@@ -176,9 +208,9 @@
   ,"short_addr_manager.unselect_all":"全不选"
   ,"short_addr_manager.batch_delete":"批量删除"
   ,"short_addr_manager.batch_delete_title":"批量删除"
-  ,"short_addr_manager.batch_delete_confirm":"确认删除已选的 {} 个地址?"
+  ,"short_addr_manager.batch_delete_confirm":"确认删除已选的 {count} 个地址?"
   ,"short_addr_manager.batch_delete_success":"批量删除成功"
-  ,"short_addr_manager.batch_delete_fail":"批量删除失败: {}"
+  ,"short_addr_manager.batch_delete_fail":"批量删除失败: {error}"
   ,"sequence.editor.title":"指令序列编辑"
   ,"sequence.sequences":"序列列表"
   ,"sequence.sequence.new":"新建序列"
@@ -192,7 +224,7 @@
   ,"sequence.run":"执行"
   ,"sequence.stop":"停止"
   ,"sequence.no_steps":"暂无步骤"
-  ,"sequence.current_running":"正在执行步骤 {}/{}"
+  ,"sequence.current_running":"正在执行步骤 {current}/{total}"
   ,"sequence.cmd.setBright":"设置亮度"
   ,"sequence.cmd.on":"开灯"
   ,"sequence.cmd.off":"关灯"
@@ -226,20 +258,35 @@
   ,"sequence.summary.removeFromGroup":"地址 {addr} 移出组 {group}"
   ,"sequence.summary.setFadeTime":"地址 {addr} 淡入淡出时间 {value}"
   ,"sequence.summary.setFadeRate":"地址 {addr} 淡入淡出速率 {value}"
+  ,"sequence.summary.group.setBright":"组 {addr} -> 亮度 {level}"
+  ,"sequence.summary.group.on":"开灯 组 {addr}"
+  ,"sequence.summary.group.off":"关灯 组 {addr}"
+  ,"sequence.summary.group.toScene":"组 {addr} 跳转场景 {scene}"
+  ,"sequence.summary.group.setScene":"组 {addr} 存储场景 {scene}"
+  ,"sequence.summary.group.removeScene":"组 {addr} 移除场景 {scene}"
+  ,"sequence.summary.group.addToGroup":"组 {addr} 加入组 {group}"
+  ,"sequence.summary.group.removeFromGroup":"组 {addr} 移出组 {group}"
+  ,"sequence.summary.group.setFadeTime":"组 {addr} 淡入淡出时间 {value}"
+  ,"sequence.summary.group.setFadeRate":"组 {addr} 淡入淡出速率 {value}"
+  ,"sequence.summary.group.deleteShortAddress":"删除 组 {addr}"
+  ,"sequence.summary.broadcast.setBright":"广播 -> 亮度 {level}"
+  ,"sequence.summary.broadcast.on":"开灯 广播"
+  ,"sequence.summary.broadcast.off":"关灯 广播"
+  ,"sequence.summary.broadcast.toScene":"广播 跳转场景 {scene}"
+  ,"sequence.summary.broadcast.setScene":"广播 存储场景 {scene}"
+  ,"sequence.summary.broadcast.removeScene":"广播 移除场景 {scene}"
+  ,"sequence.summary.broadcast.addToGroup":"广播 加入组 {group}"
+  ,"sequence.summary.broadcast.removeFromGroup":"广播 移出组 {group}"
+  ,"sequence.summary.broadcast.setFadeTime":"广播 淡入淡出时间 {value}"
+  ,"sequence.summary.broadcast.setFadeRate":"广播 淡入淡出速率 {value}"
   ,"sequence.summary.wait":"等待 {ms} 毫秒"
   ,"sequence.summary.modifyShortAddress":"修改 {oldAddr} -> {newAddr}"
   ,"sequence.summary.deleteShortAddress":"删除地址 {addr}"
   ,"sequence.validation.field_required":"字段必填"
   ,"sequence.validation.required":"必填"
-  ,"sequence.sequence.default_name":"序列 {}"
+  ,"sequence.sequence.default_name":"序列 {index}"
   ,"sequence.field.broadcast":"广播"
-  ,"Sequence Editor":"指令序列"
-  ,"Read Operations":"读取操作"
-  ,"Color Temp":"色温"
-  ,"Presets":"预设"
-  ,"Clear All":"清除全部"
-  ,"Select All":"全选"
-  ,"Toast Notifications Test":"Toast 通知测试"
+  
   ,"settings.connection.subtitle":"选择首选的连接方式"
   ,"settings.dimming_curve.subtitle":"选择亮度调光曲线类型"
   ,"settings.theme_color.subtitle":"自定义界面主题颜色"
@@ -254,8 +301,7 @@
   ,"settings.remember_internal_page.subtitle":"重新进入大尺寸模式时定位到上次停留的内部页面"
   ,"settings.allowBroadcastRead.title":"允许广播读取"
   ,"settings.allowBroadcastRead.subtitle":"选中广播/组地址(>63 或 127)时仍允许执行读取操作"
-  ,"No logs available":"暂无日志"
-  ,"Bus abnormal":"总线异常"
+  
   ,"ip.dialog.title":"IP 连接"
   ,"ip.dialog.address":"IP / 主机"
   ,"ip.dialog.port":"端口"
@@ -298,6 +344,8 @@
   ,"custom_key.summary.allocate":"为未分配设备分配短地址"
   ,"custom_key.summary.reset_allocate":"重置后重新分配短地址"
   ,"custom_key.summary.toggleOnOff":"开关切换 地址 {addr}"
+  ,"custom_key.summary.toggleOnOff.group":"开关切换 组 {addr}"
+  ,"custom_key.summary.toggleOnOff.broadcast":"开关切换 广播"
   ,"custom_key.help.allocate":"为所有未分配地址的设备分配短地址。"
   ,"custom_key.help.reset_allocate":"重置(可清空旧地址)后重新分配短地址。"
   ,"custom_key.group.create":"新建分组"
@@ -326,4 +374,11 @@
   ,"colortemp.preset.natural":"自然"
   ,"colortemp.preset.cool":"冷白"
   ,"colortemp.preset.daylight":"日光"
+  ,"settings.autoReconnect.title":"自动重连"
+  ,"settings.autoReconnect.subtitle":"断开后自动尝试重新连接"
+  ,"settings.autoReconnect.interval.title":"重连间隔 (毫秒)"
+  ,"settings.autoReconnect.interval.subtitle":"每次重连尝试之间的延时"
+  ,"settings.autoReconnect.maxAttempts.title":"最大尝试次数"
+  ,"settings.autoReconnect.maxAttempts.subtitle":"超过次数后停止重连"
+  ,"ble.device.title":"蓝牙设备"
 }

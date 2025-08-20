@@ -18,7 +18,7 @@ class LanguageSetting extends StatelessWidget {
           items: [
             DropdownMenuItem(
               value: null,
-              child: Text('System Default').tr(),
+              child: Text('common.system_default').tr(),
             ),
             ...context.supportedLocales.map((locale) {
               return DropdownMenuItem(

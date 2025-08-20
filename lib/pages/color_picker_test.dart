@@ -17,7 +17,7 @@ class _ColorPickerTestPageState extends State<ColorPickerTestPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Color Picker Test'.tr()),
+        title: Text('color.picker_test.title'.tr()),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -26,7 +26,7 @@ class _ColorPickerTestPageState extends State<ColorPickerTestPage> {
           children: [
             // 主题颜色选择器（启用alpha）
             Text(
-              'Theme Color (Alpha Enabled)'.tr(),
+              'theme.color.alpha_enabled'.tr(),
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 16),
@@ -64,7 +64,7 @@ class _ColorPickerTestPageState extends State<ColorPickerTestPage> {
 
             // Dali颜色选择器（禁用alpha）
             Text(
-              'Dali Color (Alpha Disabled)'.tr(),
+              'theme.color.dali_alpha_disabled'.tr(),
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 16),
@@ -104,10 +104,8 @@ class _ColorPickerTestPageState extends State<ColorPickerTestPage> {
   }
 
   Color _getContrastColor(Color color) {
-    double luminance = (0.299 * color.r * 255.0 +
-            0.587 * color.g * 255.0 +
-            0.114 * color.b * 255.0) /
-        255;
+    double luminance =
+        (0.299 * color.r * 255.0 + 0.587 * color.g * 255.0 + 0.114 * color.b * 255.0) / 255;
     return luminance > 0.5 ? Colors.black : Colors.white;
   }
 }

@@ -28,7 +28,7 @@ class _DT1TestPageState extends State<DT1TestPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('DT1 Emergency Test'.tr()),
+        title: Text('test.dt1.title'.tr()),
         backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       ),
       body: Padding(
@@ -54,7 +54,7 @@ class _DT1TestPageState extends State<DT1TestPage> {
                     // Gateway Address
                     TextField(
                       decoration: InputDecoration(
-                        labelText: 'Gateway Address'.tr(),
+                        labelText: 'test.dt1.gateway_address'.tr(),
                         border: const OutlineInputBorder(),
                         prefixIcon: const Icon(Icons.router),
                       ),
@@ -70,7 +70,7 @@ class _DT1TestPageState extends State<DT1TestPage> {
                     // Device Address
                     TextField(
                       decoration: InputDecoration(
-                        labelText: 'Device Address'.tr(),
+                        labelText: 'device.address'.tr(),
                         border: const OutlineInputBorder(),
                         prefixIcon: const Icon(Icons.location_on),
                       ),
@@ -87,7 +87,7 @@ class _DT1TestPageState extends State<DT1TestPage> {
                     // Device Type
                     DropdownButtonFormField<int>(
                       decoration: InputDecoration(
-                        labelText: 'Device Type'.tr(),
+                        labelText: 'device.type'.tr(),
                         border: const OutlineInputBorder(),
                         prefixIcon: const Icon(Icons.device_hub),
                       ),
@@ -176,7 +176,7 @@ class _DT1TestPageState extends State<DT1TestPage> {
                           });
                         },
                         icon: const Icon(Icons.sync),
-                        label: Text('Use Selected Address'.tr()),
+                        label: Text('test.dt1.use_selected_address'.tr()),
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
@@ -189,7 +189,7 @@ class _DT1TestPageState extends State<DT1TestPage> {
                   child: ElevatedButton.icon(
                     onPressed: _showDT1TestDialog,
                     icon: const Icon(Icons.flash_on),
-                    label: Text('Start Emergency Test'.tr()),
+                    label: Text('test.dt1.start'.tr()),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Theme.of(context).colorScheme.onPrimary,

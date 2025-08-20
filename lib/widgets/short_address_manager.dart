@@ -64,7 +64,7 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
     final connection = ConnectionManager.instance.connection;
     if (!connection.isDeviceConnected()) {
       // 改为统一 toast 提示
-      ToastManager().showErrorToast('Device not connected'.tr());
+      ToastManager().showErrorToast('connection.disconnected'.tr());
       return;
     }
     int? start = int.tryParse(_scanStartCtrl.text);
@@ -125,8 +125,8 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('short_addr_manager.batch_delete_title').tr(),
-        content:
-            Text('short_addr_manager.batch_delete_confirm'.tr(args: [_selected.length.toString()])),
+        content: Text('short_addr_manager.batch_delete_confirm'
+            .tr(namedArgs: {'count': _selected.length.toString()})),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No').tr()),
           TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Yes').tr()),
@@ -145,7 +145,7 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
       });
       _showSnack('short_addr_manager.batch_delete_success'.tr());
     } catch (e) {
-      _showSnack('short_addr_manager.batch_delete_fail'.tr(args: [e.toString()]));
+      _showSnack('short_addr_manager.batch_delete_fail'.tr(namedArgs: {'error': e.toString()}));
     }
   }
 
@@ -165,7 +165,7 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
       await _startScan();
       _showSnack('short_addr_manager.modify_success'.tr());
     } catch (e) {
-      _showSnack('short_addr_manager.modify_fail'.tr(args: [e.toString()]));
+      _showSnack('short_addr_manager.modify_fail'.tr(namedArgs: {'error': e.toString()}));
     }
   }
 
@@ -176,7 +176,7 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
       await _startScan();
       _showSnack('short_addr_manager.delete_success'.tr());
     } catch (e) {
-      _showSnack('short_addr_manager.delete_fail'.tr(args: [e.toString()]));
+      _showSnack('short_addr_manager.delete_fail'.tr(namedArgs: {'error': e.toString()}));
     }
   }
 
@@ -217,7 +217,8 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('short_addr_manager.delete_title').tr(),
-        content: Text('short_addr_manager.delete_confirm'.tr(args: [addr.toString()])),
+        content:
+            Text('short_addr_manager.delete_confirm'.tr(namedArgs: {'address': addr.toString()})),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No').tr()),
           TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Yes').tr()),
@@ -338,7 +339,7 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
       if (e.toString().contains('cancelled')) {
         _showSnack('short_addr_manager.reorder_cancelled'.tr());
       } else {
-        _showSnack('short_addr_manager.reorder_fail'.tr(args: [e.toString()]));
+        _showSnack('short_addr_manager.reorder_fail'.tr(namedArgs: {'error': e.toString()}));
       }
     }
     if (mounted) {
@@ -410,7 +411,7 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
               ),
             ],
             const SizedBox(width: 16),
-            Text('short_addr_manager.count'.tr(args: [_addresses.length.toString()])),
+            Text('short_addr_manager.count'.tr(namedArgs: {'count': _addresses.length.toString()})),
           ],
         ),
         const SizedBox(height: 12),
@@ -457,12 +458,12 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
                                 onChanged: (_) => _toggleSelect(addr),
                               ),
                             Expanded(
-                                child: Text(
-                                    'short_addr_manager.device_label'.tr(args: [addr.toString()]))),
+                                child: Text('short_addr_manager.device_label'
+                                    .tr(namedArgs: {'address': addr.toString()}))),
                           ],
                         ),
-                        subtitle:
-                            Text('short_addr_manager.slot_label'.tr(args: [index.toString()])),
+                        subtitle: Text('short_addr_manager.slot_label'
+                            .tr(namedArgs: {'index': index.toString()})),
                         trailing: Wrap(
                           spacing: 4,
                           children: [

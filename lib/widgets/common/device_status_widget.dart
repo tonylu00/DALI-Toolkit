@@ -42,7 +42,7 @@ class DeviceStatusWidget extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '${'Selected Address'.tr()}: ${snapshot.hasData ? snapshot.data : Dali.instance.base!.selectedAddress}',
+                  '${'addressing.selected_address'.tr()}: ${snapshot.hasData ? snapshot.data : Dali.instance.base!.selectedAddress}',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,

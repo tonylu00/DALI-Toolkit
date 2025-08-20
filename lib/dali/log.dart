@@ -53,7 +53,7 @@ class DaliLog {
                   return listBuilder(_logMessages);
                 }
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(child: Text('No logs available').tr());
+                  return Center(child: Text('log.no_logs').tr());
                 }
                 return listBuilder(snapshot.data!);
               },
@@ -65,13 +65,13 @@ class DaliLog {
                 clearLogs();
                 Navigator.of(context).pop();
               },
-              child: const Text('Clear').tr(),
+              child: const Text('common.clear').tr(),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('Close').tr(),
+              child: const Text('common.close').tr(),
             ),
           ],
         );

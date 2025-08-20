@@ -47,7 +47,8 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
 
   CommandSequence _newSequence() {
     final id = Random().nextInt(1 << 32).toString();
-    final name = 'sequence.sequence.default_name'.tr(args: ['${repo.sequences.length + 1}']);
+    final name =
+        'sequence.sequence.default_name'.tr(namedArgs: {'index': '${repo.sequences.length + 1}'});
     return CommandSequence(id: id, name: name);
   }
 
@@ -384,97 +385,98 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
     final bool isBroadcast =
         s.type != DaliCommandType.modifyShortAddress && s.params.getInt('addr') == 127;
     final bool isGroupAddr = s.params.data['isGroupAddr'] == 1 && !isBroadcast;
+    String variantPrefix = '';
+    if (isBroadcast) {
+      variantPrefix = 'sequence.summary.broadcast.';
+    } else if (isGroupAddr) {
+      variantPrefix = 'sequence.summary.group.';
+    } else {
+      variantPrefix = 'sequence.summary.';
+    }
+
+    String keyFor(DaliCommandType t) {
+      switch (t) {
+        case DaliCommandType.setBright:
+          return 'setBright';
+        case DaliCommandType.on:
+          return 'on';
+        case DaliCommandType.off:
+          return 'off';
+        case DaliCommandType.toScene:
+          return 'toScene';
+        case DaliCommandType.setScene:
+          return 'setScene';
+        case DaliCommandType.removeScene:
+          return 'removeScene';
+        case DaliCommandType.addToGroup:
+          return 'addToGroup';
+        case DaliCommandType.removeFromGroup:
+          return 'removeFromGroup';
+        case DaliCommandType.setFadeTime:
+          return 'setFadeTime';
+        case DaliCommandType.setFadeRate:
+          return 'setFadeRate';
+        case DaliCommandType.wait:
+          return 'wait';
+        case DaliCommandType.modifyShortAddress:
+          return 'modifyShortAddress';
+        case DaliCommandType.deleteShortAddress:
+          return 'deleteShortAddress';
+      }
+    }
+
+    String fullKey = variantPrefix + keyFor(s.type);
+    Map<String, String> args = {};
+    // Supply required named args depending on key/variant
     switch (s.type) {
       case DaliCommandType.setBright:
-        base = 'sequence.summary.setBright'.tr(namedArgs: {
-          'addr': addrVal(s.params.getInt('addr')),
-          'level': s.params.getInt('level').toString(),
-        });
+        if (!isBroadcast) args['addr'] = addrVal(s.params.getInt('addr'));
+        args['level'] = s.params.getInt('level').toString();
         break;
       case DaliCommandType.on:
-        base = 'sequence.summary.on'.tr(namedArgs: {
-          'addr': addrVal(s.params.getInt('addr')),
-        });
-        break;
       case DaliCommandType.off:
-        base = 'sequence.summary.off'.tr(namedArgs: {
-          'addr': addrVal(s.params.getInt('addr')),
-        });
+        if (!isBroadcast) args['addr'] = addrVal(s.params.getInt('addr'));
         break;
       case DaliCommandType.toScene:
-        base = 'sequence.summary.toScene'.tr(namedArgs: {
-          'addr': addrVal(s.params.getInt('addr')),
-          'scene': s.params.getInt('scene').toString(),
-        });
-        break;
       case DaliCommandType.setScene:
-        base = 'sequence.summary.setScene'.tr(namedArgs: {
-          'addr': addrVal(s.params.getInt('addr')),
-          'scene': s.params.getInt('scene').toString(),
-        });
-        break;
       case DaliCommandType.removeScene:
-        base = 'sequence.summary.removeScene'.tr(namedArgs: {
-          'addr': addrVal(s.params.getInt('addr')),
-          'scene': s.params.getInt('scene').toString(),
-        });
+        if (!isBroadcast) args['addr'] = addrVal(s.params.getInt('addr'));
+        args['scene'] = s.params.getInt('scene').toString();
         break;
       case DaliCommandType.addToGroup:
-        base = 'sequence.summary.addToGroup'.tr(namedArgs: {
-          'addr': addrVal(s.params.getInt('addr')),
-          'group': s.params.getInt('group').toString(),
-        });
-        break;
       case DaliCommandType.removeFromGroup:
-        base = 'sequence.summary.removeFromGroup'.tr(namedArgs: {
-          'addr': addrVal(s.params.getInt('addr')),
-          'group': s.params.getInt('group').toString(),
-        });
+        if (!isBroadcast) args['addr'] = addrVal(s.params.getInt('addr'));
+        args['group'] = s.params.getInt('group').toString();
         break;
       case DaliCommandType.setFadeTime:
-        base = 'sequence.summary.setFadeTime'.tr(namedArgs: {
-          'addr': addrVal(s.params.getInt('addr')),
-          'value': s.params.getInt('value').toString(),
-        });
-        break;
       case DaliCommandType.setFadeRate:
-        base = 'sequence.summary.setFadeRate'.tr(namedArgs: {
-          'addr': addrVal(s.params.getInt('addr')),
-          'value': s.params.getInt('value').toString(),
-        });
+        if (!isBroadcast) args['addr'] = addrVal(s.params.getInt('addr'));
+        args['value'] = s.params.getInt('value').toString();
         break;
       case DaliCommandType.wait:
-        base = 'sequence.summary.wait'.tr(namedArgs: {
-          'ms': s.params.getInt('ms').toString(),
-        });
+        // wait has no addr even in variants
+        args['ms'] = s.params.getInt('ms').toString();
         break;
       case DaliCommandType.modifyShortAddress:
-        base = 'sequence.summary.modifyShortAddress'.tr(namedArgs: {
-          'oldAddr': s.params.getInt('oldAddr').toString(),
-          'newAddr': s.params.getInt('newAddr').toString(),
-        });
+        fullKey = 'sequence.summary.modifyShortAddress';
+        args['oldAddr'] = s.params.getInt('oldAddr').toString();
+        args['newAddr'] = s.params.getInt('newAddr').toString();
         break;
       case DaliCommandType.deleteShortAddress:
-        base = 'sequence.summary.deleteShortAddress'.tr(namedArgs: {
-          'addr': addrVal(s.params.getInt('addr')),
-        });
+        if (isBroadcast) {
+          // broadcast delete not really meaningful; fallback to original key
+          fullKey = 'sequence.summary.deleteShortAddress';
+          args['addr'] = addrVal(s.params.getInt('addr'));
+        } else if (isGroupAddr) {
+          fullKey = 'sequence.summary.group.deleteShortAddress';
+          args['addr'] = addrVal(s.params.getInt('addr'));
+        } else {
+          fullKey = 'sequence.summary.deleteShortAddress';
+          args['addr'] = addrVal(s.params.getInt('addr'));
+        }
         break;
     }
-    if (isBroadcast) {
-      final bLabel = 'sequence.field.broadcast'.tr();
-      // 去掉中文“地址 ”或英文“Addr ”/"Address " 前缀
-      base = base
-          .replaceAll('地址 $bLabel', bLabel)
-          .replaceAll('Addr $bLabel', bLabel)
-          .replaceAll('Address $bLabel', bLabel);
-    }
-    if (isGroupAddr) {
-      // 将“地址 ”或 "Addr " / "Address " 替换为 “组 ” / "Group "
-      base = base
-          .replaceAll('地址 ', '组 ')
-          .replaceAll('Addr ', 'Group ')
-          .replaceAll('Address ', 'Group ');
-    }
+    base = fullKey.tr(namedArgs: args);
     if (s.remark != null && s.remark!.isNotEmpty) {
       return '$base  | ${s.remark}';
     }

@@ -43,7 +43,7 @@ class DarkModeSettingState extends State<DarkModeSetting> {
   Widget build(BuildContext context) {
     return SettingsCard(
       child: SettingsItem(
-        title: 'Dark Mode',
+        title: 'theme.dark_mode.title',
         icon: Icons.dark_mode,
         subtitle: 'settings.dark_mode.subtitle',
         control: Switch(

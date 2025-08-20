@@ -360,7 +360,7 @@ class BleManager implements Connection {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('BLE Devices').tr(),
+          title: const Text('ble.device.title').tr(),
           content: SizedBox(
             width: double.maxFinite,
             child: StreamBuilder<List<BleDevice>>(
@@ -369,15 +369,15 @@ class BleManager implements Connection {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 } else if (snapshot.hasError) {
-                  return Center(child: Text('Error occurred').tr());
+                  return Center(child: Text('common.error_occurred').tr());
                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(child: Text('No devices found').tr());
+                  return Center(child: Text('device.no_devices_found').tr());
                 } else {
                   return ListView.builder(
                     itemCount: snapshot.data!.length,
                     itemBuilder: (context, index) {
                       return ListTile(
-                        title: Text(snapshot.data![index].name ?? 'Unknown').tr(),
+                        title: Text(snapshot.data![index].name ?? 'common.unknown').tr(),
                         subtitle: Text(
                             'ID: ${snapshot.data![index].deviceId}\nRSSI: ${snapshot.data![index].rssi}'),
                         onTap: () {
@@ -398,7 +398,7 @@ class BleManager implements Connection {
                 stopScan();
                 Navigator.of(context).pop();
               },
-              child: const Text('Close').tr(),
+              child: const Text('common.close').tr(),
             ),
           ],
         );

@@ -56,7 +56,7 @@ class _RenameDeviceDialogState extends State<RenameDeviceDialog> {
   void _validateInput(String text) {
     setState(() {
       if (text.length > 20) {
-        errorMessage = 'Device name too long'.tr();
+        errorMessage = 'rename.device_name_too_long'.tr();
         controller.text = text.substring(0, 20);
         controller.selection = TextSelection.fromPosition(
           TextPosition(offset: controller.text.length),
@@ -76,7 +76,7 @@ class _RenameDeviceDialogState extends State<RenameDeviceDialog> {
   Future<void> _handleRename() async {
     if (controller.text.isEmpty) {
       setState(() {
-        errorMessage = 'Device name cannot be empty'.tr();
+        errorMessage = 'validation.device_name_required'.tr();
       });
       controller.text =
           'DALInspector_${widget.connectedDeviceId.substring(widget.connectedDeviceId.length - 6)}';
@@ -96,7 +96,7 @@ class _RenameDeviceDialogState extends State<RenameDeviceDialog> {
       }
     } catch (e) {
       setState(() {
-        errorMessage = 'Failed to save device name'.tr();
+        errorMessage = 'rename.save_failed'.tr();
       });
     }
   }
@@ -104,14 +104,14 @@ class _RenameDeviceDialogState extends State<RenameDeviceDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Rename Device').tr(),
+      title: const Text('rename.device_title').tr(),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
             controller: controller,
             decoration: InputDecoration(
-              hintText: 'Enter new name'.tr(),
+              hintText: 'rename.enter_new_name'.tr(),
               errorText: errorMessage,
             ),
             onChanged: _validateInput,
@@ -123,11 +123,11 @@ class _RenameDeviceDialogState extends State<RenameDeviceDialog> {
           onPressed: () {
             Navigator.of(context).pop();
           },
-          child: const Text('Cancel').tr(),
+          child: const Text('common.cancel').tr(),
         ),
         TextButton(
           onPressed: _handleRename,
-          child: const Text('OK').tr(),
+          child: const Text('common.ok').tr(),
         ),
       ],
     );
