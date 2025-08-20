@@ -5,6 +5,7 @@ import '../dali/sequence.dart';
 import '../dali/sequence_store.dart';
 import '../connection/manager.dart';
 import '../toast.dart';
+import '../widgets/reorder_handle.dart';
 
 /// 指令序列编辑页面
 class SequenceEditorPage extends StatefulWidget {
@@ -348,8 +349,8 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
                         // 跟随主题，不再手动调低透明度，确保暗色模式下对比度充足
                         fontSize: 12,
                       )),
-              trailing: Wrap(
-                spacing: 4,
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
                       visualDensity: VisualDensity.compact,
@@ -359,7 +360,10 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
                       visualDensity: VisualDensity.compact,
                       onPressed: () => _deleteStep(index),
                       icon: const Icon(Icons.delete, size: 18)),
-                  const Icon(Icons.drag_handle),
+                  ReorderableDragStartListener(
+                    index: index,
+                    child: const ReorderHandle(),
+                  ),
                 ],
               ),
             ));

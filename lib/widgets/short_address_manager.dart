@@ -5,6 +5,7 @@ import '../connection/manager.dart';
 import '../dali/addr.dart';
 import '../dali/log.dart';
 import '../toast.dart';
+import 'reorder_handle.dart';
 
 /// 短地址管理组件
 /// 功能: 扫描在线设备、显示列表、选择设备、修改短地址、删除短地址、拖拽重新排序
@@ -446,7 +447,8 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
                       final addr = _addresses[index];
                       return ListTile(
                         key: ValueKey(addr),
-                        leading: const Icon(Icons.drag_handle),
+                        leading: ReorderableDragStartListener(
+                            index: index, child: const ReorderHandle()),
                         title: Row(
                           children: [
                             if (_selectionMode)

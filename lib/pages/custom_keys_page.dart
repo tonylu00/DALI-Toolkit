@@ -8,6 +8,7 @@ import '../dali/sequence.dart';
 import '../dali/dali.dart';
 import '../connection/manager.dart';
 import '../toast.dart';
+import '../widgets/reorder_handle.dart';
 
 /// 自定义按键页面
 class CustomKeysPage extends StatefulWidget {
@@ -248,19 +249,22 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
                   },
                   itemBuilder: (c, i) {
                     final k = repo.keys[i];
+                    final summary = _actionSummary(k);
                     return ListTile(
                         key: ValueKey(k.id),
-                        title: Text(k.name),
-                        subtitle: Text(_actionSummary(k)),
+                        title: Text(summary),
+                        subtitle: k.name.isNotEmpty
+                            ? Text(k.name, style: Theme.of(context).textTheme.bodySmall)
+                            : null,
                         leading: const Icon(Icons.smart_button_outlined),
-                        trailing: Wrap(spacing: 4, children: [
+                        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                           IconButton(
                               onPressed: () => _addOrEdit(def: k),
                               icon: const Icon(Icons.edit, size: 18)),
                           IconButton(
                               onPressed: () => _delete(k),
                               icon: const Icon(Icons.delete, size: 18)),
-                          const Icon(Icons.drag_handle)
+                          ReorderableDragStartListener(index: i, child: const ReorderHandle())
                         ]),
                         onTap: () => _execute(k));
                   }))
@@ -378,7 +382,9 @@ class _CustomKeyDialogState extends State<_CustomKeyDialog> {
             children: [
               TextField(
                 controller: _nameCtrl,
-                decoration: InputDecoration(labelText: 'custom_key.field.name'.tr()),
+                decoration: InputDecoration(
+                    labelText: 'sequence.field.remark'.tr(),
+                    hintText: 'sequence.field.remark'.tr()),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<CustomKeyActionType>(
@@ -466,10 +472,7 @@ class _CustomKeyDialogState extends State<_CustomKeyDialog> {
         FilledButton(
           onPressed: () {
             final name = _nameCtrl.text.trim();
-            if (name.isEmpty) {
-              ToastManager().showErrorToast('sequence.validation.field_required'.tr());
-              return;
-            }
+            // 备注可选，不再强制校验
             if (_actionType == CustomKeyActionType.runSequence && _selectedSequenceId == null) {
               ToastManager().showErrorToast('custom_key.no_sequence_selected'.tr());
               return;
