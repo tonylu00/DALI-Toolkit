@@ -4,6 +4,8 @@ import '/dali/dali.dart';
 import '/connection/manager.dart';
 import '/utils/colour_track_shape.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '/dali/errors.dart';
+import '/toast.dart';
 
 class BrightnessControlWidget extends StatefulWidget {
   final double brightness;
@@ -26,13 +28,19 @@ class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
 
   bool _checkDeviceConnection() => ConnectionManager.instance.ensureReadyForOperation();
 
+  void _showErr(String msg) {
+    ToastManager().showErrorToast(msg);
+  }
+
   Future<void> _readBrightness() async {
     if (!_checkDeviceConnection()) return;
 
-    final bright = await Dali.instance.base!.getBright(Dali.instance.base!.selectedAddress);
-    if (bright == null || bright < 0 || bright > 254) {
-      return;
-    }
+    final bright = await daliSafe<int?>(() async {
+      return await Dali.instance.base!.getBright(Dali.instance.base!.selectedAddress);
+    }, onError: _showErr);
+
+    if (bright == null) return; // 错误已提示
+    if (bright < 0 || bright > 254) return;
     widget.onBrightnessChanged(bright.toDouble());
   }
 
@@ -42,7 +50,10 @@ class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
     widget.onBrightnessChanged(value);
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 50), () {
-      Dali.instance.base!.setBright(Dali.instance.base!.selectedAddress, value.toInt());
+      daliSafe(() async {
+        await Dali.instance.base!.setBright(Dali.instance.base!.selectedAddress, value.toInt());
+        return null;
+      }, onError: _showErr);
     });
   }
 
@@ -158,11 +169,11 @@ class _BrightnessControlWidgetState extends State<BrightnessControlWidget> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildPresetButton(context, '0%', 0),
-              _buildPresetButton(context, '25%', 63),
-              _buildPresetButton(context, '50%', 127),
-              _buildPresetButton(context, '75%', 191),
-              _buildPresetButton(context, '100%', 254),
+              _buildPresetButton(context, 'brightness.preset.0'.tr(), 0),
+              _buildPresetButton(context, 'brightness.preset.25'.tr(), 63),
+              _buildPresetButton(context, 'brightness.preset.50'.tr(), 127),
+              _buildPresetButton(context, 'brightness.preset.75'.tr(), 191),
+              _buildPresetButton(context, 'brightness.preset.100'.tr(), 254),
             ],
           ),
         ],

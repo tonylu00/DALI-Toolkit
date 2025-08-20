@@ -4,6 +4,7 @@ import '/dali/dali.dart';
 import '/connection/manager.dart';
 import '/utils/colour_track_shape.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '/dali/errors.dart';
 
 class ColorTemperatureControlWidget extends StatefulWidget {
   final double colorTemperature;
@@ -28,15 +29,13 @@ class _ColorTemperatureControlWidgetState extends State<ColorTemperatureControlW
 
   Future<void> _readColorTemperature() async {
     if (!_checkDeviceConnection()) return;
-
-    int colorTemp =
-        await Dali.instance.dt8!.getColorTemperature(Dali.instance.base!.selectedAddress);
-    if (colorTemp < 2700) {
-      colorTemp = 2700;
-    }
-    if (colorTemp > 6500) {
-      colorTemp = 6500;
-    }
+    final colorTemp0 = await daliSafeToast<int>(() async {
+      return await Dali.instance.dt8!.getColorTemperature(Dali.instance.base!.selectedAddress);
+    });
+    if (colorTemp0 == null) return;
+    int colorTemp = colorTemp0;
+    if (colorTemp < 2700) colorTemp = 2700;
+    if (colorTemp > 6500) colorTemp = 6500;
     widget.onColorTemperatureChanged(colorTemp.toDouble());
   }
 
@@ -46,7 +45,10 @@ class _ColorTemperatureControlWidgetState extends State<ColorTemperatureControlW
     widget.onColorTemperatureChanged(value);
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 50), () {
-      Dali.instance.dt8!.setColorTemperature(Dali.instance.base!.selectedAddress, value.toInt());
+      daliSafeToast<void>(() async {
+        await Dali.instance.dt8!
+            .setColorTemperature(Dali.instance.base!.selectedAddress, value.toInt());
+      });
     });
   }
 
@@ -162,11 +164,11 @@ class _ColorTemperatureControlWidgetState extends State<ColorTemperatureControlW
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildPresetButton(context, 'Warm', 2700, Colors.yellow.shade600),
-              _buildPresetButton(context, 'Soft', 3500, Colors.orange.shade300),
-              _buildPresetButton(context, 'Natural', 4500, Colors.white),
-              _buildPresetButton(context, 'Cool', 5500, Colors.blue.shade200),
-              _buildPresetButton(context, 'Daylight', 6500, Colors.lightBlue.shade300),
+              _buildPresetButton(context, 'colortemp.preset.warm'.tr(), 2700, Colors.yellow.shade600),
+              _buildPresetButton(context, 'colortemp.preset.soft'.tr(), 3500, Colors.orange.shade300),
+              _buildPresetButton(context, 'colortemp.preset.natural'.tr(), 4500, Colors.white),
+              _buildPresetButton(context, 'colortemp.preset.cool'.tr(), 5500, Colors.blue.shade200),
+              _buildPresetButton(context, 'colortemp.preset.daylight'.tr(), 6500, Colors.lightBlue.shade300),
             ],
           ),
         ],

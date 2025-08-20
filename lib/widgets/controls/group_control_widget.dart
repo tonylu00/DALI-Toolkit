@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '/dali/dali.dart';
-import '/toast.dart';
 import '/connection/manager.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '/dali/errors.dart';
+import '/toast.dart';
 
 class GroupControlWidget extends StatefulWidget {
   final List<bool> groupCheckboxes;
@@ -26,34 +27,32 @@ class _GroupControlWidgetState extends State<GroupControlWidget> {
   Future<void> _readGroup() async {
     if (!_checkDeviceConnection()) return;
     if (Dali.instance.base!.selectedAddress > 63) {
-      ToastManager().showErrorToast('Operation not supported');
+      ToastManager().showErrorToast('group.read.unsupported'.tr());
       return;
     }
-    int group = await Dali.instance.base!.getGroup(Dali.instance.base!.selectedAddress);
-    if (group < 0) {
-      ToastManager().showErrorToast('Failed to read group configuration');
-      return;
-    }
+    final group = await daliSafeToast<int>(() async {
+      return await Dali.instance.base!.getGroup(Dali.instance.base!.selectedAddress);
+    });
+    if (group == null) return;
     List<bool> newCheckboxes = List.from(widget.groupCheckboxes);
-
     for (int i = 0; i < 16; i++) {
       newCheckboxes[i] = (group & (1 << i)) != 0;
     }
-
     widget.onGroupCheckboxesChanged(newCheckboxes);
   }
 
   Future<void> _writeGroup() async {
     if (!_checkDeviceConnection()) return;
-
     int group = 0;
     for (int i = 0; i < 16; i++) {
-      if (widget.groupCheckboxes[i]) {
-        group |= (1 << i);
-      }
+      if (widget.groupCheckboxes[i]) group |= (1 << i);
     }
-    await Dali.instance.base!.setGroup(Dali.instance.base!.selectedAddress, group);
-    ToastManager().showDoneToast('Group configuration saved');
+    final _ = await daliSafeToast<void>(() async {
+      await Dali.instance.base!.setGroup(Dali.instance.base!.selectedAddress, group);
+    });
+    if (mounted) {
+      ToastManager().showDoneToast('group.write.success'.tr());
+    }
   }
 
   void _onCheckboxChanged(int index, bool? value) {

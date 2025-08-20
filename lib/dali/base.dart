@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'comm.dart';
+import 'errors.dart';
 
 class DaliStatus {
   int _status;
@@ -362,26 +363,34 @@ class DaliBase extends DaliComm {
   }
 
   Future<int> getGroup(int a) async {
-    int h = await getGroupH(a);
-    int l = await getGroupL(a);
-    if (h < 0 || l < 0) {
-      return -1; // Error in reading group
+    try {
+      int h = await getGroupH(a);
+      int l = await getGroupL(a);
+      return h * 256 + l;
+    } on DaliQueryException {
+      rethrow; // 交由调用层决定
     }
-    return h * 256 + l;
   }
 
   Future<void> setGroup(int a, int value) async {
-    final currentGroup = await getGroup(a);
+    int currentGroup;
+    try {
+      currentGroup = await getGroup(a);
+    } on DaliQueryException {
+      // 如果读取失败，直接写需要变化的位
+      currentGroup = -1; // 标记强制写
+    }
     if (currentGroup == value) {
       return;
     }
     for (int i = 0; i < 16; i++) {
-      if ((currentGroup & (1 << i)) != (value & (1 << i))) {
-        if ((value & (1 << i)) != 0) {
-          await addToGroup(a, i);
-        } else {
-          await removeFromGroup(a, i);
-        }
+      if (currentGroup != -1 && (currentGroup & (1 << i)) == (value & (1 << i))) {
+        continue; // 不需要变更
+      }
+      if ((value & (1 << i)) != 0) {
+        await addToGroup(a, i);
+      } else {
+        await removeFromGroup(a, i);
       }
     }
   }
@@ -492,24 +501,28 @@ class DaliBase extends DaliComm {
 
   Future<bool> verifyShortAddr(int a) async {
     int addr = a * 2 + 1;
-    int ret = await queryCmd(0xb9, addr);
-    if (ret >= 0) {
-      return true;
+    try {
+      await queryCmd(0xb9, addr);
+      return true; // 成功返回即存在
+    } on DaliDeviceNoResponseException {
+      return false; // 设备明确无响应
+    } on DaliGatewayTimeoutException {
+      return false; // 网关超时也视为失败
     }
-    return false;
   }
 
   Future<bool> compare(int h, int m, int l) async {
     await queryAddressL(l);
     await queryAddressM(m);
     await queryAddressH(h);
-    int ret = await queryCmd(0xa9, 0x00);
-    if (ret == -1) {
-      return false;
-    } else if (ret >= 0) {
-      return true;
+    try {
+      await queryCmd(0xa9, 0x00);
+      return true; // 有回应
+    } on DaliDeviceNoResponseException {
+      return false; // 设备未响应 => 不匹配
+    } on DaliGatewayTimeoutException {
+      return false; // 超时 => 不匹配
     }
-    return false;
   }
 
   Future<int> getRandomAddrH(int addr) async {

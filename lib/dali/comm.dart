@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '/connection/manager.dart';
 import '/connection/connection.dart';
+import 'errors.dart';
 
 class DaliComm {
   final ConnectionManager manager;
@@ -193,73 +194,79 @@ class DaliComm {
     await Future.delayed(Duration(milliseconds: delays));
   }
 
+  /// send DALI command (need response)
   Future<int> queryRaw(int a, int b, {int? d, int? g}) async {
     if (!ConnectionManager.instance.canOperateBus()) {
       debugPrint('dali:queryRaw blocked (bus abnormal)');
-      return -2; // treat as no response
+      throw DaliBusUnavailableException(addr: a, cmd: b);
     }
     int delays = d ?? queryDelays;
     int addr = a;
     int cmd = b;
     List<int> buffer = [0x28, 0x01, gw, 0x14, addr, cmd];
     buffer = checksum(buffer);
-    int ret = -2;
     await write(buffer);
+    Uint8List? data;
     for (int i = 0; i < 10; i++) {
       await Future.delayed(Duration(milliseconds: delays));
-      Uint8List? data = await read(5, timeout: delays);
+      data = await read(5, timeout: delays);
       if (data != null && data.length == 5) {
         final sum = checksum(data.sublist(0, 3))[4];
-        if (data[0] == 0x22 && data[2] == gw && data[4] == sum) {
+        final valid = data[0] == 0x22 && data[2] == gw && data[4] == sum;
+        if (valid) {
           if (data[1] == 0x03) {
-            ret = data[3];
-            break;
+            return data[3];
           } else if (data[1] == 0x04) {
-            ret = -1;
-            break;
+            throw DaliDeviceNoResponseException(addr: a, cmd: b);
           } else {
-            debugPrint("dali:queryRaw: invalid response: $data");
+            debugPrint('dali:queryRaw: invalid response code: $data');
+            throw DaliInvalidFrameException(data, addr: a, cmd: b);
           }
         }
       } else {
-        debugPrint("dali:queryRaw: no data or invalid data, length: ${data?.length}");
+        debugPrint('dali:queryRaw: no data or invalid data, length: ${data?.length}');
       }
-      await write(buffer);
+      await write(buffer); // 重试
     }
-    return ret;
+    throw DaliGatewayTimeoutException(addr: a, cmd: b);
   }
 
-  /// send DALI command (need response)
+  /// 新接口查询 (单总线模式) 不再使用返回 -1/-2 代表错误
+  /// 正常返回 0..255 的数据字节；
+  /// 发生错误时抛出:
+  /// - [DaliBusUnavailableException]
+  /// - [DaliDeviceNoResponseException]
+  /// - [DaliGatewayTimeoutException]
+  /// - [DaliInvalidFrameException]
   Future<int> queryRawNew(int a, int b, {int? d, int? g}) async {
     if (!ConnectionManager.instance.canOperateBus()) {
       debugPrint('dali:queryRawNew blocked (bus abnormal)');
-      return -2;
+      throw DaliBusUnavailableException(addr: a, cmd: b);
     }
     int delays = d ?? queryDelays;
     int addr = a;
     int cmd = b;
     List<int> buffer = [0x12, addr, cmd];
-    int ret = -2;
-    //await flush();
     await write(buffer);
+    Uint8List? data;
     for (int i = 0; i < 10; i++) {
       await Future.delayed(Duration(milliseconds: delays));
-      Uint8List? data = await read(2, timeout: delays);
+      data = await read(2, timeout: delays);
       if (data != null && data.length == 2) {
         if (data[0] == 255) {
-          ret = data[1];
-          break;
+          return data[1];
         } else if (data[0] == 254) {
-          ret = -1;
-          break;
+          throw DaliDeviceNoResponseException(addr: a, cmd: b);
+        } else {
+          debugPrint('dali:queryRawNew: invalid frame $data');
+          throw DaliInvalidFrameException(data, addr: a, cmd: b);
         }
       } else {
-        debugPrint("dali:queryRawNew: no data");
+        debugPrint('dali:queryRawNew: no data');
       }
-      await write(buffer);
+      await write(buffer); // 重试
     }
-
-    return ret;
+    throw DaliGatewayTimeoutException(addr: a, cmd: b);
   }
 
   /// Send HEX command
@@ -277,11 +284,9 @@ class DaliComm {
   /// Send HEX request, and return the response
   Future<int> queryCmd(int addr, int c, {int? d, int? g}) async {
     if (isSingle) {
-      int ret = await queryRawNew(addr, c, d: d, g: g);
-      return ret;
+      return await queryRawNew(addr, c, d: d, g: g);
     }
-    int ret = await queryRaw(addr, c, d: d, g: g);
-    return ret;
+    return await queryRaw(addr, c, d: d, g: g);
   }
 
   /// Send command with DEC address
@@ -293,8 +298,7 @@ class DaliComm {
   /// Send request with DEC address, and return the response
   Future<int> query(int a, int c, {int? d, int? g}) async {
     int addr = a * 2 + 1;
-    int resp = await queryCmd(addr, c, d: d, g: g);
-    return resp;
+    return await queryCmd(addr, c, d: d, g: g);
   }
 
   /// convert brightness to percent curve

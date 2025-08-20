@@ -3,6 +3,7 @@ import '/dali/dali.dart';
 import '/dali/log.dart';
 import '/connection/manager.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '/dali/errors.dart';
 
 class DeviceControlButtonsWidget extends StatelessWidget {
   const DeviceControlButtonsWidget({super.key});
@@ -23,7 +24,9 @@ class DeviceControlButtonsWidget extends StatelessWidget {
               context: context,
               onPressed: () {
                 if (!_checkDeviceConnection()) return;
-                Dali.instance.base?.recallMaxLevel(Dali.instance.base!.selectedAddress);
+                daliSafeToast(() async {
+                  await Dali.instance.base?.recallMaxLevel(Dali.instance.base!.selectedAddress);
+                });
               },
               label: 'ON',
               icon: Icons.lightbulb,
@@ -33,7 +36,9 @@ class DeviceControlButtonsWidget extends StatelessWidget {
               context: context,
               onPressed: () {
                 if (!_checkDeviceConnection()) return;
-                Dali.instance.base?.off(Dali.instance.base!.selectedAddress);
+                daliSafeToast(() async {
+                  await Dali.instance.base?.off(Dali.instance.base!.selectedAddress);
+                });
               },
               label: 'OFF',
               icon: Icons.lightbulb_outline,
@@ -43,7 +48,9 @@ class DeviceControlButtonsWidget extends StatelessWidget {
               context: context,
               onPressed: () {
                 if (!_checkDeviceConnection()) return;
-                Dali.instance.addr?.resetAndAllocAddr();
+                daliSafeToast(() async {
+                  Dali.instance.addr?.resetAndAllocAddr();
+                });
                 log.showLogDialog(context, 'Log', clear: true, onCanceled: () {
                   Dali.instance.addr?.stopAllocAddr();
                 });
@@ -63,7 +70,9 @@ class DeviceControlButtonsWidget extends StatelessWidget {
               context: context,
               onPressed: () {
                 if (!_checkDeviceConnection()) return;
-                Dali.instance.base?.reset(Dali.instance.base!.selectedAddress);
+                daliSafeToast(() async {
+                  await Dali.instance.base?.reset(Dali.instance.base!.selectedAddress);
+                });
               },
               label: 'Reset',
               icon: Icons.restart_alt,
