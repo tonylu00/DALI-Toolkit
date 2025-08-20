@@ -10,7 +10,6 @@ export 'controls/device_control_buttons_widget.dart';
 export 'controls/brightness_control_widget.dart';
 export 'controls/color_temperature_control_widget.dart';
 export 'controls/group_control_widget.dart';
-export 'controls/read_operation_buttons_widget.dart';
 
 // Color widgets
 export 'color/color_control_widget.dart';

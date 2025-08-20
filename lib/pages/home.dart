@@ -1,10 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import '../toast.dart';
 import '/dali/dali.dart';
-import '/connection/manager.dart';
 import 'base_scaffold.dart';
 
 // Import the new widget components
@@ -51,49 +48,6 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     if (mounted) setState(() {});
   }
 
-  bool _checkDeviceConnection() {
-    return ConnectionManager.instance.ensureReadyForOperation();
-  }
-
-  Future<void> _readBrightness() async {
-    if (!_checkDeviceConnection()) return;
-    int? bright = await Dali.instance.base!.getBright(Dali.instance.base!.selectedAddress);
-    if (bright == null || bright < 0 || bright > 254) {
-      return;
-    }
-    setState(() {
-      brightness = bright.toDouble();
-    });
-  }
-
-  Future<void> _readColor() async {
-    if (!_checkDeviceConnection()) return;
-    final colorRGB = await Dali.instance.dt8!.getColourRGB(Dali.instance.base!.selectedAddress);
-    if (colorRGB.isEmpty) {
-      return;
-    }
-    debugPrint('Color: $colorRGB');
-    final colorObj = Color((0xFF << 24) + (colorRGB[0] << 16) + (colorRGB[1] << 8) + colorRGB[2]);
-    setState(() {
-      color = colorObj;
-    });
-  }
-
-  Future<void> _readColorTemperature() async {
-    if (!_checkDeviceConnection()) return;
-    int colorTemp =
-        await Dali.instance.dt8!.getColorTemperature(Dali.instance.base!.selectedAddress);
-    if (colorTemp < 2700) {
-      colorTemp = 2700;
-    }
-    if (colorTemp > 6500) {
-      colorTemp = 6500;
-    }
-    setState(() {
-      colorTemperature = colorTemp.toDouble();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final selAddr = Dali.instance.base!.selectedAddress;
@@ -116,13 +70,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                     // Device Control Buttons
                     const DeviceControlButtonsWidget(),
 
-                    // Read Operation Buttons
-                    ReadOperationButtonsWidget(
-                      isReadable: isReadable,
-                      onReadBrightness: _readBrightness,
-                      onReadColorTemperature: _readColorTemperature,
-                      onReadColor: _readColor,
-                    ),
+                    // Removed standalone read operation buttons (refresh now only via individual sections)
 
                     // Brightness Control
                     BrightnessControlWidget(
