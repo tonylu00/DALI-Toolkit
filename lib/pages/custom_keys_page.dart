@@ -26,6 +26,7 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
   bool _editMode = false; // 编辑模式: 显示编辑/删除/排序列表
   double _gridButtonSize = 120; // 基础边长
   static const _kGridBtnSizeKey = 'custom_key_grid_btn_size';
+  final Set<String> _activeToggle = {}; // 记录 toggleOnOff 激活的按键ID
 
   @override
   void initState() {
@@ -196,6 +197,17 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
             def.params.getInt('addr', Dali.instance.base!.selectedAddress),
             def.params.getInt('group', 0));
         break;
+      case CustomKeyActionType.toggleOnOff:
+        final addr = def.params.getInt('addr', Dali.instance.base!.selectedAddress);
+        final active = _activeToggle.contains(def.id);
+        if (active) {
+          await Dali.instance.base!.off(addr);
+          setState(() => _activeToggle.remove(def.id));
+        } else {
+          await Dali.instance.base!.on(addr);
+          setState(() => _activeToggle.add(def.id));
+        }
+        break;
     }
   }
 
@@ -259,6 +271,7 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
               onChanged: (v) {
                 if (v == null) return;
                 setState(() => repo.selectGroup(v));
+                _activeToggle.clear(); // 切换组重置
               })),
       IconButton(
           onPressed: _createGroup,
@@ -308,9 +321,16 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
                       itemBuilder: (c, i) {
                         final k = repo.keys[i];
                         final summary = _actionSummary(k);
+                        final isToggleActive = _activeToggle.contains(k.id);
                         return ListTile(
                             key: ValueKey(k.id),
-                            title: Text(summary),
+                            tileColor: k.actionType == CustomKeyActionType.toggleOnOff &&
+                                    isToggleActive
+                                ? Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.6)
+                                : null,
+                            title: Text(k.actionType == CustomKeyActionType.toggleOnOff
+                                ? '$summary (${isToggleActive ? 'ON'.tr() : 'OFF'.tr()})'
+                                : summary),
                             subtitle: k.name.isNotEmpty
                                 ? Text(k.name, style: Theme.of(context).textTheme.bodySmall)
                                 : null,
@@ -342,12 +362,23 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
                         itemBuilder: (c, i) {
                           final k = repo.keys[i];
                           final summary = _actionSummary(k);
+                          final isToggleActive = _activeToggle.contains(k.id);
                           return SizedBox(
                             width: _gridButtonSize,
                             height: _gridButtonSize,
                             child: ElevatedButton(
                               onPressed: () => _execute(k),
-                              style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(8)),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.all(8),
+                                backgroundColor: k.actionType == CustomKeyActionType.toggleOnOff &&
+                                        isToggleActive
+                                    ? Theme.of(context).colorScheme.secondaryContainer
+                                    : null,
+                                foregroundColor: k.actionType == CustomKeyActionType.toggleOnOff &&
+                                        isToggleActive
+                                    ? Theme.of(context).colorScheme.onSecondaryContainer
+                                    : null,
+                              ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -359,6 +390,20 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
                                     maxLines: 3,
                                     overflow: TextOverflow.ellipsis,
                                   ),
+                                  if (k.actionType == CustomKeyActionType.toggleOnOff) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      isToggleActive ? 'ON'.tr() : 'OFF'.tr(),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: k.actionType == CustomKeyActionType.toggleOnOff &&
+                                                isToggleActive
+                                            ? Theme.of(context).colorScheme.onSecondaryContainer
+                                            : Theme.of(context).textTheme.bodyMedium?.color,
+                                      ),
+                                    ),
+                                  ],
                                   if (k.name.isNotEmpty) ...[
                                     const SizedBox(height: 6),
                                     Text(k.name,
@@ -434,6 +479,9 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
           'addr': addrStr(k.params.getInt('addr')),
           'group': k.params.getInt('group').toString()
         });
+      case CustomKeyActionType.toggleOnOff:
+        return 'custom_key.summary.toggleOnOff'
+            .tr(namedArgs: {'addr': addrStr(k.params.getInt('addr'))});
     }
   }
 }

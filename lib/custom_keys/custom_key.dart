@@ -15,6 +15,7 @@ enum CustomKeyActionType {
   setScene, // 设置场景
   addToGroup, // 加入分组
   removeFromGroup, // 移出分组
+  toggleOnOff, // 新增: 切换开关
 }
 
 extension CustomKeyActionTypeI18n on CustomKeyActionType {
@@ -97,6 +98,8 @@ List<CustomKeyActionFieldMeta> customKeyActionMeta(CustomKeyActionType t) {
         CustomKeyActionFieldMeta('addr', 'sequence.field.addr', min: 0, max: 127),
         CustomKeyActionFieldMeta('group', 'sequence.field.group', min: 0, max: 15),
       ];
+    case CustomKeyActionType.toggleOnOff:
+      return [CustomKeyActionFieldMeta('addr', 'sequence.field.addr', min: 0, max: 127)];
   }
 }
 
