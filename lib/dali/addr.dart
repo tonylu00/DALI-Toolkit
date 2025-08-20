@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 import 'base.dart';
 import 'log.dart';
+import 'errors.dart';
 
 class DaliAddr {
   final DaliBase base;
@@ -37,17 +38,39 @@ class DaliAddr {
     _selectedDeviceController.add(address);
   }
 
+  // 统一日志 & 可选中断辅助
+  void _logDaliError(DaliQueryException e, String ctx) {
+    try {
+      DaliLog.instance.addLog('ERROR [$ctx]: ${e.toString()}');
+    } catch (_) {
+      debugPrint('ERROR [$ctx]: ${e.toString()}');
+    }
+  }
+
+  bool _isFatalScanError(DaliQueryException e) =>
+      e is DaliBusUnavailableException || e is DaliGatewayTimeoutException;
+
   /// Write device short address
   Future<void> writeAddr(int addr, int newAddr) async {
-    await base.setDTR(newAddr);
-    await base.storeDTRAsAddr(addr);
+    try {
+      await base.setDTR(newAddr);
+      await base.storeDTRAsAddr(addr);
+    } on DaliQueryException catch (e) {
+      _logDaliError(e, 'writeAddr($addr->$newAddr)');
+      rethrow; // 让上层决定是否提示用户
+    }
     // await base.getOnlineStatus(addr);
   }
 
   /// Remove short address
   Future<void> removeAddr(int addr) async {
-    await base.setDTR(0xff);
-    await base.storeDTRAsAddr(addr);
+    try {
+      await base.setDTR(0xff);
+      await base.storeDTRAsAddr(addr);
+    } on DaliQueryException catch (e) {
+      _logDaliError(e, 'removeAddr($addr)');
+      rethrow;
+    }
     // await base.getOnlineStatus(addr);
   }
 
@@ -63,11 +86,25 @@ class DaliAddr {
     onlineDevices.clear();
     for (int i = 0; i < addr; i++) {
       if (!isSearching) break; // Check the flag to stop the search
-      final status = await base.getOnlineStatus(i);
-      if (status) {
-        debugPrint('INFO [searchAddr]: device $i is online');
-        onlineDevices.add(i);
-        _onlineDevicesController.add(onlineDevices);
+      try {
+        final status = await base.getOnlineStatus(i);
+        if (status) {
+          debugPrint('INFO [searchAddr]: device $i is online');
+          onlineDevices.add(i);
+          _onlineDevicesController.add(List<int>.from(onlineDevices));
+        }
+      } on DaliDeviceNoResponseException {
+        // 单个地址无响应: 忽略继续
+        continue;
+      } on DaliQueryException catch (e) {
+        _logDaliError(e, 'searchAddr index=$i');
+        if (_isFatalScanError(e)) {
+          // 网关/总线级错误, 中止扫描
+          break;
+        } else {
+          // 其他查询异常, 继续尝试后续地址
+          continue;
+        }
       }
     }
     debugPrint('INFO [searchAddr]: done. online devices: $onlineDevices');
@@ -90,10 +127,21 @@ class DaliAddr {
     onlineDevices.clear();
     for (int i = start; i <= end; i++) {
       if (!isSearching) break;
-      final status = await base.getOnlineStatus(i);
-      if (status) {
-        onlineDevices.add(i);
-        _onlineDevicesController.add(List<int>.from(onlineDevices));
+      try {
+        final status = await base.getOnlineStatus(i);
+        if (status) {
+          onlineDevices.add(i);
+          _onlineDevicesController.add(List<int>.from(onlineDevices));
+        }
+      } on DaliDeviceNoResponseException {
+        continue; // 忽略
+      } on DaliQueryException catch (e) {
+        _logDaliError(e, 'searchAddrRange index=$i');
+        if (_isFatalScanError(e)) {
+          break; // 中断范围扫描
+        } else {
+          continue;
+        }
       }
     }
     debugPrint('INFO [searchAddrRange]: done range [$start,$end] devices: $onlineDevices');
@@ -112,22 +160,27 @@ class DaliAddr {
 
   /// Compare a selected address
   Future<bool> compareSingleAddress(int typ, int addr) async {
-    if (typ == 1) {
-      await base.queryAddressH(addr);
-    } else if (typ == 2) {
-      await base.queryAddressM(addr);
-    } else if (typ == 3) {
-      await base.queryAddressL(addr);
-    } else {
-      debugPrint('ERROR [compareSingleAddress]: failed to compare single address');
-    }
-    int ret = await base.queryCmd(0xa9, 0x00);
-    if (ret == -1) {
+    try {
+      if (typ == 1) {
+        await base.queryAddressH(addr);
+      } else if (typ == 2) {
+        await base.queryAddressM(addr);
+      } else if (typ == 3) {
+        await base.queryAddressL(addr);
+      } else {
+        debugPrint('ERROR [compareSingleAddress]: invalid typ=$typ');
+      }
+      int ret = await base.queryCmd(0xa9, 0x00);
+      if (ret >= 0) return true;
+      debugPrint('ERROR [compareSingleAddress]: unexpected ret=$ret');
       return false;
-    } else if (ret >= 0) {
-      return true;
-    } else {
-      debugPrint('ERROR [compareSingleAddress]: failed to compare address, return $ret');
+    } on DaliDeviceNoResponseException {
+      return false; // 设备无响应 => 不匹配
+    } on DaliGatewayTimeoutException catch (e) {
+      _logDaliError(e, 'compareSingleAddress timeout typ=$typ addr=$addr');
+      return false;
+    } on DaliQueryException catch (e) {
+      _logDaliError(e, 'compareSingleAddress typ=$typ addr=$addr');
       return false;
     }
   }
@@ -382,23 +435,28 @@ class DaliAddr {
       log.addLog('INFO [resetAndAllocAddr]: close all lights done');
       await Future.delayed(const Duration(milliseconds: 100));
     }
-    await base.terminate();
-    await Future.delayed(const Duration(milliseconds: 200));
-    if (isRemoveAddr) {
-      await base.initialiseAll();
+    try {
+      await base.terminate();
       await Future.delayed(const Duration(milliseconds: 200));
-      await removeAllAddr();
-      log.addLog('INFO [resetAndAllocAddr]: remove all short address');
-    } else {
-      await base.initialise();
-      log.addLog('INFO [resetAndAllocAddr]: initialise unaddressed');
+      if (isRemoveAddr) {
+        await base.initialiseAll();
+        await Future.delayed(const Duration(milliseconds: 200));
+        await removeAllAddr();
+        log.addLog('INFO [resetAndAllocAddr]: remove all short address');
+      } else {
+        await base.initialise();
+        log.addLog('INFO [resetAndAllocAddr]: initialise unaddressed');
+      }
+      await Future.delayed(const Duration(milliseconds: 500));
+      await base.randomise();
+      await Future.delayed(const Duration(milliseconds: 100));
+      await base.randomise();
+      await Future.delayed(const Duration(milliseconds: 300));
+      await allocateAllAddr(n);
+    } on DaliQueryException catch (e) {
+      _logDaliError(e, 'resetAndAllocAddr');
+      isAllocAddr = false; // 确保状态恢复
     }
-    await Future.delayed(const Duration(milliseconds: 500));
-    await base.randomise();
-    await Future.delayed(const Duration(milliseconds: 100));
-    await base.randomise();
-    await Future.delayed(const Duration(milliseconds: 300));
-    await allocateAllAddr(n);
     int elapsed = base.mcuTicks() - startTime;
     log.addLog('INFO [resetAndAllocAddr]: reset and allocate address done in $elapsed ms');
     // placeholder for mem.inter.WriteBit(7, 3, 0);
