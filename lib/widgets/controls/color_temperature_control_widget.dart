@@ -164,11 +164,14 @@ class _ColorTemperatureControlWidgetState extends State<ColorTemperatureControlW
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildPresetButton(context, 'colortemp.preset.warm'.tr(), 2700, Colors.yellow.shade600),
-              _buildPresetButton(context, 'colortemp.preset.soft'.tr(), 3500, Colors.orange.shade300),
+              _buildPresetButton(
+                  context, 'colortemp.preset.warm'.tr(), 2700, Colors.yellow.shade600),
+              _buildPresetButton(
+                  context, 'colortemp.preset.soft'.tr(), 3500, Colors.orange.shade300),
               _buildPresetButton(context, 'colortemp.preset.natural'.tr(), 4500, Colors.white),
               _buildPresetButton(context, 'colortemp.preset.cool'.tr(), 5500, Colors.blue.shade200),
-              _buildPresetButton(context, 'colortemp.preset.daylight'.tr(), 6500, Colors.lightBlue.shade300),
+              _buildPresetButton(
+                  context, 'colortemp.preset.daylight'.tr(), 6500, Colors.lightBlue.shade300),
             ],
           ),
         ],
