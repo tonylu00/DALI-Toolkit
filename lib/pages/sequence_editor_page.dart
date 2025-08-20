@@ -383,6 +383,7 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
 
     final bool isBroadcast =
         s.type != DaliCommandType.modifyShortAddress && s.params.getInt('addr') == 127;
+    final bool isGroupAddr = s.params.data['isGroupAddr'] == 1 && !isBroadcast;
     switch (s.type) {
       case DaliCommandType.setBright:
         base = 'sequence.summary.setBright'.tr(namedArgs: {
@@ -467,6 +468,13 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
           .replaceAll('Addr $bLabel', bLabel)
           .replaceAll('Address $bLabel', bLabel);
     }
+    if (isGroupAddr) {
+      // 将“地址 ”或 "Addr " / "Address " 替换为 “组 ” / "Group "
+      base = base
+          .replaceAll('地址 ', '组 ')
+          .replaceAll('Addr ', 'Group ')
+          .replaceAll('Address ', 'Group ');
+    }
     if (s.remark != null && s.remark!.isNotEmpty) {
       return '$base  | ${s.remark}';
     }
@@ -487,6 +495,7 @@ class _StepDialogState extends State<StepDialog> {
   final TextEditingController _remarkCtrl = TextEditingController();
   Map<String, TextEditingController> paramCtrls = {};
   bool _broadcast = false; // 是否广播（addr=127）
+  bool _groupAddr = false; // 是否组地址 (addr + 64)
 
   @override
   void initState() {
@@ -507,11 +516,14 @@ class _StepDialogState extends State<StepDialog> {
     if (paramCtrls.containsKey('addr')) {
       if (paramCtrls['addr']!.text == '127') {
         _broadcast = true;
+        _groupAddr = false;
       } else {
         _broadcast = false;
+        _groupAddr = (existing['isGroupAddr'] == 1 || existing['isGroupAddr'] == true);
       }
     } else {
       _broadcast = false;
+      _groupAddr = false;
     }
   }
 
@@ -571,6 +583,29 @@ class _StepDialogState extends State<StepDialog> {
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            Row(children: [
+                              Checkbox(
+                                  value: _groupAddr,
+                                  onChanged: _broadcast
+                                      ? null
+                                      : (v) {
+                                          setState(() {
+                                            final newVal = v ?? false;
+                                            if (_groupAddr != newVal) {
+                                              // 清空地址输入
+                                              paramCtrls[f.key]!.clear();
+                                            }
+                                            _groupAddr = newVal;
+                                          });
+                                        }),
+                              Text('sequence.field.groupAddr'.tr()),
+                            ])
+                          ],
+                        ),
+                        const SizedBox(width: 8),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
                             Row(
                               children: [
                                 Checkbox(
@@ -624,12 +659,29 @@ class _StepDialogState extends State<StepDialog> {
                 break;
               }
               if (txt.isNotEmpty) {
-                params[f.key] = int.tryParse(txt) ?? txt;
+                final parsed = int.tryParse(txt) ?? txt;
+                if (f.key == 'addr' && !_broadcast && txt.isNotEmpty) {
+                  if (_groupAddr) {
+                    if (parsed is int && (parsed < 0 || parsed > 15)) {
+                      missing = true; // 触发验证提示
+                      break;
+                    }
+                  } else {
+                    if (parsed is int && (parsed < 0 || parsed > 63)) {
+                      missing = true;
+                      break;
+                    }
+                  }
+                }
+                params[f.key] = parsed;
               }
             }
             if (_broadcast) {
               // 强制广播地址
               params['addr'] = 127;
+            }
+            if (_groupAddr && !_broadcast && params.containsKey('addr')) {
+              params['isGroupAddr'] = 1; // 标记组地址
             }
             if (missing) {
               // 改用全局 Toast 提示

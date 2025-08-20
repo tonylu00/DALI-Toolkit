@@ -205,4 +205,5 @@
   ,"custom_key.group.default":"Default Group"
   ,"custom_key.grid.size":"Button Size"
   ,"custom_key.grid.size_hint":"Drag slider to adjust button side (80-200px)"
+  ,"sequence.field.groupAddr":"Group Addr"
 }

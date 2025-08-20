@@ -136,43 +136,75 @@ class SequenceRunner with ChangeNotifier {
   Future<void> _executeStep(SequenceStep step) async {
     switch (step.type) {
       case DaliCommandType.setBright:
-        final a = step.params.getInt('addr', base.selectedAddress);
-        final v = step.params.getInt('level', 128);
-        await base.setBright(a, v);
+        {
+          int a = step.params.getInt('addr', base.selectedAddress);
+          if (step.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
+          final v = step.params.getInt('level', 128);
+          await base.setBright(a, v);
+        }
         break;
       case DaliCommandType.on:
-        await base.on(step.params.getInt('addr', base.selectedAddress));
+        {
+          int a = step.params.getInt('addr', base.selectedAddress);
+          if (step.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
+          await base.on(a);
+        }
         break;
       case DaliCommandType.off:
-        await base.off(step.params.getInt('addr', base.selectedAddress));
+        {
+          int a = step.params.getInt('addr', base.selectedAddress);
+          if (step.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
+          await base.off(a);
+        }
         break;
       case DaliCommandType.toScene:
-        await base.toScene(
-            step.params.getInt('addr', base.selectedAddress), step.params.getInt('scene', 0));
+        {
+          int a = step.params.getInt('addr', base.selectedAddress);
+          if (step.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
+          await base.toScene(a, step.params.getInt('scene', 0));
+        }
         break;
       case DaliCommandType.setScene:
-        await base.setScene(
-            step.params.getInt('addr', base.selectedAddress), step.params.getInt('scene', 0));
+        {
+          int a = step.params.getInt('addr', base.selectedAddress);
+          if (step.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
+          await base.setScene(a, step.params.getInt('scene', 0));
+        }
         break;
       case DaliCommandType.removeScene:
-        await base.removeScene(
-            step.params.getInt('addr', base.selectedAddress), step.params.getInt('scene', 0));
+        {
+          int a = step.params.getInt('addr', base.selectedAddress);
+          if (step.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
+          await base.removeScene(a, step.params.getInt('scene', 0));
+        }
         break;
       case DaliCommandType.addToGroup:
-        await base.addToGroup(
-            step.params.getInt('addr', base.selectedAddress), step.params.getInt('group', 0));
+        {
+          int a = step.params.getInt('addr', base.selectedAddress);
+          if (step.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
+          await base.addToGroup(a, step.params.getInt('group', 0));
+        }
         break;
       case DaliCommandType.removeFromGroup:
-        await base.removeFromGroup(
-            step.params.getInt('addr', base.selectedAddress), step.params.getInt('group', 0));
+        {
+          int a = step.params.getInt('addr', base.selectedAddress);
+          if (step.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
+          await base.removeFromGroup(a, step.params.getInt('group', 0));
+        }
         break;
       case DaliCommandType.setFadeTime:
-        await base.setFadeTime(
-            step.params.getInt('addr', base.selectedAddress), step.params.getInt('value', 0));
+        {
+          int a = step.params.getInt('addr', base.selectedAddress);
+          if (step.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
+          await base.setFadeTime(a, step.params.getInt('value', 0));
+        }
         break;
       case DaliCommandType.setFadeRate:
-        await base.setFadeRate(
-            step.params.getInt('addr', base.selectedAddress), step.params.getInt('value', 0));
+        {
+          int a = step.params.getInt('addr', base.selectedAddress);
+          if (step.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
+          await base.setFadeRate(a, step.params.getInt('value', 0));
+        }
         break;
       case DaliCommandType.wait:
         final ms = step.params.getInt('ms', 500);

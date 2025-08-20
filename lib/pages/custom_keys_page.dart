@@ -165,47 +165,67 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
         ToastManager().showInfoToast('custom_key.reset_allocate_started'.tr());
         break;
       case CustomKeyActionType.on:
-        await Dali.instance.base!
-            .on(def.params.getInt('addr', Dali.instance.base!.selectedAddress));
+        {
+          int a = def.params.getInt('addr', Dali.instance.base!.selectedAddress);
+          if (def.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
+          await Dali.instance.base!.on(a);
+        }
         break;
       case CustomKeyActionType.off:
-        await Dali.instance.base!
-            .off(def.params.getInt('addr', Dali.instance.base!.selectedAddress));
+        {
+          int a = def.params.getInt('addr', Dali.instance.base!.selectedAddress);
+          if (def.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
+          await Dali.instance.base!.off(a);
+        }
         break;
       case CustomKeyActionType.setBright:
-        await Dali.instance.base!.setBright(
-            def.params.getInt('addr', Dali.instance.base!.selectedAddress),
-            def.params.getInt('level', 128));
+        {
+          int a = def.params.getInt('addr', Dali.instance.base!.selectedAddress);
+          if (def.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
+          await Dali.instance.base!.setBright(a, def.params.getInt('level', 128));
+        }
         break;
       case CustomKeyActionType.toScene:
-        await Dali.instance.base!.toScene(
-            def.params.getInt('addr', Dali.instance.base!.selectedAddress),
-            def.params.getInt('scene', 0));
+        {
+          int a = def.params.getInt('addr', Dali.instance.base!.selectedAddress);
+          if (def.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
+          await Dali.instance.base!.toScene(a, def.params.getInt('scene', 0));
+        }
         break;
       case CustomKeyActionType.setScene:
-        await Dali.instance.base!.setScene(
-            def.params.getInt('addr', Dali.instance.base!.selectedAddress),
-            def.params.getInt('scene', 0));
+        {
+          int a = def.params.getInt('addr', Dali.instance.base!.selectedAddress);
+          if (def.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
+          await Dali.instance.base!.setScene(a, def.params.getInt('scene', 0));
+        }
         break;
       case CustomKeyActionType.addToGroup:
-        await Dali.instance.base!.addToGroup(
-            def.params.getInt('addr', Dali.instance.base!.selectedAddress),
-            def.params.getInt('group', 0));
+        {
+          int a = def.params.getInt('addr', Dali.instance.base!.selectedAddress);
+          if (def.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
+          await Dali.instance.base!.addToGroup(a, def.params.getInt('group', 0));
+        }
         break;
       case CustomKeyActionType.removeFromGroup:
-        await Dali.instance.base!.removeFromGroup(
-            def.params.getInt('addr', Dali.instance.base!.selectedAddress),
-            def.params.getInt('group', 0));
+        {
+          int a = def.params.getInt('addr', Dali.instance.base!.selectedAddress);
+          if (def.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
+          await Dali.instance.base!.removeFromGroup(a, def.params.getInt('group', 0));
+        }
         break;
       case CustomKeyActionType.toggleOnOff:
-        final addr = def.params.getInt('addr', Dali.instance.base!.selectedAddress);
-        final active = _activeToggle.contains(def.id);
-        if (active) {
-          await Dali.instance.base!.off(addr);
-          setState(() => _activeToggle.remove(def.id));
-        } else {
-          await Dali.instance.base!.on(addr);
-          setState(() => _activeToggle.add(def.id));
+        {
+          int addr = def.params.getInt('addr', Dali.instance.base!.selectedAddress);
+          final bool isGroup = def.params.data['isGroupAddr'] == 1 && addr != 127;
+          if (isGroup) addr += 64;
+          final active = _activeToggle.contains(def.id);
+          if (active) {
+            await Dali.instance.base!.off(addr);
+            setState(() => _activeToggle.remove(def.id));
+          } else {
+            await Dali.instance.base!.on(addr);
+            setState(() => _activeToggle.add(def.id));
+          }
         }
         break;
     }
@@ -437,6 +457,7 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
 
   String _actionSummary(CustomKeyDefinition k) {
     String addrStr(int v) => v == 127 ? 'sequence.field.broadcast'.tr() : v.toString();
+    final bool isGroupAddr = k.params.data['isGroupAddr'] == 1 && k.params.getInt('addr') != 127;
     switch (k.actionType) {
       case CustomKeyActionType.runSequence:
         final seqId = k.params.get<String>('sequenceId');
@@ -451,37 +472,111 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
       case CustomKeyActionType.resetAndAllocate:
         return 'custom_key.summary.reset_allocate'.tr();
       case CustomKeyActionType.on:
-        return 'sequence.summary.on'.tr(namedArgs: {'addr': addrStr(k.params.getInt('addr'))});
+        {
+          String s =
+              'sequence.summary.on'.tr(namedArgs: {'addr': addrStr(k.params.getInt('addr'))});
+          if (isGroupAddr) {
+            s = s
+                .replaceAll('地址 ', '组 ')
+                .replaceAll('Addr ', 'Group ')
+                .replaceAll('Address ', 'Group ');
+          }
+          return s;
+        }
       case CustomKeyActionType.off:
-        return 'sequence.summary.off'.tr(namedArgs: {'addr': addrStr(k.params.getInt('addr'))});
+        {
+          String s =
+              'sequence.summary.off'.tr(namedArgs: {'addr': addrStr(k.params.getInt('addr'))});
+          if (isGroupAddr) {
+            s = s
+                .replaceAll('地址 ', '组 ')
+                .replaceAll('Addr ', 'Group ')
+                .replaceAll('Address ', 'Group ');
+          }
+          return s;
+        }
       case CustomKeyActionType.setBright:
-        return 'sequence.summary.setBright'.tr(namedArgs: {
-          'addr': addrStr(k.params.getInt('addr')),
-          'level': k.params.getInt('level').toString()
-        });
+        {
+          String s = 'sequence.summary.setBright'.tr(namedArgs: {
+            'addr': addrStr(k.params.getInt('addr')),
+            'level': k.params.getInt('level').toString()
+          });
+          if (isGroupAddr) {
+            s = s
+                .replaceAll('地址 ', '组 ')
+                .replaceAll('Addr ', 'Group ')
+                .replaceAll('Address ', 'Group ');
+          }
+          return s;
+        }
       case CustomKeyActionType.toScene:
-        return 'sequence.summary.toScene'.tr(namedArgs: {
-          'addr': addrStr(k.params.getInt('addr')),
-          'scene': k.params.getInt('scene').toString()
-        });
+        {
+          String s = 'sequence.summary.toScene'.tr(namedArgs: {
+            'addr': addrStr(k.params.getInt('addr')),
+            'scene': k.params.getInt('scene').toString()
+          });
+          if (isGroupAddr) {
+            s = s
+                .replaceAll('地址 ', '组 ')
+                .replaceAll('Addr ', 'Group ')
+                .replaceAll('Address ', 'Group ');
+          }
+          return s;
+        }
       case CustomKeyActionType.setScene:
-        return 'sequence.summary.setScene'.tr(namedArgs: {
-          'addr': addrStr(k.params.getInt('addr')),
-          'scene': k.params.getInt('scene').toString()
-        });
+        {
+          String s = 'sequence.summary.setScene'.tr(namedArgs: {
+            'addr': addrStr(k.params.getInt('addr')),
+            'scene': k.params.getInt('scene').toString()
+          });
+          if (isGroupAddr) {
+            s = s
+                .replaceAll('地址 ', '组 ')
+                .replaceAll('Addr ', 'Group ')
+                .replaceAll('Address ', 'Group ');
+          }
+          return s;
+        }
       case CustomKeyActionType.addToGroup:
-        return 'sequence.summary.addToGroup'.tr(namedArgs: {
-          'addr': addrStr(k.params.getInt('addr')),
-          'group': k.params.getInt('group').toString()
-        });
+        {
+          String s = 'sequence.summary.addToGroup'.tr(namedArgs: {
+            'addr': addrStr(k.params.getInt('addr')),
+            'group': k.params.getInt('group').toString()
+          });
+          if (isGroupAddr) {
+            s = s
+                .replaceAll('地址 ', '组 ')
+                .replaceAll('Addr ', 'Group ')
+                .replaceAll('Address ', 'Group ');
+          }
+          return s;
+        }
       case CustomKeyActionType.removeFromGroup:
-        return 'sequence.summary.removeFromGroup'.tr(namedArgs: {
-          'addr': addrStr(k.params.getInt('addr')),
-          'group': k.params.getInt('group').toString()
-        });
+        {
+          String s = 'sequence.summary.removeFromGroup'.tr(namedArgs: {
+            'addr': addrStr(k.params.getInt('addr')),
+            'group': k.params.getInt('group').toString()
+          });
+          if (isGroupAddr) {
+            s = s
+                .replaceAll('地址 ', '组 ')
+                .replaceAll('Addr ', 'Group ')
+                .replaceAll('Address ', 'Group ');
+          }
+          return s;
+        }
       case CustomKeyActionType.toggleOnOff:
-        return 'custom_key.summary.toggleOnOff'
-            .tr(namedArgs: {'addr': addrStr(k.params.getInt('addr'))});
+        {
+          String s = 'custom_key.summary.toggleOnOff'
+              .tr(namedArgs: {'addr': addrStr(k.params.getInt('addr'))});
+          if (isGroupAddr) {
+            s = s
+                .replaceAll('地址 ', '组 ')
+                .replaceAll('Addr ', 'Group ')
+                .replaceAll('Address ', 'Group ');
+          }
+          return s;
+        }
     }
   }
 }
@@ -500,6 +595,7 @@ class _CustomKeyDialogState extends State<_CustomKeyDialog> {
   String? _selectedSequenceId;
   final Map<String, TextEditingController> _paramCtrls = {};
   bool _broadcast = false;
+  bool _groupAddr = false; // 是否组地址 (addr + 64)
 
   @override
   void initState() {
@@ -518,8 +614,10 @@ class _CustomKeyDialogState extends State<_CustomKeyDialog> {
     }
     if (_paramCtrls.containsKey('addr')) {
       _broadcast = _paramCtrls['addr']!.text == '127';
+      _groupAddr = (existing['isGroupAddr'] == 1 || existing['isGroupAddr'] == true) && !_broadcast;
     } else {
       _broadcast = false;
+      _groupAddr = false;
     }
   }
 
@@ -587,6 +685,28 @@ class _CustomKeyDialogState extends State<_CustomKeyDialog> {
                               const SizedBox(width: 8),
                               Column(
                                 children: [
+                                  Row(children: [
+                                    Checkbox(
+                                      value: _groupAddr,
+                                      onChanged: _broadcast
+                                          ? null
+                                          : (v) {
+                                              setState(() {
+                                                final newVal = v ?? false;
+                                                if (_groupAddr != newVal) {
+                                                  _paramCtrls['addr']!.clear();
+                                                }
+                                                _groupAddr = newVal;
+                                              });
+                                            },
+                                    ),
+                                    Text('sequence.field.groupAddr'.tr()),
+                                  ])
+                                ],
+                              ),
+                              const SizedBox(width: 8),
+                              Column(
+                                children: [
                                   Row(
                                     children: [
                                       Checkbox(
@@ -596,6 +716,7 @@ class _CustomKeyDialogState extends State<_CustomKeyDialog> {
                                             _broadcast = v ?? false;
                                             if (_broadcast) {
                                               _paramCtrls['addr']!.text = '127';
+                                              _groupAddr = false; // 互斥
                                             } else {
                                               _paramCtrls['addr']!.clear();
                                             }
@@ -662,11 +783,27 @@ class _CustomKeyDialogState extends State<_CustomKeyDialog> {
                   ToastManager().showErrorToast('sequence.validation.field_required'.tr());
                   return;
                 }
+                if (f.key == 'addr' && !_broadcast) {
+                  if (_groupAddr) {
+                    if (v < 0 || v > 15) {
+                      ToastManager().showErrorToast('sequence.validation.field_required'.tr());
+                      return;
+                    }
+                  } else {
+                    if (v < 0 || v > 63) {
+                      ToastManager().showErrorToast('sequence.validation.field_required'.tr());
+                      return;
+                    }
+                  }
+                }
                 params[f.key] = v;
               }
             }
             if (_broadcast) {
               params['addr'] = 127;
+            }
+            if (_groupAddr && !_broadcast && params.containsKey('addr')) {
+              params['isGroupAddr'] = 1; // 标记执行时 +64
             }
             final def = CustomKeyDefinition(
               id: widget.definition?.id ?? Random().nextInt(1 << 32).toString(),

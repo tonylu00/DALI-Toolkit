@@ -302,4 +302,5 @@
   ,"custom_key.group.default":"默认分组"
   ,"custom_key.grid.size":"按钮尺寸"
   ,"custom_key.grid.size_hint":"拖动滑块调整按钮边长 (80-200px)"
+  ,"sequence.field.groupAddr":"组地址"
 }
