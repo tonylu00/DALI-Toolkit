@@ -373,40 +373,10 @@ class BaseScaffoldState extends State<BaseScaffold> {
                   Navigator.pushNamed(context, '/login');
                   return;
                 }
-                showModalBottomSheet<void>(
-                  context: context,
-                  builder: (BuildContext ctx) {
-                    return SafeArea(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          ListTile(
-                            leading: const Icon(Icons.person),
-                            title: Text(displayName),
-                            subtitle: Text(displayEmail),
-                            onTap: () {
-                              Navigator.pop(ctx);
-                              // 可跳转到个人资料页，暂不实现
-                            },
-                          ),
-                          ListTile(
-                            leading: const Icon(Icons.logout),
-                            title: Text('auth.logout'.tr()),
-                            onTap: () async {
-                              Navigator.pop(ctx);
-                              await auth.logout();
-                              ToastManager().showInfoToast('auth.logout');
-                            },
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                );
+                Navigator.pushNamed(context, '/profile');
               },
               child: CircleAvatar(
                 backgroundColor: Theme.of(context).colorScheme.primary,
-                // 优先使用已缓存到磁盘的 avatar 文件
                 backgroundImage: () {
                   final prefsAvatarFile =
                       auth.state.user == null ? null : auth.state.user?['avatar_file'];

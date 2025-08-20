@@ -44,10 +44,7 @@ class LoginPageState extends State<LoginPage> {
       final provider = context.read<AuthProvider>();
       await provider.login();
       if (!mounted) return;
-      Navigator.pop(context, {
-        'tokens': provider.tokens?.toJson(),
-        'user': provider.state.user,
-      });
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString());

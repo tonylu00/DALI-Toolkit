@@ -107,7 +107,7 @@ class MyAppState extends State<MyApp> {
         '/sequenceEditor': (context) => const SequenceEditorPage(),
         '/customKeys': (context) => const CustomKeysPage(),
         '/about': (context) => const AuthRequired(child: AboutPage()),
-  '/profile': (context) => const ProfilePage(),
+        '/profile': (context) => const ProfilePage(),
       },
     );
   }
