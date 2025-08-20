@@ -12,9 +12,12 @@ import '/pages/custom_keys_page.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import '../auth/auth_provider.dart';
+import '../toast.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
-import 'dart:io' show Platform; // 对桌面平台判断
+import 'dart:io' show Platform, File; // 对桌面平台判断
 import 'package:desktop_window/desktop_window.dart';
 
 import '/dali/log.dart';
@@ -36,8 +39,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
   static const double _kNavRailWidth = 72.0; // 大屏模式功能区导航宽
   static const double _kMinFunctionalWidth = 560.0; // 右侧功能区最小有效内容宽
   static const double _kExtraMargin = 32.0; // 余量（窗口边缘/滚动条等）
-  String _accountName = 'auth.not_logged_in'.tr();
-  String _accountEmail = '';
+  // 账户显示改由 AuthProvider 提供，不再本地存储
   String? _internalPage; // 大尺寸模式当前功能区
   late final InternalPagePrefs _prefs;
 
@@ -99,18 +101,12 @@ class BaseScaffoldState extends State<BaseScaffold> {
     }
   }
 
-  void _updateAccountInfo(String newName, String newEmail) {
-    setState(() {
-      _accountName = newName;
-      _accountEmail = newEmail;
-    });
-  }
+  // 旧 _updateAccountInfo 已移除
 
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final size = media.size;
-    // 简易对角线英寸估算：对角 = 像素对角 / ppi；无法精确获取 ppi，这里近似用逻辑像素对角 / 150 估算，>10 判定
     final diagonalLogical = math.sqrt(size.width * size.width + size.height * size.height);
     final approxInches = diagonalLogical / 150.0; // 经验系数
     bool isUltraLarge = approxInches >= 10.0;
@@ -357,29 +353,81 @@ class BaseScaffoldState extends State<BaseScaffold> {
     final approxInches = diagonalLogical / 150.0;
     final isDesktop = Platform.isWindows || Platform.isLinux || Platform.isMacOS;
     final isUltraLarge = isDesktop || approxInches >= 10.0;
+    final auth = context.watch<AuthProvider>();
+    final loggedIn = auth.state.authenticated;
+    final displayName = loggedIn
+        ? (auth.state.user?['preferred_username'] ?? auth.state.user?['name'] ?? 'User')
+        : 'auth.not_logged_in'.tr();
+    final displayEmail = loggedIn ? (auth.state.user?['email'] ?? '') : '';
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: <Widget>[
           UserAccountsDrawerHeader(
-            accountName: Text(_accountName),
-            accountEmail: Text(_accountEmail),
+            accountName: Text(displayName),
+            accountEmail: Text(displayEmail),
             currentAccountPicture: GestureDetector(
               onTap: () {
-                if (_accountName == 'auth.not_logged_in'.tr()) {
-                  Navigator.pushNamed(context, '/login').then((value) {
-                    if (value != null) {
-                      final List<String> loginInfo = value as List<String>;
-                      _updateAccountInfo(loginInfo[0], loginInfo[1]);
-                    }
-                  });
-                } else {
-                  _updateAccountInfo('auth.not_logged_in'.tr(), '');
+                if (!loggedIn) {
+                  Navigator.pushNamed(context, '/login');
+                  return;
                 }
+                showModalBottomSheet<void>(
+                  context: context,
+                  builder: (BuildContext ctx) {
+                    return SafeArea(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          ListTile(
+                            leading: const Icon(Icons.person),
+                            title: Text(displayName),
+                            subtitle: Text(displayEmail),
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              // 可跳转到个人资料页，暂不实现
+                            },
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.logout),
+                            title: Text('auth.logout'.tr()),
+                            onTap: () async {
+                              Navigator.pop(ctx);
+                              await auth.logout();
+                              ToastManager().showInfoToast('auth.logout');
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
               },
               child: CircleAvatar(
                 backgroundColor: Theme.of(context).colorScheme.primary,
-                child: Text('User'),
+                // 优先使用已缓存到磁盘的 avatar 文件
+                backgroundImage: () {
+                  final prefsAvatarFile =
+                      auth.state.user == null ? null : auth.state.user?['avatar_file'];
+                  final avatar = auth.state.user?['avatar'] ??
+                      auth.state.user?['avatarUrl'] ??
+                      auth.state.user?['picture'];
+                  try {
+                    if (prefsAvatarFile is String && prefsAvatarFile.isNotEmpty) {
+                      final f = File(prefsAvatarFile);
+                      if (f.existsSync()) return FileImage(f);
+                    }
+                    if (avatar is String && avatar.isNotEmpty) {
+                      return NetworkImage(avatar) as ImageProvider<Object>?;
+                    }
+                  } catch (_) {}
+                  return null;
+                }(),
+                child: auth.state.user == null
+                    ? const Text('U')
+                    : Text(
+                        (displayName.isNotEmpty ? displayName.substring(0, 1).toUpperCase() : 'U')),
               ),
             ),
           ),

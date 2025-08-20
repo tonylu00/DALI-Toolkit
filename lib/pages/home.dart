@@ -34,7 +34,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     BroadcastReadPrefs.instance.load();
     ToastManager().init();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ToastManager().showInfoToast('Initialization complete');
+      ToastManager().showInfoToast('init.complete');
     });
   }
 

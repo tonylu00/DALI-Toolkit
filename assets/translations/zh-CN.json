@@ -61,6 +61,7 @@
   "auth.login":"登录",
   "auth.logout":"登出",
   "auth.register":"注册",
+  "auth.login_failed":"登录失败或已取消",
   "common.welcome":"欢迎",
   "settings.title":"设置",
   "settings.language.title":"语言",

@@ -12,9 +12,13 @@ import 'pages/short_address_manager_page.dart';
 import 'pages/sequence_editor_page.dart';
 import 'pages/about_page.dart';
 import 'pages/custom_keys_page.dart';
+import 'pages/profile_page.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dali/dali.dart';
+import 'package:provider/provider.dart';
+import 'auth/auth_provider.dart';
+import 'auth/auth_required.dart';
 
 FirebaseAnalytics analytics = FirebaseAnalytics.instance;
 // VS Code 默认蓝色 #007ACC 作为应用默认主题色
@@ -37,9 +41,14 @@ void main() async {
   );
   runApp(EasyLocalization(
       supportedLocales: [Locale('en'), Locale('zh', 'CN')],
-      path: 'assets/translations', // <-- change the path of the translation files
+      path: 'assets/translations',
       fallbackLocale: Locale('zh', 'CN'),
-      child: MyApp()));
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthProvider()..init()),
+        ],
+        child: const MyApp(),
+      )));
   ConnectionManager.instance.init();
 }
 
@@ -97,7 +106,8 @@ class MyAppState extends State<MyApp> {
         '/shortAddressManager': (context) => ShortAddressManagerPage(daliAddr: dali.addr!),
         '/sequenceEditor': (context) => const SequenceEditorPage(),
         '/customKeys': (context) => const CustomKeysPage(),
-        '/about': (context) => const AboutPage(),
+        '/about': (context) => const AuthRequired(child: AboutPage()),
+  '/profile': (context) => const ProfilePage(),
       },
     );
   }

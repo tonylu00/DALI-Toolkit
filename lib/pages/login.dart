@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+// Casdoor SDK 使用被封装在 AuthService 内
+// auth_service 仅在 provider 内部使用
+import 'package:dalimaster/auth/auth_provider.dart';
+import 'package:provider/provider.dart';
+import 'dart:async';
 
-void main() => runApp(MyApp());
+void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -13,7 +18,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: LoginPage(),
+      home: const LoginPage(),
     );
   }
 }
@@ -26,99 +31,52 @@ class LoginPage extends StatefulWidget {
 }
 
 class LoginPageState extends State<LoginPage> {
-  final _formKey = GlobalKey<FormState>();
-  bool _agreeToPrivacy = false;
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  bool _loading = false;
+  String? _error;
 
-  void _submitForm() {
-    if (_formKey.currentState?.validate() == true && _agreeToPrivacy) {
-      _formKey.currentState?.save();
-      debugPrint('Form is valid and privacy policy agreed to.');
-      final loginForm = _formKey.currentState as FormState;
-      final username = _usernameController.text;
-      final password = _passwordController.text;
-      debugPrint('Username: $username');
-      debugPrint('Password: $password');
-      final loginInfo = [username, password];
-      debugPrint('Login Form: $loginForm');
-      Navigator.pop(context, loginInfo);
-    } else {
-      debugPrint('Form is invalid or privacy policy not agreed to.');
+  Future<void> _startLogin() async {
+    setState(() {
+      _error = null;
+      _loading = true;
+    });
+    try {
+      // 调用 SDK 展示登录并返回 code
+      final provider = context.read<AuthProvider>();
+      await provider.login();
+      if (!mounted) return;
+      Navigator.pop(context, {
+        'tokens': provider.tokens?.toJson(),
+        'user': provider.state.user,
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Login Example'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              TextFormField(
-                controller: _usernameController,
-                decoration: InputDecoration(labelText: 'user.username'.tr()),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'validation.username_required'.tr();
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _passwordController,
-                decoration: InputDecoration(labelText: 'user.password'.tr()),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'validation.password_required'.tr();
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 20),
-              Row(
-                children: <Widget>[
-                  Checkbox(
-                    value: _agreeToPrivacy,
-                    onChanged: (bool? value) {
-                      setState(() {
-                        _agreeToPrivacy = value ?? false;
-                      });
-                    },
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        // Open privacy policy link
-                      },
-                      child: Text(
-                        'auth.agree_privacy_policy'.tr(),
-                        style: TextStyle(
-                          decoration: TextDecoration.underline,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ),
+      appBar: AppBar(title: Text('auth.login'.tr())),
+      body: Center(
+        child: _loading
+            ? const CircularProgressIndicator()
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_error != null) ...[
+                    Text(_error!,
+                        style: const TextStyle(color: Colors.red), textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                  ],
+                  ElevatedButton(
+                    onPressed: _startLogin,
+                    child: Text('auth.login').tr(),
                   ),
                 ],
               ),
-              SizedBox(height: 20),
-              Center(
-                child: ElevatedButton(
-                  onPressed: _submitForm,
-                  child: Text('auth.login').tr(),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

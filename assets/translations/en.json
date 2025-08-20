@@ -29,6 +29,7 @@
   "test.dt1.in_progress_wait":"Test in progress... Please wait",
   "test.dt1.in_progress_seconds":"Test in progress... ({elapsed}/{total}s)"
   ,"short_addr_manager.title":"Short Address Manager"
+  ,"auth.login_failed":"Login failed or cancelled"
   ,"color.wheel":"Color Wheel"
   ,"color.grid":"Color Grid"
   ,"color.rgb":"RGB"
