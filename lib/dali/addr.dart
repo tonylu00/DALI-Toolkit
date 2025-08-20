@@ -353,21 +353,63 @@ class DaliAddr {
     int ad = ads ?? 0;
     isAllocAddr = true;
     lastAllocAddr = 255;
+    int fatalErrorCount = 0; // 连续致命错误计数
+    const int fatalErrorLimit = 5; // 达到后终止
     for (int i = 0; i <= 80; i++) {
       if (!isAllocAddr) break;
-      bool dev1 = await base.compare(255, 255, 255);
-      if (dev1) {
-        await Future.delayed(const Duration(milliseconds: 100));
-      } else if (await base.compare(255, 255, 255)) {
-        await Future.delayed(const Duration(milliseconds: 100));
-      } else if (await base.compare(255, 255, 255)) {
-        await Future.delayed(const Duration(milliseconds: 100));
-      } else {
-        log.addLog('INFO [allocateAllAddr]: no devices to compare');
+      bool anyDevice;
+      try {
+        bool dev1 = await base.compare(255, 255, 255);
+        if (dev1) {
+          anyDevice = true;
+          await Future.delayed(const Duration(milliseconds: 100));
+        } else if (await base.compare(255, 255, 255)) {
+          anyDevice = true;
+          await Future.delayed(const Duration(milliseconds: 100));
+        } else if (await base.compare(255, 255, 255)) {
+          anyDevice = true;
+          await Future.delayed(const Duration(milliseconds: 100));
+        } else {
+          anyDevice = false;
+        }
+      } on DaliDeviceNoResponseException {
+        // 视为当前无新设备, 不增加 fatal 计数
+        anyDevice = false;
+      } on DaliGatewayTimeoutException catch (e) {
+        _logDaliError(e, 'allocateAllAddr gateway timeout pre-compare');
+        anyDevice = false; // 可能暂时性, 继续但允许退出
+        fatalErrorCount++;
+      } on DaliBusUnavailableException catch (e) {
+        _logDaliError(e, 'allocateAllAddr bus unavailable pre-compare');
+        fatalErrorCount++;
+        anyDevice = false;
+      } on DaliQueryException catch (e) {
+        _logDaliError(e, 'allocateAllAddr pre-compare unexpected');
+        anyDevice = false; // 非致命
+      }
+      if (!anyDevice) {
+        if (fatalErrorCount >= fatalErrorLimit) {
+          log.addLog(
+              'ERROR [allocateAllAddr]: abort due to repeated fatal errors ($fatalErrorCount)');
+          break;
+        }
+        log.addLog('INFO [allocateAllAddr]: no devices to compare (fatalErrors=$fatalErrorCount)');
         break;
       }
+
       log.addLog('INFO [allocateAllAddr]: start comparing address $ad');
-      List<dynamic> retVals = await compareAddr(ad, 0, 0, 0);
+      List<dynamic> retVals;
+      try {
+        retVals = await compareAddr(ad, 0, 0, 0);
+      } on DaliQueryException catch (e) {
+        _logDaliError(e, 'allocateAllAddr compareAddr');
+        fatalErrorCount++;
+        if (fatalErrorCount >= fatalErrorLimit) {
+          log.addLog('ERROR [allocateAllAddr]: abort compareAddr due to repeated fatal errors');
+          break;
+        }
+        continue; // 跳过当前循环
+      }
       ad = retVals[3];
       if (!isAllocAddr) break;
       if (retVals[0] == 0 && retVals[1] == 0 && retVals[2] == 0) {
@@ -376,7 +418,16 @@ class DaliAddr {
         i = 0;
       }
       // place for mem.inter.WriteBit(18, ad, 1);
-      ad = await compareMulti(retVals[0], retVals[1], retVals[2] + 1, ad);
+      try {
+        ad = await compareMulti(retVals[0], retVals[1], retVals[2] + 1, ad);
+      } on DaliQueryException catch (e) {
+        _logDaliError(e, 'allocateAllAddr compareMulti');
+        fatalErrorCount++;
+        if (fatalErrorCount >= fatalErrorLimit) {
+          log.addLog('ERROR [allocateAllAddr]: abort compareMulti due to repeated fatal errors');
+          break;
+        }
+      }
       // place for mem.inter.Write(660, ad+1);
       lastAllocAddr = ad;
       ad++;
