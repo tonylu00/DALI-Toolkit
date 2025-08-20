@@ -111,6 +111,8 @@ class AuthProvider extends ChangeNotifier {
       user: normalized,
       expiresAt: tokens.expiresAt,
     ));
+    // 缓存登录时间戳（毫秒）
+    await prefsForAll.setInt('auth_login_time', DateTime.now().millisecondsSinceEpoch);
     // debug: print normalized user for troubleshooting
     try {
       debugPrint('AuthProvider.login normalized user: ${normalized.toString()}');
@@ -349,6 +351,32 @@ class AuthProvider extends ChangeNotifier {
   void _setState(AuthState newState) {
     _state = newState;
     notifyListeners();
+  }
+
+  /// 检查离线登录状态，超过15天且无法刷新 token 则强制退出登录
+  Future<void> checkOfflineLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final loginTimeMs = prefs.getInt('auth_login_time');
+    if (loginTimeMs == null) return;
+    final loginTime = DateTime.fromMillisecondsSinceEpoch(loginTimeMs);
+    final now = DateTime.now();
+    final offlineDays = now.difference(loginTime).inDays;
+    // 仅在超过15天时才检测
+    if (offlineDays < 15) return;
+    // 尝试刷新 token，失败则视为无网
+    final tokens = await _service.loadTokens();
+    if (tokens == null) {
+      await logout();
+      return;
+    }
+    try {
+      final refreshed = await _service.refreshTokens(tokens);
+      if (refreshed == null) {
+        await logout();
+      }
+    } catch (_) {
+      await logout();
+    }
   }
 
   @override
