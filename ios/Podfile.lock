@@ -1,4 +1,6 @@
 PODS:
+  - device_info_plus (0.0.1):
+    - Flutter
   - Firebase/CoreOnly (12.0.0):
     - FirebaseCore (~> 12.0.0)
   - Firebase/RemoteConfig (12.0.0):
@@ -128,6 +130,7 @@ PODS:
     - FlutterMacOS
 
 DEPENDENCIES:
+  - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - firebase_analytics (from `.symlinks/plugins/firebase_analytics/ios`)
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
   - firebase_remote_config (from `.symlinks/plugins/firebase_remote_config/ios`)
@@ -155,6 +158,8 @@ SPEC REPOS:
     - PromisesObjC
 
 EXTERNAL SOURCES:
+  device_info_plus:
+    :path: ".symlinks/plugins/device_info_plus/ios"
   firebase_analytics:
     :path: ".symlinks/plugins/firebase_analytics/ios"
   firebase_core:
@@ -173,6 +178,7 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/universal_ble/darwin"
 
 SPEC CHECKSUMS:
+  device_info_plus: 71ffc6ab7634ade6267c7a93088ed7e4f74e5896
   Firebase: 800d487043c0557d9faed71477a38d9aafb08a41
   firebase_analytics: cd56fc56f75c1df30a6ff5290cd56e230996a76d
   firebase_core: 633e1851ffe1b9ab875f6467a4f574c79cef02e4

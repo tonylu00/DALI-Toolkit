@@ -11,6 +11,7 @@ import 'pages/login.dart';
 import 'pages/short_address_manager_page.dart';
 import 'pages/sequence_editor_page.dart';
 import 'pages/about_page.dart';
+import 'pages/custom_keys_page.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dali/dali.dart';
@@ -95,6 +96,7 @@ class MyAppState extends State<MyApp> {
         '/login': (context) => const LoginPage(),
         '/shortAddressManager': (context) => ShortAddressManagerPage(daliAddr: dali.addr!),
         '/sequenceEditor': (context) => const SequenceEditorPage(),
+        '/customKeys': (context) => const CustomKeysPage(),
         '/about': (context) => const AboutPage(),
       },
     );

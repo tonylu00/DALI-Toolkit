@@ -1,0 +1,521 @@
+import 'dart:math';
+import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
+import '../custom_keys/custom_key.dart';
+import '../custom_keys/custom_key_store.dart';
+import '../dali/sequence_store.dart';
+import '../dali/sequence.dart';
+import '../dali/dali.dart';
+import '../connection/manager.dart';
+import '../toast.dart';
+
+/// 自定义按键页面
+class CustomKeysPage extends StatefulWidget {
+  final bool embedded;
+  const CustomKeysPage({super.key, this.embedded = false});
+  @override
+  State<CustomKeysPage> createState() => _CustomKeysPageState();
+}
+
+class _CustomKeysPageState extends State<CustomKeysPage> {
+  final repo = CustomKeyRepository.instance;
+  final seqRepo = SequenceRepository.instance;
+  bool loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    await seqRepo.load();
+    await repo.load();
+    setState(() => loading = false);
+  }
+
+  Future<void> _save() async => repo.save();
+
+  Future<void> _createGroup() async {
+    final name = await _inputDialog(title: 'custom_key.group.create'.tr());
+    if (name == null || name.trim().isEmpty) return;
+    setState(() {
+      final g = repo.createGroup(name.trim());
+      repo.selectGroup(g.id);
+    });
+    await _save();
+  }
+
+  Future<void> _renameGroup() async {
+    if (repo.currentGroup == null) return;
+    final name =
+        await _inputDialog(title: 'custom_key.group.rename'.tr(), initial: repo.currentGroup!.name);
+    if (name == null || name.trim().isEmpty) return;
+    setState(() => repo.renameGroup(repo.currentGroup!, name.trim()));
+    await _save();
+  }
+
+  Future<void> _deleteGroup() async {
+    if (repo.currentGroup == null) return;
+    final ok = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+                title: Text('custom_key.group.delete'.tr()),
+                content: Text('custom_key.group.delete_confirm'.tr()),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text('sequence.cancel'.tr())),
+                  FilledButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: Text('sequence.delete'.tr()))
+                ]));
+    if (ok != true) return;
+    setState(() => repo.deleteGroup(repo.currentGroup!));
+    await _save();
+  }
+
+  Future<String?> _inputDialog({required String title, String? initial}) async {
+    return showDialog<String>(
+      context: context,
+      builder: (_) {
+        final ctrl = TextEditingController(text: initial ?? '');
+        return AlertDialog(
+          title: Text(title),
+          content: TextField(
+            controller: ctrl,
+            decoration: InputDecoration(labelText: 'custom_key.group.name'.tr()),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context), child: Text('sequence.cancel'.tr())),
+            FilledButton(
+                onPressed: () => Navigator.pop(context, ctrl.text),
+                child: Text('sequence.save'.tr())),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _addOrEdit({CustomKeyDefinition? def}) async {
+    final result = await showDialog<CustomKeyDefinition>(
+        context: context,
+        builder: (_) => _CustomKeyDialog(definition: def, sequences: seqRepo.sequences));
+    if (result != null) {
+      setState(() => def == null ? repo.add(result) : repo.replace(result));
+      await _save();
+    }
+  }
+
+  Future<void> _delete(CustomKeyDefinition def) async {
+    final ok = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+                title: Text('custom_key.delete'.tr()),
+                content: Text('custom_key.delete_confirm'.tr()),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text('sequence.cancel'.tr())),
+                  FilledButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: Text('sequence.delete'.tr()))
+                ]));
+    if (ok == true) {
+      setState(() => repo.remove(def.id));
+      await _save();
+    }
+  }
+
+  Future<void> _execute(CustomKeyDefinition def) async {
+    if (!ConnectionManager.instance.ensureReadyForOperation()) return;
+    switch (def.actionType) {
+      case CustomKeyActionType.runSequence:
+        final seqId = def.params.get<String>('sequenceId');
+        if (seqId == null) {
+          ToastManager().showErrorToast('custom_key.no_sequence_selected'.tr());
+          return;
+        }
+        final seq = seqRepo.sequences.firstWhere(
+          (e) => e.id == seqId,
+          orElse: () => CommandSequence(id: '', name: '', steps: []),
+        );
+        if (seq.id.isEmpty) {
+          ToastManager().showErrorToast('custom_key.sequence_not_found'.tr());
+          return;
+        }
+        final runner = SequenceRunner(seq);
+        await runner.run();
+        break;
+      case CustomKeyActionType.allocateAddresses:
+        await Dali.instance.addr!.allocateAllAddr();
+        ToastManager().showInfoToast('custom_key.allocate_started'.tr());
+        break;
+      case CustomKeyActionType.resetAndAllocate:
+        await Dali.instance.addr!.resetAndAllocAddr();
+        ToastManager().showInfoToast('custom_key.reset_allocate_started'.tr());
+        break;
+      case CustomKeyActionType.on:
+        await Dali.instance.base!
+            .on(def.params.getInt('addr', Dali.instance.base!.selectedAddress));
+        break;
+      case CustomKeyActionType.off:
+        await Dali.instance.base!
+            .off(def.params.getInt('addr', Dali.instance.base!.selectedAddress));
+        break;
+      case CustomKeyActionType.setBright:
+        await Dali.instance.base!.setBright(
+            def.params.getInt('addr', Dali.instance.base!.selectedAddress),
+            def.params.getInt('level', 128));
+        break;
+      case CustomKeyActionType.toScene:
+        await Dali.instance.base!.toScene(
+            def.params.getInt('addr', Dali.instance.base!.selectedAddress),
+            def.params.getInt('scene', 0));
+        break;
+      case CustomKeyActionType.setScene:
+        await Dali.instance.base!.setScene(
+            def.params.getInt('addr', Dali.instance.base!.selectedAddress),
+            def.params.getInt('scene', 0));
+        break;
+      case CustomKeyActionType.addToGroup:
+        await Dali.instance.base!.addToGroup(
+            def.params.getInt('addr', Dali.instance.base!.selectedAddress),
+            def.params.getInt('group', 0));
+        break;
+      case CustomKeyActionType.removeFromGroup:
+        await Dali.instance.base!.removeFromGroup(
+            def.params.getInt('addr', Dali.instance.base!.selectedAddress),
+            def.params.getInt('group', 0));
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) return const Center(child: CircularProgressIndicator());
+    final groupBar = Row(children: [
+      Expanded(
+          child: DropdownButton<String>(
+              isExpanded: true,
+              value: repo.currentGroup?.id,
+              items: repo.groups
+                  .map((g) => DropdownMenuItem(value: g.id, child: Text(g.name)))
+                  .toList(),
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() => repo.selectGroup(v));
+              })),
+      IconButton(
+          onPressed: _createGroup,
+          icon: const Icon(Icons.playlist_add),
+          tooltip: 'custom_key.group.create'.tr()),
+      IconButton(
+          onPressed: _renameGroup,
+          icon: const Icon(Icons.edit),
+          tooltip: 'custom_key.group.rename'.tr()),
+      IconButton(
+          onPressed: _deleteGroup,
+          icon: const Icon(Icons.delete_outline),
+          tooltip: 'custom_key.group.delete'.tr())
+    ]);
+    final content = Column(children: [
+      Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+          child: Column(children: [
+            groupBar,
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(
+                  child: Text('custom_key.page_title'.tr(),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+              IconButton(
+                  onPressed: () => _addOrEdit(),
+                  tooltip: 'custom_key.add'.tr(),
+                  icon: const Icon(Icons.add_circle_outline))
+            ])
+          ])),
+      Expanded(
+          child: repo.keys.isEmpty
+              ? Center(child: Text('custom_key.empty'.tr()))
+              : ReorderableListView.builder(
+                  padding: const EdgeInsets.only(bottom: 32),
+                  itemCount: repo.keys.length,
+                  onReorder: (o, n) async {
+                    setState(() => repo.reorder(o, n));
+                    await _save();
+                  },
+                  itemBuilder: (c, i) {
+                    final k = repo.keys[i];
+                    return ListTile(
+                        key: ValueKey(k.id),
+                        title: Text(k.name),
+                        subtitle: Text(_actionSummary(k)),
+                        leading: const Icon(Icons.smart_button_outlined),
+                        trailing: Wrap(spacing: 4, children: [
+                          IconButton(
+                              onPressed: () => _addOrEdit(def: k),
+                              icon: const Icon(Icons.edit, size: 18)),
+                          IconButton(
+                              onPressed: () => _delete(k),
+                              icon: const Icon(Icons.delete, size: 18)),
+                          const Icon(Icons.drag_handle)
+                        ]),
+                        onTap: () => _execute(k));
+                  }))
+    ]);
+    if (widget.embedded) return content;
+    return Scaffold(
+        appBar: AppBar(
+            title: Text('custom_key.page_title'.tr()),
+            actions: [IconButton(onPressed: () => _addOrEdit(), icon: const Icon(Icons.add))]),
+        body: content);
+  }
+
+  String _actionSummary(CustomKeyDefinition k) {
+    String addrStr(int v) => v == 127 ? 'sequence.field.broadcast'.tr() : v.toString();
+    switch (k.actionType) {
+      case CustomKeyActionType.runSequence:
+        final seqId = k.params.get<String>('sequenceId');
+        final seq = seqRepo.sequences.firstWhere(
+          (e) => e.id == seqId,
+          orElse: () => CommandSequence(id: '', name: '', steps: []),
+        );
+        return 'custom_key.summary.run_sequence'
+            .tr(namedArgs: {'name': seq.name.isEmpty ? '-' : seq.name});
+      case CustomKeyActionType.allocateAddresses:
+        return 'custom_key.summary.allocate'.tr();
+      case CustomKeyActionType.resetAndAllocate:
+        return 'custom_key.summary.reset_allocate'.tr();
+      case CustomKeyActionType.on:
+        return 'sequence.summary.on'.tr(namedArgs: {'addr': addrStr(k.params.getInt('addr'))});
+      case CustomKeyActionType.off:
+        return 'sequence.summary.off'.tr(namedArgs: {'addr': addrStr(k.params.getInt('addr'))});
+      case CustomKeyActionType.setBright:
+        return 'sequence.summary.setBright'.tr(namedArgs: {
+          'addr': addrStr(k.params.getInt('addr')),
+          'level': k.params.getInt('level').toString()
+        });
+      case CustomKeyActionType.toScene:
+        return 'sequence.summary.toScene'.tr(namedArgs: {
+          'addr': addrStr(k.params.getInt('addr')),
+          'scene': k.params.getInt('scene').toString()
+        });
+      case CustomKeyActionType.setScene:
+        return 'sequence.summary.setScene'.tr(namedArgs: {
+          'addr': addrStr(k.params.getInt('addr')),
+          'scene': k.params.getInt('scene').toString()
+        });
+      case CustomKeyActionType.addToGroup:
+        return 'sequence.summary.addToGroup'.tr(namedArgs: {
+          'addr': addrStr(k.params.getInt('addr')),
+          'group': k.params.getInt('group').toString()
+        });
+      case CustomKeyActionType.removeFromGroup:
+        return 'sequence.summary.removeFromGroup'.tr(namedArgs: {
+          'addr': addrStr(k.params.getInt('addr')),
+          'group': k.params.getInt('group').toString()
+        });
+    }
+  }
+}
+
+class _CustomKeyDialog extends StatefulWidget {
+  final CustomKeyDefinition? definition;
+  final List<CommandSequence> sequences;
+  const _CustomKeyDialog({required this.definition, required this.sequences});
+  @override
+  State<_CustomKeyDialog> createState() => _CustomKeyDialogState();
+}
+
+class _CustomKeyDialogState extends State<_CustomKeyDialog> {
+  late TextEditingController _nameCtrl;
+  late CustomKeyActionType _actionType;
+  String? _selectedSequenceId;
+  final Map<String, TextEditingController> _paramCtrls = {};
+  bool _broadcast = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameCtrl = TextEditingController(text: widget.definition?.name ?? '');
+    _actionType = widget.definition?.actionType ?? CustomKeyActionType.runSequence;
+    _selectedSequenceId = widget.definition?.params.get('sequenceId');
+    _initParamCtrls();
+  }
+
+  void _initParamCtrls() {
+    _paramCtrls.clear();
+    final existing = widget.definition?.params.data ?? {};
+    for (final m in customKeyActionMeta(_actionType)) {
+      _paramCtrls[m.key] = TextEditingController(text: existing[m.key]?.toString() ?? '');
+    }
+    if (_paramCtrls.containsKey('addr')) {
+      _broadcast = _paramCtrls['addr']!.text == '127';
+    } else {
+      _broadcast = false;
+    }
+  }
+
+  void _changeType(CustomKeyActionType t) {
+    setState(() {
+      _actionType = t;
+      _initParamCtrls();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fields = customKeyActionMeta(_actionType);
+    return AlertDialog(
+      title: Text(widget.definition == null ? 'custom_key.add'.tr() : 'custom_key.edit'.tr()),
+      content: SizedBox(
+        width: 420,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _nameCtrl,
+                decoration: InputDecoration(labelText: 'custom_key.field.name'.tr()),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<CustomKeyActionType>(
+                value: _actionType,
+                decoration: InputDecoration(labelText: 'custom_key.field.action'.tr()),
+                items: CustomKeyActionType.values
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e.label())))
+                    .toList(),
+                onChanged: (v) => _changeType(v!),
+              ),
+              const SizedBox(height: 12),
+              if (_actionType == CustomKeyActionType.runSequence)
+                DropdownButtonFormField<String>(
+                  value: _selectedSequenceId,
+                  decoration: InputDecoration(labelText: 'custom_key.field.sequence'.tr()),
+                  items: widget.sequences
+                      .map((s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
+                      .toList(),
+                  onChanged: (v) => setState(() => _selectedSequenceId = v),
+                ),
+              if (_actionType != CustomKeyActionType.runSequence && fields.isNotEmpty)
+                Column(
+                  children: [
+                    for (final f in fields)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _paramCtrls[f.key],
+                                keyboardType: TextInputType.number,
+                                enabled: !(f.key == 'addr' && _broadcast),
+                                decoration: InputDecoration(labelText: f.labelKey.tr()),
+                              ),
+                            ),
+                            if (f.key == 'addr') ...[
+                              const SizedBox(width: 8),
+                              Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      Checkbox(
+                                        value: _broadcast,
+                                        onChanged: (v) {
+                                          setState(() {
+                                            _broadcast = v ?? false;
+                                            if (_broadcast) {
+                                              _paramCtrls['addr']!.text = '127';
+                                            } else {
+                                              _paramCtrls['addr']!.clear();
+                                            }
+                                          });
+                                        },
+                                      ),
+                                      Text('sequence.field.broadcast'.tr()),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ]
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              if (_actionType == CustomKeyActionType.allocateAddresses ||
+                  _actionType == CustomKeyActionType.resetAndAllocate)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    _actionType == CustomKeyActionType.allocateAddresses
+                        ? 'custom_key.help.allocate'.tr()
+                        : 'custom_key.help.reset_allocate'.tr(),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text('sequence.cancel'.tr())),
+        FilledButton(
+          onPressed: () {
+            final name = _nameCtrl.text.trim();
+            if (name.isEmpty) {
+              ToastManager().showErrorToast('sequence.validation.field_required'.tr());
+              return;
+            }
+            if (_actionType == CustomKeyActionType.runSequence && _selectedSequenceId == null) {
+              ToastManager().showErrorToast('custom_key.no_sequence_selected'.tr());
+              return;
+            }
+            // 参数解析
+            final params = <String, dynamic>{};
+            if (_actionType == CustomKeyActionType.runSequence) {
+              params['sequenceId'] = _selectedSequenceId;
+            } else {
+              for (final f in fields) {
+                final txtRaw = _paramCtrls[f.key]?.text.trim() ?? '';
+                String txt = txtRaw;
+                if (f.key == 'addr' && _broadcast) {
+                  txt = '127';
+                }
+                if (txt.isEmpty) {
+                  ToastManager().showErrorToast('sequence.validation.field_required'.tr());
+                  return;
+                }
+                final v = int.tryParse(txt);
+                if (v == null) {
+                  ToastManager().showErrorToast('sequence.validation.field_required'.tr());
+                  return;
+                }
+                if ((f.min != null && v < f.min!) || (f.max != null && v > f.max!)) {
+                  ToastManager().showErrorToast('sequence.validation.field_required'.tr());
+                  return;
+                }
+                params[f.key] = v;
+              }
+            }
+            if (_broadcast) {
+              params['addr'] = 127;
+            }
+            final def = CustomKeyDefinition(
+              id: widget.definition?.id ?? Random().nextInt(1 << 32).toString(),
+              name: name,
+              actionType: _actionType,
+              params: CustomKeyParams(params),
+              order: widget.definition?.order ?? DateTime.now().millisecondsSinceEpoch,
+            );
+            Navigator.pop(context, def);
+          },
+          child: Text('sequence.save'.tr()),
+        ),
+      ],
+    );
+  }
+}

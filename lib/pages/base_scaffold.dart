@@ -8,6 +8,7 @@ import '/pages/settings.dart';
 import '/pages/short_address_manager_page.dart';
 import '/pages/sequence_editor_page.dart';
 import '/pages/about_page.dart';
+import '/pages/custom_keys_page.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -175,6 +176,12 @@ class BaseScaffoldState extends State<BaseScaffold> {
         label: 'About'.tr(),
         icon: Icons.info_outline,
         builder: (c) => const AboutPage(embedded: true),
+      ),
+      _PageSpec(
+        key: 'CustomKeys',
+        label: 'custom_key.page_title'.tr(),
+        icon: Icons.smart_button_outlined,
+        builder: (c) => const CustomKeysPage(embedded: true),
       ),
     ];
 
@@ -446,6 +453,19 @@ class BaseScaffoldState extends State<BaseScaffold> {
               } else if (widget.currentPage != 'About') {
                 Navigator.pop(context);
                 navigateToPage(context, '/about');
+              }
+            },
+          ),
+          ListTile(
+            title: const Text('custom_key.page_title').tr(),
+            selected: widget.currentPage == 'CustomKeys',
+            onTap: () {
+              if (isUltraLarge) {
+                _changeInternalPage('CustomKeys');
+                Navigator.pop(context);
+              } else if (widget.currentPage != 'CustomKeys') {
+                Navigator.pop(context);
+                navigateToPage(context, '/customKeys');
               }
             },
           ),
