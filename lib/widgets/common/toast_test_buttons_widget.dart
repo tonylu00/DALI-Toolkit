@@ -97,8 +97,8 @@ class ToastTestButtonsWidget extends StatelessWidget {
     return ElevatedButton.icon(
       onPressed: onPressed,
       icon: Icon(icon, size: 16),
-  label: Text(
-  label.tr(),
+      label: Text(
+        label.tr(),
         style: const TextStyle(fontSize: 12),
       ),
       style: ElevatedButton.styleFrom(
