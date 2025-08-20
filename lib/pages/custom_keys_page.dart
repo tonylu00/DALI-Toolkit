@@ -314,7 +314,7 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
             const SizedBox(height: 8),
             Row(children: [
               Expanded(
-                  child: Text('custom_key.page_title'.tr(),
+                  child: Text(''.tr(),
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
               // 新增：编辑模式切换
               IconButton(
