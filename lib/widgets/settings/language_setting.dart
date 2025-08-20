@@ -10,7 +10,7 @@ class LanguageSetting extends StatelessWidget {
   Widget build(BuildContext context) {
     return SettingsCard(
       child: SettingsItem(
-        title: 'Language',
+        title: 'settings.language.title',
         icon: Icons.language,
         subtitle: 'settings.language.subtitle',
         control: DropdownButton<Locale?>(

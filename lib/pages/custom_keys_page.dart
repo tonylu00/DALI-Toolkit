@@ -314,11 +314,11 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
             const SizedBox(height: 8),
             Row(children: [
               Expanded(
-                  child: Text(''.tr(),
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+                  child:
+                      Text('', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
               // 新增：编辑模式切换
               IconButton(
-                  tooltip: _editMode ? 'sequence.save'.tr() : 'Edit'.tr(),
+                  tooltip: _editMode ? 'sequence.save'.tr() : 'common.edit'.tr(),
                   onPressed: () => setState(() => _editMode = !_editMode),
                   icon: Icon(_editMode ? Icons.check : Icons.edit_square)),
               IconButton(

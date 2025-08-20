@@ -432,6 +432,19 @@ class BaseScaffoldState extends State<BaseScaffold> {
             },
           ),
           ListTile(
+            title: const Text('custom_key.page_title').tr(),
+            selected: widget.currentPage == 'CustomKeys',
+            onTap: () {
+              if (isUltraLarge) {
+                _changeInternalPage('CustomKeys');
+                Navigator.pop(context);
+              } else if (widget.currentPage != 'CustomKeys') {
+                Navigator.pop(context);
+                navigateToPage(context, '/customKeys');
+              }
+            },
+          ),
+          ListTile(
             title: const Text('settings.title').tr(),
             selected: widget.currentPage == 'Settings',
             onTap: () {
@@ -454,19 +467,6 @@ class BaseScaffoldState extends State<BaseScaffold> {
               } else if (widget.currentPage != 'About') {
                 Navigator.pop(context);
                 navigateToPage(context, '/about');
-              }
-            },
-          ),
-          ListTile(
-            title: const Text('custom_key.page_title').tr(),
-            selected: widget.currentPage == 'CustomKeys',
-            onTap: () {
-              if (isUltraLarge) {
-                _changeInternalPage('CustomKeys');
-                Navigator.pop(context);
-              } else if (widget.currentPage != 'CustomKeys') {
-                Navigator.pop(context);
-                navigateToPage(context, '/customKeys');
               }
             },
           ),

@@ -300,7 +300,7 @@
   ,"settings.remember_internal_page.title":"记住上次功能区页面"
   ,"settings.remember_internal_page.subtitle":"重新进入大尺寸模式时定位到上次停留的内部页面"
   ,"settings.allowBroadcastRead.title":"允许广播读取"
-  ,"settings.allowBroadcastRead.subtitle":"选中广播/组地址(>63 或 127)时仍允许执行读取操作"
+  ,"settings.allowBroadcastRead.subtitle":"选中广播/组地址时仍允许执行读取操作"
   
   ,"ip.dialog.title":"IP 连接"
   ,"ip.dialog.address":"IP / 主机"
