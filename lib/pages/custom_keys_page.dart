@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../custom_keys/custom_key.dart';
 import '../custom_keys/custom_key_store.dart';
 import '../dali/sequence_store.dart';
@@ -22,6 +23,9 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
   final repo = CustomKeyRepository.instance;
   final seqRepo = SequenceRepository.instance;
   bool loading = true;
+  bool _editMode = false; // 编辑模式: 显示编辑/删除/排序列表
+  double _gridButtonSize = 120; // 基础边长
+  static const _kGridBtnSizeKey = 'custom_key_grid_btn_size';
 
   @override
   void initState() {
@@ -32,6 +36,8 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
   Future<void> _init() async {
     await seqRepo.load();
     await repo.load();
+    final prefs = await SharedPreferences.getInstance();
+    _gridButtonSize = prefs.getDouble(_kGridBtnSizeKey) ?? 120;
     setState(() => loading = false);
   }
 
@@ -193,6 +199,52 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
     }
   }
 
+  Future<void> _showSizeDialog() async {
+    double temp = _gridButtonSize;
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('custom_key.grid.size'.tr(), style: const TextStyle(fontSize: 16)),
+        content: SizedBox(
+          width: 340,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('custom_key.grid.size_hint'.tr()),
+              const SizedBox(height: 12),
+              StatefulBuilder(builder: (c, setS) {
+                return Column(
+                  children: [
+                    Slider(
+                      value: temp,
+                      min: 80,
+                      max: 200,
+                      divisions: 12,
+                      label: temp.toStringAsFixed(0),
+                      onChanged: (v) => setS(() => temp = v),
+                    ),
+                    Text('${temp.toStringAsFixed(0)} px')
+                  ],
+                );
+              })
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('sequence.cancel'.tr())),
+          FilledButton(
+              onPressed: () async {
+                setState(() => _gridButtonSize = temp);
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setDouble(_kGridBtnSizeKey, _gridButtonSize);
+                Navigator.pop(context);
+              },
+              child: Text('sequence.save'.tr()))
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading) return const Center(child: CircularProgressIndicator());
@@ -231,6 +283,11 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
               Expanded(
                   child: Text('custom_key.page_title'.tr(),
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+              // 新增：编辑模式切换
+              IconButton(
+                  tooltip: _editMode ? 'sequence.save'.tr() : 'Edit'.tr(),
+                  onPressed: () => setState(() => _editMode = !_editMode),
+                  icon: Icon(_editMode ? Icons.check : Icons.edit_square)),
               IconButton(
                   onPressed: () => _addOrEdit(),
                   tooltip: 'custom_key.add'.tr(),
@@ -240,40 +297,96 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
       Expanded(
           child: repo.keys.isEmpty
               ? Center(child: Text('custom_key.empty'.tr()))
-              : ReorderableListView.builder(
-                  padding: const EdgeInsets.only(bottom: 32),
-                  itemCount: repo.keys.length,
-                  onReorder: (o, n) async {
-                    setState(() => repo.reorder(o, n));
-                    await _save();
-                  },
-                  itemBuilder: (c, i) {
-                    final k = repo.keys[i];
-                    final summary = _actionSummary(k);
-                    return ListTile(
-                        key: ValueKey(k.id),
-                        title: Text(summary),
-                        subtitle: k.name.isNotEmpty
-                            ? Text(k.name, style: Theme.of(context).textTheme.bodySmall)
-                            : null,
-                        leading: const Icon(Icons.smart_button_outlined),
-                        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                          IconButton(
-                              onPressed: () => _addOrEdit(def: k),
-                              icon: const Icon(Icons.edit, size: 18)),
-                          IconButton(
-                              onPressed: () => _delete(k),
-                              icon: const Icon(Icons.delete, size: 18)),
-                          ReorderableDragStartListener(index: i, child: const ReorderHandle())
-                        ]),
-                        onTap: () => _execute(k));
-                  }))
+              : _editMode
+                  ? ReorderableListView.builder(
+                      padding: const EdgeInsets.only(bottom: 32),
+                      itemCount: repo.keys.length,
+                      onReorder: (o, n) async {
+                        setState(() => repo.reorder(o, n));
+                        await _save();
+                      },
+                      itemBuilder: (c, i) {
+                        final k = repo.keys[i];
+                        final summary = _actionSummary(k);
+                        return ListTile(
+                            key: ValueKey(k.id),
+                            title: Text(summary),
+                            subtitle: k.name.isNotEmpty
+                                ? Text(k.name, style: Theme.of(context).textTheme.bodySmall)
+                                : null,
+                            leading: const Icon(Icons.smart_button_outlined),
+                            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                              IconButton(
+                                  onPressed: () => _addOrEdit(def: k),
+                                  icon: const Icon(Icons.edit, size: 18)),
+                              IconButton(
+                                  onPressed: () => _delete(k),
+                                  icon: const Icon(Icons.delete, size: 18)),
+                              ReorderableDragStartListener(index: i, child: const ReorderHandle())
+                            ]),
+                            onTap: () => _execute(k));
+                      })
+                  : LayoutBuilder(builder: (context, constraints) {
+                      final width = constraints.maxWidth;
+                      final cross = width ~/ (_gridButtonSize + 24); // 24 近似包含边距/间距
+                      final crossAxisCount = cross.clamp(1, 8);
+                      return GridView.builder(
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 32),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 1,
+                        ),
+                        itemCount: repo.keys.length,
+                        itemBuilder: (c, i) {
+                          final k = repo.keys[i];
+                          final summary = _actionSummary(k);
+                          return SizedBox(
+                            width: _gridButtonSize,
+                            height: _gridButtonSize,
+                            child: ElevatedButton(
+                              onPressed: () => _execute(k),
+                              style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(8)),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    summary,
+                                    textAlign: TextAlign.center,
+                                    style:
+                                        const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (k.name.isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Text(k.name,
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(fontSize: 11, color: Colors.white70),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis),
+                                  ]
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    }))
     ]);
     if (widget.embedded) return content;
     return Scaffold(
-        appBar: AppBar(
-            title: Text('custom_key.page_title'.tr()),
-            actions: [IconButton(onPressed: () => _addOrEdit(), icon: const Icon(Icons.add))]),
+        appBar: AppBar(title: Text('custom_key.page_title'.tr()), actions: [
+          if (!_editMode)
+            IconButton(
+                tooltip: 'custom_key.grid.size'.tr(),
+                onPressed: _showSizeDialog,
+                icon: const Icon(Icons.aspect_ratio))
+        ]),
         body: content);
   }
 

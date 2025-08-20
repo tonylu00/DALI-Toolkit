@@ -201,4 +201,6 @@
   ,"custom_key.group.delete_confirm":"Delete this group?"
   ,"custom_key.group.name":"Group Name"
   ,"custom_key.group.default":"Default Group"
+  ,"custom_key.grid.size":"Button Size"
+  ,"custom_key.grid.size_hint":"Drag slider to adjust button side (80-200px)"
 }
