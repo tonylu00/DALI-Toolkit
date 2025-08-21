@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../connection/manager.dart';
 import '../dali/addr.dart';
-import '../dali/log.dart';
 import '../toast.dart';
 import 'reorder_handle.dart';
 
@@ -242,96 +241,84 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
       _showSnack('short_addr_manager.invalid_reorder_range'.tr());
       return;
     }
-    // 生成需要应用的子列表与映射区段
     final window = newOrder.where((a) => a >= startSlot! && a <= endSlot!).toList();
     if (window.isEmpty) {
       _showSnack('short_addr_manager.no_change'.tr());
       return;
     }
     _cancelApply = false;
-    setState(() {
-      _applyingOrder = true;
-    });
-    // 思路: 找出需要变更的映射 old->new, 处理地址冲突
-    final log = DaliLog.instance;
-    Map<int, int> mapping = {}; // old -> new
-    // 目标序列: 在指定窗口内按当前排列顺序映射到连续 startSlot..startSlot+len-1
+    setState(() { _applyingOrder = true; });
+
+    Map<int, int> mapping = {};
     for (int i = 0; i < window.length; i++) {
       final actualAddr = window[i];
       final desired = startSlot + i;
       if (actualAddr != desired) mapping[actualAddr] = desired;
     }
-    if (mapping.isEmpty) {
-      _showSnack('short_addr_manager.no_change'.tr());
-      setState(() {
-        _applyingOrder = false;
-      });
-      return;
-    }
-    // 解决冲突: 如果 new 值被其它旧地址占用, 需要临时地址
-    // 找一个未使用的临时地址 (0-63 范围) 不在当前 nor 目标集合
-    Set<int> used = _addresses.toSet();
+    if (mapping.isEmpty) { setState(() { _applyingOrder = false; }); _showSnack('short_addr_manager.no_change'.tr()); return; }
+
+    // 新实现：统一处理所有依赖链，使用临时地址避免链写过程中的覆盖
+    Set<int> sources = mapping.keys.toSet();
+    Set<int> targets = mapping.values.toSet();
     int? temp;
     for (int t = 63; t >= 0; t--) {
-      // 从高位向下找
-      if (!used.contains(t) && !mapping.values.contains(t)) {
-        temp = t;
-        break;
-      }
+      if (!sources.contains(t) && !targets.contains(t) && !_addresses.contains(t)) { temp = t; break; }
     }
-    // 拓扑排序/循环检测
-    Set<int> visited = {};
-    Set<int> inStack = {};
-    List<List<int>> cycles = [];
-    void dfs(int node, List<int> path) {
-      visited.add(node);
-      inStack.add(node);
-      final next = mapping[node];
-      if (next != null) {
-        if (!visited.contains(next)) {
-          dfs(next, [...path, next]);
-        } else if (inStack.contains(next)) {
-          final idx = path.indexOf(next);
-          cycles.add(path.sublist(idx));
-        }
-      }
-      inStack.remove(node);
-    }
+    temp ??= Iterable<int>.generate(64).firstWhere((t) => !targets.contains(t), orElse: () => -1);
+    if (temp == -1) { _showSnack('short_addr_manager.temp_addr_fail'.tr()); setState(() { _applyingOrder = false; }); return; }
 
-    for (final k in mapping.keys) {
-      if (!visited.contains(k)) dfs(k, [k]);
+    Map<int,int> mapCopy = Map.from(mapping);
+    Set<int> visited = {};
+    List<List<int>> chainsOrCycles = [];
+    for (final start in mapCopy.keys) {
+      if (visited.contains(start)) continue;
+      List<int> path = [];
+      int cur = start;
+      Set<int> local = {};
+      while (true) {
+        if (visited.contains(cur)) break;
+        path.add(cur); visited.add(cur); local.add(cur);
+        final next = mapCopy[cur];
+        if (next == null) break;
+        if (local.contains(next)) {
+          int idx = path.indexOf(next);
+          chainsOrCycles.add(path.sublist(idx));
+          break;
+        }
+        cur = next;
+      }
+      if (path.isNotEmpty && !chainsOrCycles.contains(path)) {
+        if (mapCopy[path.last] == null) chainsOrCycles.add(path);
+      }
     }
 
     try {
-      // 先处理循环
-      for (final cycle in cycles) {
+      for (final chain in chainsOrCycles) {
         if (_cancelApply) throw Exception('cancelled');
-        if (temp == null) {
-          _showSnack('short_addr_manager.temp_addr_fail'.tr());
-          return;
-        }
-        final first = cycle.first;
-        log.addLog('Reorder cycle: ${cycle.join("->")}');
-        await widget.daliAddr.writeAddr(first, temp); // first -> temp
-        int prev = first;
-        for (int i = 1; i < cycle.length; i++) {
-          final cur = cycle[i];
-          if (_cancelApply) throw Exception('cancelled');
-          await widget.daliAddr.writeAddr(cur, mapping[prev]!); // cur -> prev target
-          prev = cur;
-        }
-        await widget.daliAddr.writeAddr(temp, mapping[prev]!); // temp -> last target
-      }
-      // 非循环部分: 拓扑顺序执行
-      // 简化: 重复扫描直到无冲突
-      for (final entry in mapping.entries) {
-        if (_cancelApply) throw Exception('cancelled');
-        if (cycles.any((c) => c.contains(entry.key))) continue; // 已处理
-        if (_addresses.contains(entry.value) && !_addresses.contains(entry.key)) {
-          // 目标被占用且原地址不存在(极少见)
+        if (chain.length == 1) {
+          final oldAddr = chain.first;
+          final newAddr = mapping[oldAddr]!;
+          if (_addresses.contains(newAddr) && !_addresses.contains(oldAddr)) {
+            await widget.daliAddr.writeAddr(newAddr, temp);
+            await Future.delayed(const Duration(milliseconds: 40));
+          }
+          await widget.daliAddr.writeAddr(oldAddr, newAddr);
           continue;
         }
-        await widget.daliAddr.writeAddr(entry.key, entry.value);
+        final first = chain.first;
+        await widget.daliAddr.writeAddr(first, temp);
+        await Future.delayed(const Duration(milliseconds: 40));
+        for (int i = chain.length - 1; i >= 1; i--) {
+          if (_cancelApply) throw Exception('cancelled');
+            final prev = chain[i-1];
+            final cur = chain[i];
+            final target = mapping[prev]!;
+            await widget.daliAddr.writeAddr(cur, target);
+            await Future.delayed(const Duration(milliseconds: 30));
+        }
+        final lastTarget = mapping[chain.last]!;
+        await widget.daliAddr.writeAddr(temp, lastTarget);
+        await Future.delayed(const Duration(milliseconds: 30));
       }
       await _startScan();
       _showSnack('short_addr_manager.reorder_success'.tr());
@@ -342,11 +329,7 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
         _showSnack('short_addr_manager.reorder_fail'.tr(namedArgs: {'error': e.toString()}));
       }
     }
-    if (mounted) {
-      setState(() {
-        _applyingOrder = false;
-      });
-    }
+    if (mounted) setState(() { _applyingOrder = false; });
   }
 
   @override

@@ -95,7 +95,7 @@ class DaliBase extends DaliComm {
   }
 
   Future<void> setDTR(int value) async {
-    await sendCmd(0xa3, value, t: 1);
+    await sendCmd(0xa3, value, t: 2);
   }
 
   Future<void> setDTR1(int value) async {
@@ -198,8 +198,13 @@ class DaliBase extends DaliComm {
   }
 
   Future<bool> getOnlineStatus(int a) async {
-    int res = await query(a, 0x91);
-    return res == 255;
+    try {
+      int status = await query(a, 0x91);
+      return status == 255;
+    } catch (e) {
+      debugPrint('ERROR [getOnlineStatus]: $e');
+      return false;
+    }
   }
 
   Future<int?> getBright(int a) async {

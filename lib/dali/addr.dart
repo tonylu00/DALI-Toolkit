@@ -52,8 +52,9 @@ class DaliAddr {
 
   /// Write device short address
   Future<void> writeAddr(int addr, int newAddr) async {
+    final nAddr = newAddr * 2 + 1;
     try {
-      await base.setDTR(newAddr);
+      await base.setDTR(nAddr);
       await base.storeDTRAsAddr(addr);
     } on DaliQueryException catch (e) {
       _logDaliError(e, 'writeAddr($addr->$newAddr)');

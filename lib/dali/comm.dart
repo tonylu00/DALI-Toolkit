@@ -162,6 +162,7 @@ class DaliComm {
     } else {
       await write(buffer);
     }
+    await Future.delayed(Duration(milliseconds: delays));
   }
 
   /// Send DALI extended command, which needs to be sent two times in 100ms.
@@ -249,6 +250,7 @@ class DaliComm {
     List<int> buffer = [0x12, addr, cmd];
     await write(buffer);
     Uint8List? data;
+    int invalidFrameCount = 0;
     for (int i = 0; i < 10; i++) {
       await Future.delayed(Duration(milliseconds: delays));
       data = await read(2, timeout: delays);
@@ -257,9 +259,15 @@ class DaliComm {
           return data[1];
         } else if (data[0] == 254) {
           throw DaliDeviceNoResponseException(addr: a, cmd: b);
+        } else if (data[0] == 253) {
+          debugPrint('dali:queryRawNew: invalid frame, check cable or duplicate address. $data');
+          invalidFrameCount++;
+          if (invalidFrameCount > 1) {
+            throw DaliInvalidFrameException(data, addr: a, cmd: b);
+          }
         } else {
-          debugPrint('dali:queryRawNew: invalid frame $data');
-          throw DaliInvalidFrameException(data, addr: a, cmd: b);
+          debugPrint('dali:queryRawNew: unknown response from gateway: $data');
+          throw DaliInvalidGatewayFrameException(addr: a, cmd: b);
         }
       } else {
         debugPrint('dali:queryRawNew: no data');

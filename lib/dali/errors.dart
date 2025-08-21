@@ -38,12 +38,18 @@ class DaliInvalidFrameException extends DaliQueryException {
       : super('Invalid frame: $frame', addr: addr, cmd: cmd);
 }
 
+class DaliInvalidGatewayFrameException extends DaliQueryException {
+  const DaliInvalidGatewayFrameException({int? addr, int? cmd})
+      : super('Invalid gateway frame', addr: addr, cmd: cmd);
+}
+
 /// 将 DaliQueryException 映射为本地化 key
 String mapDaliErrorToMessage(DaliQueryException e) {
   if (e is DaliBusUnavailableException) return 'dali.error.bus_unavailable';
   if (e is DaliGatewayTimeoutException) return 'dali.error.gateway_timeout';
   if (e is DaliDeviceNoResponseException) return 'dali.error.device_no_response';
   if (e is DaliInvalidFrameException) return 'dali.error.invalid_frame';
+  if (e is DaliInvalidGatewayFrameException) return 'dali.error.invalid_gateway_frame';
   return 'dali.error.unknown';
 }
 
