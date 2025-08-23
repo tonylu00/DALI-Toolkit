@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:js_interop';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:dalimaster/dali/log.dart';
 import 'package:web/web.dart' as web;
 import 'package:serial/serial.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -50,7 +51,7 @@ class SerialWebManager implements Connection {
       }
       _scanResultsController.add(_availablePorts);
     } catch (e) {
-      debugPrint('Error getting available ports: $e');
+      DaliLog.instance.debugLog('Error getting available ports: $e');
     }
   }
 
@@ -74,7 +75,7 @@ class SerialWebManager implements Connection {
         if (portIndex < _availablePorts.length) {
           selectedPort = _availablePorts[portIndex];
         } else {
-          debugPrint('Invalid port index: $address');
+          DaliLog.instance.debugLog('Invalid port index: $address');
           return;
         }
       }
@@ -94,9 +95,9 @@ class SerialWebManager implements Connection {
       // 开始接收数据
       _startReceiving(selectedPort);
 
-      debugPrint('Connected to serial port: $connectedDeviceId');
+      DaliLog.instance.debugLog('Connected to serial port: $connectedDeviceId');
     } catch (e) {
-      debugPrint('Error connecting to serial port: $e');
+      DaliLog.instance.debugLog('Error connecting to serial port: $e');
       ConnectionManager.instance.updateConnectionStatus(false);
     }
   }
@@ -125,14 +126,14 @@ class SerialWebManager implements Connection {
               // 调用数据接收回调
               _onDataReceived?.call(receivedData);
 
-              debugPrint(
+              DaliLog.instance.debugLog(
                   'Received data: ${receivedData.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ')}');
             } catch (e) {
-              debugPrint('Error converting received data: $e');
+              DaliLog.instance.debugLog('Error converting received data: $e');
             }
           }
         } catch (e) {
-          debugPrint('Error reading from serial port: $e');
+          DaliLog.instance.debugLog('Error reading from serial port: $e');
           break;
         } finally {
           reader.releaseLock();
@@ -146,7 +147,7 @@ class SerialWebManager implements Connection {
   @override
   Future<void> send(Uint8List data) async {
     if (_port == null || !_port!.connected) {
-      debugPrint('Serial port not connected');
+      DaliLog.instance.debugLog('Serial port not connected');
       return;
     }
 
@@ -155,10 +156,11 @@ class SerialWebManager implements Connection {
       if (writer != null) {
         await writer.write(data.toJS).toDart;
         writer.releaseLock();
-        debugPrint('Sent data: ${data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ')}');
+        DaliLog.instance.debugLog(
+            'Sent data: ${data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ')}');
       }
     } catch (e) {
-      debugPrint('Error sending data: $e');
+      DaliLog.instance.debugLog('Error sending data: $e');
     }
   }
 
@@ -229,9 +231,9 @@ class SerialWebManager implements Connection {
       readBuffer = null;
       ConnectionManager.instance.updateConnectionStatus(false);
 
-      debugPrint('Disconnected from serial port');
+      DaliLog.instance.debugLog('Disconnected from serial port');
     } catch (e) {
-      debugPrint('Error disconnecting: $e');
+      DaliLog.instance.debugLog('Error disconnecting: $e');
     }
   }
 

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'log.dart';
 
 import 'comm.dart';
 import 'errors.dart';
@@ -202,7 +202,7 @@ class DaliBase extends DaliComm {
       int status = await query(a, 0x91);
       return status == 255;
     } catch (e) {
-      debugPrint('ERROR [getOnlineStatus]: $e');
+      DaliLog.instance.debugLog('ERROR [getOnlineStatus]: $e');
       return false;
     }
   }
@@ -210,7 +210,7 @@ class DaliBase extends DaliComm {
   Future<int?> getBright(int a) async {
     int res = await query(a, 0xa0);
     if (res == 255) {
-      debugPrint('Device report bright unknown');
+      DaliLog.instance.debugLog('Device report bright unknown');
       return 254;
     }
     return res;

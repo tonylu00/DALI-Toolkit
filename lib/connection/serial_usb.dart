@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:dalimaster/dali/log.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -57,7 +58,7 @@ class SerialUsbConnection implements Connection {
         ..addAll(SerialPort.availablePorts);
       _scanResultsController.add(List.of(_availablePorts));
     } catch (e) {
-      debugPrint('Serial USB scan error: $e');
+      DaliLog.instance.debugLog('Serial USB scan error: $e');
     } finally {
       _isScanning = false;
     }
@@ -79,7 +80,8 @@ class SerialUsbConnection implements Connection {
     if (!_autoReconnectEnabled) return; // not enabled
     if (_manuallyDisconnected) return; // user initiated
     if (_currentReconnectAttempts >= _autoReconnectMaxAttempts) {
-      debugPrint('Serial USB auto-reconnect reached max attempts: $_currentReconnectAttempts');
+      DaliLog.instance
+          .debugLog('Serial USB auto-reconnect reached max attempts: $_currentReconnectAttempts');
       // 放弃后清空设备 ID，通知上层
       if (connectedDeviceId.isNotEmpty) {
         // 完整断开，清除保存的路径（不再 keepSavedPath）
@@ -91,7 +93,7 @@ class SerialUsbConnection implements Connection {
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(Duration(milliseconds: _autoReconnectInterval), () async {
       _currentReconnectAttempts++;
-      debugPrint('Serial USB auto-reconnect attempt: $_currentReconnectAttempts');
+      DaliLog.instance.debugLog('Serial USB auto-reconnect attempt: $_currentReconnectAttempts');
       final target = connectedDeviceId.isNotEmpty ? connectedDeviceId : await _getSavedDevice();
       if (target.isEmpty) {
         // 没有目标，直接视为失败并清空
@@ -102,7 +104,7 @@ class SerialUsbConnection implements Connection {
       _suppressResetAttempts = true; // 下次 connect 不重置计数
       await connect(target);
       if (isDeviceConnected()) {
-        debugPrint('Serial USB auto-reconnect success');
+        DaliLog.instance.debugLog('Serial USB auto-reconnect success');
         _currentReconnectAttempts = 0;
       } else {
         _scheduleReconnect();
@@ -144,13 +146,13 @@ class SerialUsbConnection implements Connection {
           }
         }
         if (!_availablePorts.contains(devicePath)) {
-          debugPrint('Invalid serial device: $address');
+          DaliLog.instance.debugLog('Invalid serial device: $address');
           ToastManager().showErrorToast('Invalid serial device');
           return;
         }
         final sp = SerialPort(devicePath);
         if (!sp.openReadWrite()) {
-          debugPrint('Failed to open $devicePath: ${SerialPort.lastError}');
+          DaliLog.instance.debugLog('Failed to open $devicePath: ${SerialPort.lastError}');
           if (attempts >= maxAttemptsThisRound) ToastManager().showErrorToast('USB open failed');
           await Future.delayed(const Duration(milliseconds: 300));
           continue;
@@ -172,7 +174,7 @@ class SerialUsbConnection implements Connection {
 
         _attachReader(sp);
 
-        debugPrint('Serial USB connected: $devicePath');
+        DaliLog.instance.debugLog('Serial USB connected: $devicePath');
         unawaited(ConnectionManager.instance.ensureGatewayType());
         // After successful connection:
         _startPortMonitor();
@@ -180,7 +182,8 @@ class SerialUsbConnection implements Connection {
         _manuallyDisconnected = false;
         return; // success
       } catch (e) {
-        debugPrint('Serial USB connect attempt $attempts/$maxAttemptsThisRound error: $e');
+        DaliLog.instance
+            .debugLog('Serial USB connect attempt $attempts/$maxAttemptsThisRound error: $e');
         if (attempts >= maxAttemptsThisRound) {
           ToastManager().showErrorToast('USB connect failed');
           ConnectionManager.instance.updateConnectionStatus(false);
@@ -214,7 +217,8 @@ class SerialUsbConnection implements Connection {
       readBuffer = merged;
     }
     _handleBusMonitor(data);
-    debugPrint('USB recv: ${data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ')}');
+    DaliLog.instance
+        .debugLog('USB recv: ${data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ')}');
     _tryCompletePendingRead();
   }
 
@@ -233,18 +237,19 @@ class SerialUsbConnection implements Connection {
   @override
   Future<void> send(Uint8List data) async {
     if (_port == null || !_port!.isOpen) {
-      debugPrint('Serial USB not connected');
+      DaliLog.instance.debugLog('Serial USB not connected');
       return;
     }
     try {
       final written = _port!.write(data, timeout: 100);
       if (written != data.length) {
-        debugPrint('Partial write: $written/${data.length}');
+        DaliLog.instance.debugLog('Partial write: $written/${data.length}');
       } else {
-        debugPrint('USB sent: ${data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ')}');
+        DaliLog.instance.debugLog(
+            'USB sent: ${data.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ')}');
       }
     } catch (e) {
-      debugPrint('Serial USB send error: $e');
+      DaliLog.instance.debugLog('Serial USB send error: $e');
     }
   }
 
@@ -344,9 +349,9 @@ class SerialUsbConnection implements Connection {
       if (!keepSavedPath) connectedDeviceId = '';
       ConnectionManager.instance.updateConnectionStatus(false);
       ConnectionManager.instance.updateGatewayType(-1);
-      debugPrint('Serial USB ${manual ? 'manual' : 'auto'} disconnected');
+      DaliLog.instance.debugLog('Serial USB ${manual ? 'manual' : 'auto'} disconnected');
     } catch (e) {
-      debugPrint('Serial USB internal disconnect error: $e');
+      DaliLog.instance.debugLog('Serial USB internal disconnect error: $e');
     } finally {
       if (!manual && !_autoReconnectEnabled) {
         _manuallyDisconnected = true; // prevent schedule if disabled
@@ -368,7 +373,7 @@ class SerialUsbConnection implements Connection {
       if (path.isEmpty) return;
       final present = now.contains(path);
       if (!present) {
-        debugPrint('Serial USB device removed (poll)');
+        DaliLog.instance.debugLog('Serial USB device removed (poll)');
         // physical removal; treat as error/closed
         _handlePhysicalRemoval();
       }
@@ -401,7 +406,7 @@ class SerialUsbConnection implements Connection {
   }
 
   void _handlePortClosedOrError([Object? e]) async {
-    if (e != null) debugPrint('Serial USB port error/closed: $e');
+    if (e != null) DaliLog.instance.debugLog('Serial USB port error/closed: $e');
     if (_port != null && _port!.isOpen) return; // still open
     if (!_autoReconnectEnabled) {
       await _internalDisconnect(manual: false);

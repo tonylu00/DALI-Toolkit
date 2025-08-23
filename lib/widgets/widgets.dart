@@ -26,3 +26,4 @@ export 'settings/addressing_settings.dart';
 export 'settings/settings_card.dart';
 export 'settings/settings_item.dart';
 export 'settings/settings_option_button.dart';
+export 'settings/log_level_setting.dart';

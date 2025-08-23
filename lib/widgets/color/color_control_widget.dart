@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalimaster/dali/log.dart';
 import '/dali/dali.dart';
 import '/dali/color.dart';
 import '/connection/manager.dart';
@@ -31,7 +32,7 @@ class _ColorControlWidgetState extends State<ColorControlWidget> {
     if (colorRGB.isEmpty) {
       return;
     }
-    debugPrint('Color: $colorRGB');
+    DaliLog.instance.debugLog('Color: $colorRGB');
     final colorObj = Color((0xFF << 24) + (colorRGB[0] << 16) + (colorRGB[1] << 8) + colorRGB[2]);
     widget.onColorChanged(colorObj);
   }

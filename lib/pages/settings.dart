@@ -47,6 +47,7 @@ class SettingsPageState extends State<SettingsPage> {
         children: [
           const ConnectionMethodSetting(),
           const GatewayTypeCard(),
+          const LogLevelSetting(),
           const DimmingCurveSetting(),
           const AutoReconnectSetting(),
           ThemeColorSetting(
@@ -60,6 +61,8 @@ class SettingsPageState extends State<SettingsPage> {
           const DelaysSetting(),
           const AddressingSettings(),
           const AllowBroadcastReadSetting(),
+          const CrashlyticsReportAllErrorsSetting(),
+          const ResetAnonymousIdSetting(),
           const SizedBox(height: 12),
           const RememberInternalPageSetting(),
           const SizedBox(height: 20), // 添加底部间距
@@ -107,6 +110,83 @@ class _RememberInternalPageSettingState extends State<RememberInternalPageSettin
         control: Switch(
           value: prefs.remember,
           onChanged: (v) => prefs.setRemember(v),
+        ),
+      ),
+    );
+  }
+}
+
+class CrashlyticsReportAllErrorsSetting extends StatefulWidget {
+  const CrashlyticsReportAllErrorsSetting({super.key});
+
+  @override
+  State<CrashlyticsReportAllErrorsSetting> createState() =>
+      _CrashlyticsReportAllErrorsSettingState();
+}
+
+class ResetAnonymousIdSetting extends StatelessWidget {
+  const ResetAnonymousIdSetting({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SettingsCard(
+      child: SettingsItem(
+        title: 'settings.anonymous_id.reset.title',
+        subtitle: 'settings.anonymous_id.reset.subtitle',
+        icon: Icons.refresh,
+        control: FilledButton.tonal(
+          onPressed: () async {
+            final newId = await resetAnonymousId();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content: Text('settings.anonymous_id.reset.done'.replaceFirst('{id}', newId))),
+              );
+            }
+          },
+          child: const Text('common.reset'),
+        ),
+      ),
+    );
+  }
+}
+
+class _CrashlyticsReportAllErrorsSettingState extends State<CrashlyticsReportAllErrorsSetting> {
+  bool _value = reportAllErrors;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _value = prefs.getBool('reportAllErrors') ?? reportAllErrors;
+    });
+  }
+
+  Future<void> _onChanged(bool v) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('reportAllErrors', v);
+    reportAllErrors = v;
+    setState(() {
+      _value = v;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SettingsCard(
+      child: SettingsItem(
+        title: 'settings.crashlytics.report_all.title',
+        subtitle: 'settings.crashlytics.report_all.subtitle',
+        icon: Icons.report_gmailerrorred_outlined,
+        control: Switch(
+          value: _value,
+          onChanged: _onChanged,
         ),
       ),
     );

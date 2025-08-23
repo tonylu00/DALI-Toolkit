@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:dalimaster/dali/log.dart';
 import 'manager.dart';
 
 import 'connection.dart';
@@ -107,13 +108,13 @@ class TcpClient implements Connection {
       _reader.add(bytes);
       readBuffer = bytes; // 最近一次
     }, onError: (e) {
-      debugPrint('TCP error: $e');
+      DaliLog.instance.debugLog('TCP error: $e');
       disconnect();
     }, onDone: () {
-      debugPrint('TCP done');
+      DaliLog.instance.debugLog('TCP done');
       disconnect();
     });
-    debugPrint('TCP connected to $connectedDeviceId');
+    DaliLog.instance.debugLog('TCP connected to $connectedDeviceId');
     ConnectionManager.instance.updateConnectionStatus(true);
     unawaited(ConnectionManager.instance.ensureGatewayType());
   }
@@ -124,7 +125,7 @@ class TcpClient implements Connection {
     try {
       _socket!.add(data);
     } catch (e) {
-      debugPrint('TCP send error: $e');
+      DaliLog.instance.debugLog('TCP send error: $e');
     }
   }
 
@@ -216,7 +217,8 @@ class UdpClient implements Connection {
         }
       }
     });
-    debugPrint('UDP ready to $connectedDeviceId (local ${s.address.address}:${s.port})');
+    DaliLog.instance
+        .debugLog('UDP ready to $connectedDeviceId (local ${s.address.address}:${s.port})');
     ConnectionManager.instance.updateConnectionStatus(true);
     unawaited(ConnectionManager.instance.ensureGatewayType());
   }
@@ -228,7 +230,7 @@ class UdpClient implements Connection {
     try {
       s.send(data, _remoteAddress!, _remotePort);
     } catch (e) {
-      debugPrint('UDP send error: $e');
+      DaliLog.instance.debugLog('UDP send error: $e');
     }
   }
 

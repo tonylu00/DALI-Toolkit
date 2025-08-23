@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalimaster/dali/log.dart';
 import 'dart:async';
 import 'dart:typed_data';
 import 'ble.dart';
@@ -36,10 +37,10 @@ class ConnectionManager extends ChangeNotifier {
     }
     if (connectionMethod == 'BLE') {
       if (_connection is BleManager) {
-        debugPrint('BLE connection already initialized');
+        DaliLog.instance.debugLog('BLE connection already initialized');
         return;
       }
-      debugPrint('Initializing BLE connection');
+      DaliLog.instance.debugLog('Initializing BLE connection');
       _connection = BleManager();
     } else if (connectionMethod == 'IP') {
       if (!(_connection is TcpClient || _connection is UdpClient)) {
@@ -47,13 +48,13 @@ class ConnectionManager extends ChangeNotifier {
       }
     } else if (connectionMethod == 'USB') {
       if (_connection is SerialUsbConnection) {
-        debugPrint('USB connection already initialized');
+        DaliLog.instance.debugLog('USB connection already initialized');
         return;
       }
-      debugPrint('Initializing USB serial connection');
+      DaliLog.instance.debugLog('Initializing USB serial connection');
       _connection = SerialUsbConnection();
     } else {
-      debugPrint('Unknown connection method: $connectionMethod');
+      DaliLog.instance.debugLog('Unknown connection method: $connectionMethod');
       return;
     }
   }
@@ -112,7 +113,7 @@ class ConnectionManager extends ChangeNotifier {
           (data[0] == 0x01 || data[0] == 0x03 || data[0] == 0x05)) {
         gatewayType = 0; // USB
         notifyListeners();
-        debugPrint("Gateway type detected: USB");
+        DaliLog.instance.debugLog("Gateway type detected: USB");
         return;
       }
 
@@ -122,7 +123,7 @@ class ConnectionManager extends ChangeNotifier {
       if (data != null && data.length == 2 && data[0] == gateway && data[1] >= 0) {
         gatewayType = 1; // Legacy 485
         notifyListeners();
-        debugPrint("Gateway type detected: Legacy 485");
+        DaliLog.instance.debugLog("Gateway type detected: Legacy 485");
         return;
       }
 
@@ -132,15 +133,15 @@ class ConnectionManager extends ChangeNotifier {
       if (data != null && data.length == 2 && data[0] == gateway && data[1] >= 0) {
         gatewayType = 2; // New 485
         notifyListeners();
-        debugPrint("Gateway type detected: New 485");
+        DaliLog.instance.debugLog("Gateway type detected: New 485");
         return;
       }
       gatewayType = 0; // 视为 type0（需求中使用）
       notifyListeners();
-      debugPrint("Could not detect gateway type, use 0");
+      DaliLog.instance.debugLog("Could not detect gateway type, use 0");
     } catch (e) {
       // 检测失败保持 -1 以便之后可再尝试
-      debugPrint('ensureGatewayType failed: $e');
+      DaliLog.instance.debugLog('ensureGatewayType failed: $e');
     }
   }
 
@@ -156,14 +157,14 @@ class ConnectionManager extends ChangeNotifier {
     final connected = _connection.isDeviceConnected();
     if (!connected) {
       if (showToast) {
-        debugPrint('connection.disconnected');
+        DaliLog.instance.debugLog('connection.disconnected');
         _showToastSafe('connection.disconnected'.tr());
       }
       return false;
     }
     if (!canOperateBus()) {
       if (showToast) {
-        debugPrint('Bus abnormal');
+        DaliLog.instance.debugLog('Bus abnormal');
         _showToastSafe('Bus abnormal');
       }
       return false;
@@ -184,7 +185,7 @@ class ConnectionManager extends ChangeNotifier {
       _lastToastMsg = msg;
       ToastManager().showErrorToast(msg);
     } catch (e) {
-      debugPrint('Toast show failed: $e');
+      DaliLog.instance.debugLog('Toast show failed: $e');
     }
   }
 

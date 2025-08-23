@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:dalimaster/dali/log.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
 
@@ -115,7 +116,7 @@ class AuthProvider extends ChangeNotifier {
     await prefsForAll.setInt('auth_login_time', DateTime.now().millisecondsSinceEpoch);
     // debug: print normalized user for troubleshooting
     try {
-      debugPrint('AuthProvider.login normalized user: ${normalized.toString()}');
+      DaliLog.instance.debugLog('AuthProvider.login normalized user: ${normalized.toString()}');
     } catch (_) {}
     _tokens = tokens;
     _scheduleRefresh(tokens.expiresAt);
@@ -177,7 +178,8 @@ class AuthProvider extends ChangeNotifier {
     // debug: if still empty name, print raw to help troubleshooting
     if (name.isEmpty) {
       try {
-        debugPrint('AuthProvider._normalizeUserRaw empty name, raw: ${raw.toString()}');
+        DaliLog.instance
+            .debugLog('AuthProvider._normalizeUserRaw empty name, raw: ${raw.toString()}');
       } catch (_) {}
     }
 
@@ -207,7 +209,8 @@ class AuthProvider extends ChangeNotifier {
       if (tokens == null) return normalized;
       final Map<String, dynamic>? claims = await _service.decodeToken(tokens.accessToken);
       if (claims == null) return normalized;
-      debugPrint('AuthProvider._fillFromTokenIfNeeded decoded claims: ${claims.toString()}');
+      DaliLog.instance
+          .debugLog('AuthProvider._fillFromTokenIfNeeded decoded claims: ${claims.toString()}');
       final String? cName =
           (claims['name'] ?? claims['preferred_username'] ?? claims['username'])?.toString();
       final String? cEmail = (claims['email'])?.toString();

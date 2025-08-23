@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'log.dart';
 
 import 'base.dart';
 import 'color.dart';
@@ -80,17 +80,17 @@ class DaliDT8 {
 
     int colorType = await getColorType(a);
     if (colorType != ColorType.colorTemp) {
-      debugPrint('Device not supporting color mode');
+      DaliLog.instance.debugLog('Device not supporting color mode');
       return 0;
     }
 
     ColorStatus status = await getColorStatus(a);
     if (status.ctOutOfRange) {
-      debugPrint('Color temperature out of range');
+      DaliLog.instance.debugLog('Color temperature out of range');
       return 0;
     }
     if (!status.ctActive) {
-      debugPrint('Color temperature not active');
+      DaliLog.instance.debugLog('Color temperature not active');
       return 0;
     }
 
@@ -101,7 +101,7 @@ class DaliDT8 {
       value += 256;
       dtr1--;
     }
-    debugPrint('Color temperature raw: $value');
+    DaliLog.instance.debugLog('Color temperature raw: $value');
     return value;
   }
 
@@ -203,24 +203,24 @@ class DaliDT8 {
   Future<int?> getColourRaw(int a, int type) async {
     int colorType = await getColorType(a);
     if (colorType == 0) {
-      debugPrint('Device not supporting color mode');
+      DaliLog.instance.debugLog('Device not supporting color mode');
       return null;
     }
     ColorStatus status = await getColorStatus(a);
     if ((type == 0 || type == 1) && status.xyOutOfRange) {
-      debugPrint('Color out of range');
+      DaliLog.instance.debugLog('Color out of range');
       return null;
     }
     if ((type == 0 || type == 1) && !status.xyActive) {
-      debugPrint('Color not active');
+      DaliLog.instance.debugLog('Color not active');
       return null;
     }
     if (type == 2 && status.ctOutOfRange) {
-      debugPrint('Color temperature out of range');
+      DaliLog.instance.debugLog('Color temperature out of range');
       return null;
     }
     if (type == 2 && !status.ctActive) {
-      debugPrint('Color temperature not active');
+      DaliLog.instance.debugLog('Color temperature not active');
       return null;
     }
     await base.setDTR(type);
@@ -238,7 +238,7 @@ class DaliDT8 {
     if (x == null || y == null) {
       return [];
     }
-    debugPrint('x: $x, y: $y');
+    DaliLog.instance.debugLog('x: $x, y: $y');
     return [x / 65535, y / 65535];
   }
 
@@ -261,7 +261,7 @@ class DaliDT8 {
     if (xy.isEmpty) {
       return [];
     }
-    debugPrint('xy: $xy');
+    DaliLog.instance.debugLog('xy: $xy');
     final rgb = DaliColor.xy2rgb(xy[0], xy[1]);
     return rgb;
   }

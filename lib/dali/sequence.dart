@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'log.dart';
 import 'dali.dart';
 import 'base.dart';
 import 'addr.dart';
@@ -102,7 +103,7 @@ class SequenceRunner with ChangeNotifier {
     try {
       final cm = Dali.instance.cm;
       if (!cm.connection.isDeviceConnected()) {
-        debugPrint('[SequenceRunner] Connection not established, abort run');
+        DaliLog.instance.debugLog('[SequenceRunner] Connection not established, abort run');
         return;
       }
     } catch (_) {}
@@ -117,7 +118,7 @@ class SequenceRunner with ChangeNotifier {
       try {
         await _executeStep(step);
       } catch (e) {
-        debugPrint('Sequence step error: $e');
+        DaliLog.instance.debugLog('Sequence step error: $e');
         break;
       }
     }

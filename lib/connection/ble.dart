@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dalimaster/dali/log.dart';
 import 'package:universal_ble/universal_ble.dart';
 import 'dart:async';
 import 'dart:typed_data';
@@ -34,7 +35,7 @@ class BleManager implements Connection {
   @override
   bool isDeviceConnected() {
     if (connectedDeviceId.isEmpty) {
-      debugPrint('No device connected');
+      DaliLog.instance.debugLog('No device connected');
       return false;
     }
     return true;
@@ -45,7 +46,7 @@ class BleManager implements Connection {
     if (!kIsWeb) {
       final state = await UniversalBle.getBluetoothAvailabilityState();
       if (state != AvailabilityState.poweredOn) {
-        debugPrint('Bluetooth is not powered on');
+        DaliLog.instance.debugLog('Bluetooth is not powered on');
         return;
       }
     }
@@ -62,7 +63,7 @@ class BleManager implements Connection {
         _scanResults.add(bleDevice);
         _uniqueDeviceIds.add(bleDevice.deviceId);
         _scanResultsController.add(_scanResults);
-        debugPrint('Scan result: $bleDevice');
+        DaliLog.instance.debugLog('Scan result: $bleDevice');
       }
     };
     await disconnect();
@@ -78,7 +79,7 @@ class BleManager implements Connection {
   Future<void> connect(String deviceId, {int? port}) async {
     stopScan();
     UniversalBle.onConnectionChange = ((deviceId, isConnected, error) {
-      debugPrint('OnConnectionChange $deviceId, $isConnected Error: $error');
+      DaliLog.instance.debugLog('OnConnectionChange $deviceId, $isConnected Error: $error');
       if (isConnected) {
         connectedDeviceId = deviceId;
         // 先检测 gatewayType 后再广播连接状态
@@ -92,14 +93,14 @@ class BleManager implements Connection {
         UniversalBle.discoverServices(deviceId);
         UniversalBle.subscribeNotifications(deviceId, serviceUuid, readUuid);
         UniversalBle.onValueChange = (String deviceId, String characteristicId, Uint8List value) {
-          debugPrint(
+          DaliLog.instance.debugLog(
               'HEX Value changed: ${value.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ')}');
           readBuffer = value;
           _handleBusMonitor(value);
         };
-        debugPrint('Connected to $deviceId');
+        DaliLog.instance.debugLog('Connected to $deviceId');
       } else if (error != null) {
-        debugPrint('Error: $error');
+        DaliLog.instance.debugLog('Error: $error');
       } else {
         connectedDeviceId = "";
         readBuffer = null;
@@ -142,20 +143,20 @@ class BleManager implements Connection {
     String deviceId = connectedDeviceId;
     if (deviceId.isEmpty) {
       if (kIsWeb) {
-        debugPrint('No device connected, skipping disconnect on Web');
+        DaliLog.instance.debugLog('No device connected, skipping disconnect on Web');
         return;
       }
       List<BleDevice> devices = await UniversalBle.getSystemDevices(withServices: [serviceUuid]);
       for (BleDevice device in devices) {
         UniversalBle.disconnect(device.deviceId);
-        debugPrint('Disconnected from ${device.deviceId}');
+        DaliLog.instance.debugLog('Disconnected from ${device.deviceId}');
       }
       return;
     }
     UniversalBle.disconnect(deviceId);
     connectedDeviceId = "";
     ConnectionManager.instance.updateConnectionStatus(false);
-    debugPrint('Disconnected from $deviceId');
+    DaliLog.instance.debugLog('Disconnected from $deviceId');
   }
 
   void sendCommand(String command) {
@@ -175,17 +176,17 @@ class BleManager implements Connection {
   @override
   Future<Uint8List?> read(int len, {int timeout = 200}) async {
     if (!ConnectionManager.instance.canOperateBus()) {
-      debugPrint('ble:read blocked (bus abnormal)');
+      DaliLog.instance.debugLog('ble:read blocked (bus abnormal)');
       return null;
     }
     if (!isDeviceConnected()) if (!await restoreExistConnection()) return null;
     try {
       final value = await UniversalBle.read(connectedDeviceId, serviceUuid, readUuid,
           timeout: Duration(milliseconds: timeout));
-      debugPrint('Read value: $value');
+      DaliLog.instance.debugLog('Read value: $value');
       return value;
     } catch (e) {
-      debugPrint('Error reading characteristic: $e');
+      DaliLog.instance.debugLog('Error reading characteristic: $e');
     }
     return null;
   }
@@ -193,7 +194,7 @@ class BleManager implements Connection {
   @override
   Future<void> send(Uint8List value) async {
     if (!ConnectionManager.instance.canOperateBus()) {
-      debugPrint('ble:send blocked (bus abnormal)');
+      DaliLog.instance.debugLog('ble:send blocked (bus abnormal)');
       return;
     }
     if (!isDeviceConnected()) if (!await restoreExistConnection()) return;
@@ -203,7 +204,7 @@ class BleManager implements Connection {
       try {
         await UniversalBle.write(connectedDeviceId, serviceUuid, writeUuid, value);
       } catch (e) {
-        debugPrint('Error writing characteristic: $e');
+        DaliLog.instance.debugLog('Error writing characteristic: $e');
         continue;
       }
       break;
@@ -244,10 +245,10 @@ class BleManager implements Connection {
       }
       for (BleDevice device in devices) {
         connectedDeviceId = device.deviceId;
-        debugPrint('Restore connection from ${device.deviceId}');
+        DaliLog.instance.debugLog('Restore connection from ${device.deviceId}');
       }
     } else {
-      debugPrint('Already connected to $connectedDeviceId');
+      DaliLog.instance.debugLog('Already connected to $connectedDeviceId');
     }
     ConnectionManager.instance.updateConnectionStatus(true);
     return true;
@@ -278,7 +279,7 @@ class BleManager implements Connection {
         return false;
       }
     } catch (e) {
-      debugPrint('Error requesting permissions: $e');
+      DaliLog.instance.debugLog('Error requesting permissions: $e');
       return false;
     }
   }
