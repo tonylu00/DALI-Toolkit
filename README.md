@@ -101,3 +101,50 @@ if (user == null) {
    - 打开设备硬件加密 (Android API >=23 已默认)
    - 如需后台静默刷新，可在应用启动时调用 `getCachedUser()` 触发刷新
 4. 若后端配置不返回 refresh_token，则需缩短 access token 失效前的 UI 交互或引导重新登录
+
+## Server backend as a Git submodule
+
+The backend service lives in the `server/` directory and is tracked as a Git submodule.
+
+- Upstream repo: https://github.com/tonylu00/DALI-Toolkit-server
+
+Common workflows:
+
+1) Clone with submodules
+
+```bash
+git clone --recurse-submodules https://github.com/tonylu00/DALI-Toolkit.git
+# or, if already cloned
+cd DALI-Toolkit
+git submodule update --init --recursive
+```
+
+2) Update the submodule to latest main and record the new pointer
+
+```bash
+# Option A: update inside submodule and commit pointer in parent
+cd server
+git fetch origin
+git checkout main
+git pull --ff-only
+cd ..
+git add server
+git commit -m "chore: bump server submodule"
+
+# Option B: from parent repo (updates remote-tracking for submodule)
+git submodule update --remote --merge server
+git add server
+git commit -m "chore: bump server submodule"
+```
+
+3) Sync submodule remotes (rare)
+
+```bash
+git submodule sync --recursive
+```
+
+4) CI setup snippet
+
+```bash
+git submodule update --init --recursive
+```
