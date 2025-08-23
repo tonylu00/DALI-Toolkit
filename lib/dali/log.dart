@@ -48,45 +48,130 @@ class DaliLog {
   Stream<LogLevel> get levelStream => _levelController.stream;
 
   String _resolveCaller() {
-    // Skip first few frames that are inside logging utility itself
-    // Parse stack to find first frame outside logger, prefer "Class.method"
+    // Try to find the first non-logger frame and extract a concise symbol.
     final lines = StackTrace.current.toString().split('\n');
-    for (var raw in lines) {
+    final ignoreTokens = <String>[
+      'DaliLog.',
+      '/dali/log.dart',
+      ' log.dart', // space to avoid matching arbitrary paths ending with log.dart as a method
+      'core_patch.dart', // Flutter Web: StackTrace.current getter
+      'get current',
+      'StackTrace.current',
+      'package:stack_trace',
+      'stack_trace.dart',
+      // Common async/runtime frames to ignore on Web
+      'async_patch.dart',
+      'zone.dart',
+      'future_impl.dart',
+      'js_helper.dart',
+    ];
+
+    String? fallback; // file.dart:line as a weak fallback
+
+    for (final raw in lines) {
       if (raw.isEmpty) continue;
       final line = raw.trim();
-      // Skip frames from logger itself
-      if (line.contains('DaliLog.') ||
-          line.contains('/dali/log.dart') ||
-          line.contains('log.dart')) {
+
+      // Skip frames from the logger or internal stack machinery
+      if (ignoreTokens.any((t) => line.contains(t))) {
         continue;
       }
-      // Common Dart VM format: '#1      Class.method (package:...)'
-      final m1 = RegExp(r'#\d+\s+([^\s(]+)').firstMatch(line);
-      String? symbol = m1?.group(1);
 
-      // Fallback (e.g., JS/Web style): 'at Class.method (package:...)'
-      symbol ??= RegExp(r'^at\s+([^\s(]+)').firstMatch(line)?.group(1);
+      String? symbol;
+
+      // 1) Dart VM / Flutter mobile format: '#1      Class.method (package:...)'
+      final mVm = RegExp(r'#\d+\s+([^\s(]+)').firstMatch(line);
+      if (mVm != null) {
+        symbol = mVm.group(1);
+      }
+
+      // 2) Flutter Web (dev compiler) format:
+      //    'package:foo/bar.dart 10:2  Class.method' or 'packages/foo/bar.dart 10:2  function'
+      if (symbol == null) {
+        final mDevc = RegExp(r'^[^\s]+\.dart\s+\d+:\d+\s+(.+)$').firstMatch(line);
+        if (mDevc != null) {
+          symbol = mDevc.group(1);
+        }
+      }
+
+      // 3) JS style (dart2js): 'at Class.method (main.dart.js:...)' or 'at Object.method (...)'
+      if (symbol == null) {
+        final mJs = RegExp(r'^at\s+([^\s(]+)').firstMatch(line);
+        if (mJs != null) {
+          symbol = mJs.group(1);
+        }
+      }
 
       if (symbol != null) {
-        // Normalize anonymous closure suffixes
+        // Normalize anonymous closures and noisy prefixes
         symbol = symbol
             .replaceAll('<anonymous closure>', 'anon')
-            .replaceAll('<anonymous-closure>', 'anon');
+            .replaceAll('<anonymous-closure>', 'anon')
+            .replaceAll('Object.', '')
+            .replaceAll('new ', '')
+            .replaceAll('\n', '')
+            .replaceAll('\t', '')
+            .trim();
 
-        // If there are multiple dots, keep the last two segments as Class.method
+        // Skip uninformative Web symbols like <fn> or pure anonymous markers
+        if (symbol == '<fn>' || symbol == 'anon' || RegExp(r'^<[^>]+>$').hasMatch(symbol)) {
+          // keep scanning for a better frame; fallback will be file.dart:line
+          continue;
+        }
+
+        // Skip common async runtime symbols (Web/devc)
+        const skipSymbols = <String>{
+          'runUnary',
+          'runGuarded',
+          '_rootRun',
+          '_rootRunUnary',
+          '_microtaskLoop',
+          '_startMicrotaskLoop',
+          '_Future',
+          '_then',
+          '_completeWithValue',
+          '_propagateToListeners',
+          'newFuture',
+          '_asyncThenWrapperHelper',
+          '_asyncCatchHelper',
+        };
+        if (skipSymbols.contains(symbol) ||
+            symbol.startsWith('_rootRun') ||
+            symbol.startsWith('_microtaskLoop')) {
+          continue;
+        }
+
+        // Reduce very long dot-paths to the last two segments (Class.method)
         if (symbol.contains('.')) {
           final parts = symbol.split('.');
           if (parts.length >= 2) {
             symbol = '${parts[parts.length - 2]}.${parts.last}';
           }
         }
+
+        // Avoid returning logger frames accidentally
+        if (symbol.contains('DaliLog') || symbol.contains(' log')) {
+          continue;
+        }
+
+        // If symbol is still a bare function name without dot and we have a file:line fallback,
+        // prefer the fallback for better locality context on Web.
+        if (!symbol.contains('.') && fallback != null) {
+          return fallback;
+        }
         return symbol;
       }
 
-      // Last resort: return trimmed line
-      return line;
+      // Prepare a lightweight fallback like 'file.dart:line' in case we never find a symbol
+      fallback ??= () {
+        final mf = RegExp(r'([A-Za-z0-9_\-/]+\.dart)\s+(\d+):\d+').firstMatch(line);
+        if (mf != null) {
+          return '${mf.group(1)}:${mf.group(2)}';
+        }
+        return null;
+      }();
     }
-    return 'unknown';
+    return fallback ?? 'unknown';
   }
 
   void _log(LogLevel level, String message) {

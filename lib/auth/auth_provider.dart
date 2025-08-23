@@ -1,11 +1,12 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:io' show File;
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:dalimaster/dali/log.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AuthState {
   final bool loading;
@@ -58,7 +59,7 @@ class AuthProvider extends ChangeNotifier {
         if (cachedName != null) 'name': cachedName,
         if (cachedEmail != null) 'email': cachedEmail,
         if (cachedAvatar != null) 'avatar': cachedAvatar,
-        if (cachedAvatarFile != null) 'avatar_file': cachedAvatarFile,
+        if (!kIsWeb && cachedAvatarFile != null) 'avatar_file': cachedAvatarFile,
       }));
     }
 
@@ -90,13 +91,15 @@ class AuthProvider extends ChangeNotifier {
       if (nAvatar != null && nAvatar.isNotEmpty) {
         await prefs2.setString('auth_cached_avatar', nAvatar);
       }
-      // avatar download handled above when _nAvatar is present
+      // Web 平台不进行本地头像缓存
       _scheduleRefresh(tokens?.expiresAt);
     } else {
       _setState(_state.copyWith(loading: false));
     }
-    // run cleanup to remove stale avatar files
-    await _cleanupAvatarCache();
+    // run cleanup to remove stale avatar files (非 Web)
+    if (!kIsWeb) {
+      await _cleanupAvatarCache();
+    }
   }
 
   Future<void> login() async {
@@ -126,11 +129,12 @@ class AuthProvider extends ChangeNotifier {
     final String? lAvatar =
         (normalized['avatar'] is String) ? normalized['avatar'] as String : null;
     if (lName != null && lName.isNotEmpty) await prefsForAll.setString('auth_cached_name', lName);
-    if (lEmail != null && lEmail.isNotEmpty)
+    if (lEmail != null && lEmail.isNotEmpty) {
       await prefsForAll.setString('auth_cached_email', lEmail);
+    }
     if (lAvatar != null && lAvatar.isNotEmpty) {
       await prefsForAll.setString('auth_cached_avatar', lAvatar);
-      if (lAvatar.startsWith('http')) {
+      if (!kIsWeb && lAvatar.startsWith('http')) {
         final local = await _downloadAvatarToFile(lAvatar);
         if (local != null) {
           await prefsForAll.setString('auth_cached_avatar_file', local.path);
@@ -188,8 +192,9 @@ class AuthProvider extends ChangeNotifier {
     if (email != null) normalized['email'] = email;
     if (avatar != null) normalized['avatar'] = avatar;
     // also keep preferred_username for UI checks
-    if (!normalized.containsKey('preferred_username') && name.isNotEmpty)
+    if (!normalized.containsKey('preferred_username') && name.isNotEmpty) {
       normalized['preferred_username'] = name;
+    }
     return normalized;
   }
 
@@ -232,7 +237,7 @@ class AuthProvider extends ChangeNotifier {
           cAvatar.isNotEmpty) {
         normalized['avatar'] = cAvatar;
         await prefs.setString('auth_cached_avatar', cAvatar);
-        if (cAvatar.startsWith('http')) {
+        if (!kIsWeb && cAvatar.startsWith('http')) {
           final local = await _downloadAvatarToFile(cAvatar);
           if (local != null) {
             await prefs.setString('auth_cached_avatar_file', local.path);
@@ -250,17 +255,19 @@ class AuthProvider extends ChangeNotifier {
     _refreshTimer?.cancel();
     // clear cached profile and delete avatar file if exists
     final prefs = await SharedPreferences.getInstance();
-    final avatarFilePath = prefs.getString('auth_cached_avatar_file');
-    if (avatarFilePath != null) {
-      try {
-        final f = File(avatarFilePath);
-        if (await f.exists()) await f.delete();
-      } catch (_) {}
+    if (!kIsWeb) {
+      final avatarFilePath = prefs.getString('auth_cached_avatar_file');
+      if (avatarFilePath != null) {
+        try {
+          final f = File(avatarFilePath);
+          if (await f.exists()) await f.delete();
+        } catch (_) {}
+      }
+      // also remove from cache index
+      final list = prefs.getStringList('auth_cached_avatar_files') ?? <String>[];
+      list.remove(avatarFilePath);
+      await prefs.setStringList('auth_cached_avatar_files', list);
     }
-    // also remove from cache index
-    final list = prefs.getStringList('auth_cached_avatar_files') ?? <String>[];
-    list.remove(avatarFilePath);
-    await prefs.setStringList('auth_cached_avatar_files', list);
     await prefs.remove('auth_cached_name');
     await prefs.remove('auth_cached_email');
     await prefs.remove('auth_cached_avatar');
@@ -269,6 +276,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<File?> _downloadAvatarToFile(String url) async {
+    if (kIsWeb) return null; // Web 平台不写文件
     try {
       final uri = Uri.parse(url);
       final resp = await http.get(uri);
@@ -279,7 +287,9 @@ class AuthProvider extends ChangeNotifier {
       await file.writeAsBytes(bytes);
       // update cache index and cleanup
       await _registerAvatarFile(file.path);
-      await _cleanupAvatarCache();
+      if (!kIsWeb) {
+        await _cleanupAvatarCache();
+      }
       return file;
     } catch (_) {
       return null;
@@ -288,6 +298,7 @@ class AuthProvider extends ChangeNotifier {
 
   // keep list of cached avatar files and clean old/extra ones
   Future<void> _registerAvatarFile(String path) async {
+    if (kIsWeb) return; // Web 不维护本地文件列表
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList('auth_cached_avatar_files') ?? <String>[];
     // add to front
@@ -297,6 +308,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _cleanupAvatarCache({int keep = 3, int ttlDays = 14}) async {
+    if (kIsWeb) return; // Web 不清理本地文件
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList('auth_cached_avatar_files') ?? <String>[];
     final now = DateTime.now();

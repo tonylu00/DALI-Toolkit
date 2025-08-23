@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../auth/auth_provider.dart';
 import 'base_scaffold.dart';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show File;
 
 class ProfilePage extends StatelessWidget {
   final bool embedded;
@@ -18,7 +19,8 @@ class ProfilePage extends StatelessWidget {
     final avatarUrl = user['avatar'] ?? user['avatarUrl'] ?? user['picture'];
 
     final avatar = () {
-      if (avatarFile != null && avatarFile.isNotEmpty) {
+      // Web 环境不使用本地文件头像，避免 dart:io 在 Web 运行时错误
+      if (!kIsWeb && avatarFile != null && avatarFile.isNotEmpty) {
         return CircleAvatar(
           radius: 40,
           backgroundImage: Image.file(

@@ -16,7 +16,8 @@ import 'package:provider/provider.dart';
 import '../auth/auth_provider.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
-import 'dart:io' show Platform, File; // 对桌面平台判断
+import 'dart:io' show Platform, File; // 对桌面平台判断（Web 下将用 kIsWeb 保护）
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:desktop_window/desktop_window.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 
@@ -89,7 +90,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
 
   // 桌面窗口初始化：限定最小尺寸，确保双列布局不被压缩
   Future<void> _initDesktopWindow() async {
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
       // 需要同时容纳：左侧设备面板 + 导航 Rail + 最小功能区宽度 + 余量
       const minWidth =
           _kLeftPanelWidth + _kNavRailWidth + _kMinFunctionalWidth + _kExtraMargin; // 1004 默认
@@ -116,7 +117,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
     final diagonalLogical = math.sqrt(size.width * size.width + size.height * size.height);
     final approxInches = diagonalLogical / 150.0; // 经验系数
     bool isUltraLarge = approxInches >= 10.0;
-    final isDesktop = Platform.isWindows || Platform.isLinux || Platform.isMacOS;
+    final isDesktop = (!kIsWeb) && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
     // 桌面窗口模式强制使用超大屏布局
     if (isDesktop) {
       isUltraLarge = true;
@@ -357,7 +358,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
     final diagonalLogical =
         math.sqrt(media.size.width * media.size.width + media.size.height * media.size.height);
     final approxInches = diagonalLogical / 150.0;
-    final isDesktop = Platform.isWindows || Platform.isLinux || Platform.isMacOS;
+    final isDesktop = (!kIsWeb) && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
     final isUltraLarge = isDesktop || approxInches >= 10.0;
     final auth = context.watch<AuthProvider>();
     final loggedIn = auth.state.authenticated;
@@ -390,7 +391,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
                       auth.state.user?['avatarUrl'] ??
                       auth.state.user?['picture'];
                   try {
-                    if (prefsAvatarFile is String && prefsAvatarFile.isNotEmpty) {
+                    if (!kIsWeb && prefsAvatarFile is String && prefsAvatarFile.isNotEmpty) {
                       final f = File(prefsAvatarFile);
                       if (f.existsSync()) return FileImage(f);
                     }

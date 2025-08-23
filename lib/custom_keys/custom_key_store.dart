@@ -71,7 +71,7 @@ class CustomKeyRepository {
     final g = CustomKeyGroup(
         id: DateTime.now().microsecondsSinceEpoch.toString(), name: name, order: _groups.length);
     _groups.add(g);
-    if (currentGroup == null) currentGroup = g;
+    currentGroup ??= g;
     return g;
   }
 

@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_analytics/observer.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'connection/manager.dart';
 import 'dali/color.dart';
@@ -76,19 +75,37 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await FirebaseAnalytics.instance.setUserId(id: anonymousId);
-  // 将匿名标识符设置到 Crashlytics 中
-  await FirebaseCrashlytics.instance.setUserIdentifier(anonymousId);
-  FlutterError.onError = (errorDetails) {
-    if (reportAllErrors) {
-      FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
-    } else {
-      FirebaseCrashlytics.instance.recordFlutterError(errorDetails);
-    }
-  };
-  PlatformDispatcher.instance.onError = (error, stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-    return true;
-  };
+  // Crashlytics 在 Web 端不受支持：仅在非 Web 目标启用
+  if (!kIsWeb) {
+    // 将匿名标识符设置到 Crashlytics 中
+    await FirebaseCrashlytics.instance.setUserIdentifier(anonymousId);
+    FlutterError.onError = (errorDetails) {
+      if (reportAllErrors) {
+        FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+      } else {
+        FirebaseCrashlytics.instance.recordFlutterError(errorDetails);
+      }
+    };
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+  } else {
+    // Web 平台：避免触发 Crashlytics 初始化，改为本地日志与控制台输出
+    FlutterError.onError = (errorDetails) {
+      // 控制台与自定义日志
+      FlutterError.presentError(errorDetails);
+      DaliLog.instance.debugLog('Flutter error (web): '
+          '${errorDetails.exceptionAsString()}\n${errorDetails.stack}');
+    };
+    PlatformDispatcher.instance.onError = (error, stack) {
+      // 控制台与自定义日志
+      // ignore: avoid_print
+      print('Uncaught (web): $error\n$stack');
+      DaliLog.instance.debugLog('Uncaught (web): $error\n$stack');
+      return true;
+    };
+  }
   // Initialize log level (default depends on build mode) on first launch
   await DaliLog.instance.init();
   runApp(EasyLocalization(
@@ -124,7 +141,7 @@ String _generateUuidV4() {
   final p4 = ((next() & 0x3FFF) | 0x8000); // variant 10
   final p5a = hex(next(), 8);
   final p5b = hex(next(), 4);
-  return '${p1}-${p2}-${hex(p3, 4)}-${hex(p4, 4)}-${p5a}${p5b}'.toLowerCase();
+  return '$p1-$p2-${hex(p3, 4)}-${hex(p4, 4)}-$p5a$p5b'.toLowerCase();
 }
 
 // 重置匿名标识符并同步更新 Crashlytics，返回新 ID

@@ -6,10 +6,11 @@ import 'ble.dart';
 import 'serial_ip.dart';
 import 'dart:convert';
 import 'package:easy_localization/easy_localization.dart';
-import 'serial_usb.dart';
+import 'serial_platform.dart';
 import 'connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '/toast.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ConnectionManager extends ChangeNotifier {
   static ConnectionManager? _instance;
@@ -27,6 +28,17 @@ class ConnectionManager extends ChangeNotifier {
     return _instance!;
   }
 
+  String _classifyMethod(Connection c) {
+    try {
+      if (c is BleManager) return 'BLE';
+      if (c is TcpClient || c is UdpClient) return 'IP';
+      // 通过 type 文案粗略判断串口
+      final t = c.type;
+      if (t.startsWith('Serial')) return 'USB';
+    } catch (_) {}
+    return 'UNKNOWN';
+  }
+
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     String connectionMethod = prefs.getString('connectionMethod') ?? 'BLE';
@@ -35,24 +47,48 @@ class ConnectionManager extends ChangeNotifier {
       connectionMethod = 'IP';
       prefs.setString('connectionMethod', 'IP');
     }
+    // Web 平台不支持 dart:io Socket，强制回退到 BLE
+    if (kIsWeb && (connectionMethod == 'IP')) {
+      connectionMethod = 'BLE';
+      await prefs.setString('connectionMethod', 'BLE');
+      DaliLog.instance.debugLog('On Web: fallback connection method to BLE');
+    }
+
+    // 如果连接方式发生变化，立即断开当前连接（满足“切换方式即断开”的要求）
+    final currentMethod = _classifyMethod(_connection);
+    if (currentMethod != 'UNKNOWN' && currentMethod != connectionMethod) {
+      try {
+        _connection.disconnect();
+        DaliLog.instance
+            .debugLog('Disconnected due to method change: $currentMethod -> $connectionMethod');
+      } catch (_) {}
+      notifyListeners();
+    }
     if (connectionMethod == 'BLE') {
       if (_connection is BleManager) {
         DaliLog.instance.debugLog('BLE connection already initialized');
         return;
       }
       DaliLog.instance.debugLog('Initializing BLE connection');
-      _connection = BleManager();
+      replaceConnection(BleManager());
+      return;
     } else if (connectionMethod == 'IP') {
       if (!(_connection is TcpClient || _connection is UdpClient)) {
-        _connection = TcpClient(); // 默认 TCP
-      }
-    } else if (connectionMethod == 'USB') {
-      if (_connection is SerialUsbConnection) {
-        DaliLog.instance.debugLog('USB connection already initialized');
+        // 默认 TCP，具体 UDP/TCP 在 IP 弹窗中可切换
+        replaceConnection(TcpClient());
         return;
       }
-      DaliLog.instance.debugLog('Initializing USB serial connection');
-      _connection = SerialUsbConnection();
+      // 已经是 IP 系列：也通知一次，确保 UI 立即刷新（比如显示的 type 文案）
+      notifyListeners();
+      return;
+    } else if (connectionMethod == 'USB') {
+      if (_connection.type == 'Serial USB' || _connection.type == 'Serial Web') {
+        DaliLog.instance.debugLog('Serial connection already initialized');
+        return;
+      }
+      DaliLog.instance.debugLog('Initializing Serial connection');
+      replaceConnection(createSerialConnection());
+      return;
     } else {
       DaliLog.instance.debugLog('Unknown connection method: $connectionMethod');
       return;
@@ -69,7 +105,7 @@ class ConnectionManager extends ChangeNotifier {
       return;
     }
     if ((connectionMethod == 'BLE' && _connection is BleManager) ||
-        (connectionMethod == 'USB' && _connection is SerialUsbConnection)) {
+        (connectionMethod == 'USB' && (_connection.type.startsWith('Serial')))) {
       _connection.openDeviceSelection(context);
     }
   }
@@ -87,61 +123,64 @@ class ConnectionManager extends ChangeNotifier {
   Future<void> ensureGatewayType() async {
     if (gatewayType != -1) return; // 已有值
     final conn = _connection;
-    try {
-      // 参考 DaliComm.checkGatewayType 逻辑，避免直接依赖产生循环导入
-      List<int> bytes1 = [0x01, 0x00, 0x00]; // USB type 0
-      // 默认 gateway 地址 0
-      int gateway = 0;
-      List<int> bytes2 = [0x28, 0x01, gateway, 0x11, 0x00, 0x00, 0xff]; // Legacy type 1
-      List<int> bytes3 = [
-        0x28,
-        0x01,
-        gateway,
-        0x11,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0xff
-      ]; // New type 2
+    while (gatewayType == -1) {
+      try {
+        // 参考 DaliComm.checkGatewayType 逻辑，避免直接依赖产生循环导入
+        List<int> bytes1 = [0x01, 0x00, 0x00]; // USB type 0
+        // 默认 gateway 地址 0
+        int gateway = 0;
+        List<int> bytes2 = [0x28, 0x01, gateway, 0x11, 0x00, 0x00, 0xff]; // Legacy type 1
+        List<int> bytes3 = [
+          0x28,
+          0x01,
+          gateway,
+          0x11,
+          0x00,
+          0x00,
+          0x00,
+          0x00,
+          0x00,
+          0xff
+        ]; // New type 2
 
-      await conn.send(Uint8List.fromList(bytes1));
-      await Future.delayed(const Duration(milliseconds: 100));
-      Uint8List? data = await conn.read(2, timeout: 100);
-      if ((data != null && data.isNotEmpty) &&
-          (data[0] == 0x01 || data[0] == 0x03 || data[0] == 0x05)) {
-        gatewayType = 0; // USB
-        notifyListeners();
-        DaliLog.instance.debugLog("Gateway type detected: USB");
-        return;
-      }
+        await conn.send(Uint8List.fromList(bytes1));
+        await Future.delayed(const Duration(milliseconds: 100));
+        Uint8List? data = await conn.read(2, timeout: 100);
+        if ((data != null && data.isNotEmpty) &&
+            (data[0] == 0x01 || data[0] == 0x03 || data[0] == 0x05)) {
+          gatewayType = 0; // USB
+          notifyListeners();
+          DaliLog.instance.debugLog("Gateway type detected: USB");
+          return;
+        }
 
-      await conn.send(Uint8List.fromList(bytes2));
-      await Future.delayed(const Duration(milliseconds: 100));
-      data = await conn.read(2, timeout: 100);
-      if (data != null && data.length == 2 && data[0] == gateway && data[1] >= 0) {
-        gatewayType = 1; // Legacy 485
-        notifyListeners();
-        DaliLog.instance.debugLog("Gateway type detected: Legacy 485");
-        return;
-      }
+        await conn.send(Uint8List.fromList(bytes2));
+        await Future.delayed(const Duration(milliseconds: 100));
+        data = await conn.read(2, timeout: 100);
+        if (data != null && data.length == 2 && data[0] == gateway && data[1] >= 0) {
+          gatewayType = 1; // Legacy 485
+          notifyListeners();
+          DaliLog.instance.debugLog("Gateway type detected: Legacy 485");
+          return;
+        }
 
-      await conn.send(Uint8List.fromList(bytes3));
-      await Future.delayed(const Duration(milliseconds: 100));
-      data = await conn.read(2, timeout: 100);
-      if (data != null && data.length == 2 && data[0] == gateway && data[1] >= 0) {
-        gatewayType = 2; // New 485
-        notifyListeners();
-        DaliLog.instance.debugLog("Gateway type detected: New 485");
-        return;
+        await conn.send(Uint8List.fromList(bytes3));
+        await Future.delayed(const Duration(milliseconds: 100));
+        data = await conn.read(2, timeout: 100);
+        if (data != null && data.length == 2 && data[0] == gateway && data[1] >= 0) {
+          gatewayType = 2; // New 485
+          notifyListeners();
+          DaliLog.instance.debugLog("Gateway type detected: New 485");
+          return;
+        }
+        //gatewayType = 0; // 视为 type0（需求中使用）
+        //notifyListeners();
+        DaliLog.instance.debugLog("Could not detect gateway type, try again later");
+      } catch (e) {
+        // 检测失败保持 -1 以便之后可再尝试
+        DaliLog.instance.debugLog('ensureGatewayType failed: $e');
       }
-      gatewayType = 0; // 视为 type0（需求中使用）
-      notifyListeners();
-      DaliLog.instance.debugLog("Could not detect gateway type, use 0");
-    } catch (e) {
-      // 检测失败保持 -1 以便之后可再尝试
-      DaliLog.instance.debugLog('ensureGatewayType failed: $e');
+      await Future.delayed(const Duration(milliseconds: 500));
     }
   }
 

@@ -33,7 +33,7 @@ dependencies:
   universal_ble: ^0.21.0 # universal ble
   flutter_libserialport: ^0.6.0 # flutter libserialport
   libserialport: ^0.3.0
-  serial: ^0.0.7 # usb serial for web
+  serial: ^0.0.7+1 # usb serial for web
   #serial_port_win32: ^2.1.12 # usb serial for windows
   #linux_serial: ^0.2.3+6
   #usb_serial: ^0.5.2 # usb serial for android
@@ -58,10 +58,11 @@ dependencies:
   provider: ^6.0.0
   casdoor_flutter_sdk: ^1.11.0
   flutter_secure_storage: ^9.2.2
-  http: ^1.5.0
+    # serial: ^0.0.7+1 # usb serial for web
   path_provider: ^2.0.15
   cached_network_image: ^3.2.3
   firebase_crashlytics: ^5.0.0
+  http: ^1.5.0
 
 dev_dependencies:
   flutter_test:

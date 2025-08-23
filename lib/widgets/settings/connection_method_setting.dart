@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:io';
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '/connection/manager.dart';
 import 'settings_card.dart';
@@ -18,7 +18,11 @@ class ConnectionMethodSettingState extends State<ConnectionMethodSetting> {
 
   List<String> get _availableConnectionMethods {
     List<String> methods = ['BLE'];
-    if (!Platform.isIOS) {
+    // Web 环境不支持 Platform.isIOS方法；同时 iOS 也不支持 USB
+    if (!kIsWeb && !Platform.isIOS) {
+      methods.add('USB');
+    }
+    if (kIsWeb) {
       methods.add('USB');
     }
     // 除 web 外都支持 IP

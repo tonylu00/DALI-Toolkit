@@ -5,17 +5,11 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'manager.dart';
 import 'connection.dart';
 import '../widgets/common/rename_device_dialog.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'dart:io' show Platform;
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'dart:html' show DomException;
 
-class BleManager implements Connection {
+class BleWebManager implements Connection {
   static final List<BleDevice> _scanResults = [];
   static final Set<String> _uniqueDeviceIds = {};
   static final _scanResultsController = StreamController<List<BleDevice>>.broadcast();
@@ -44,13 +38,6 @@ class BleManager implements Connection {
 
   @override
   Future<void> startScan() async {
-    if (!kIsWeb) {
-      final state = await UniversalBle.getBluetoothAvailabilityState();
-      if (state != AvailabilityState.poweredOn) {
-        DaliLog.instance.debugLog('Bluetooth is not powered on');
-        return;
-      }
-    }
     await _startScanCore();
   }
 
@@ -83,10 +70,7 @@ class BleManager implements Connection {
       DaliLog.instance.debugLog('OnConnectionChange $deviceId, $isConnected Error: $error');
       if (isConnected) {
         connectedDeviceId = deviceId;
-        // 先检测 gatewayType 后再广播连接状态
-        ConnectionManager.instance.ensureGatewayType().then((_) {
-          ConnectionManager.instance.updateConnectionStatus(true);
-        });
+        ConnectionManager.instance.updateConnectionStatus(true);
         final prefs = SharedPreferences.getInstance();
         prefs.then((prefs) {
           prefs.setString('deviceId', deviceId);
@@ -100,6 +84,8 @@ class BleManager implements Connection {
           _handleBusMonitor(value);
         };
         DaliLog.instance.debugLog('Connected to $deviceId');
+        Future.delayed(const Duration(milliseconds: 500));
+        unawaited(ConnectionManager.instance.ensureGatewayType());
       } else if (error != null) {
         DaliLog.instance.debugLog('Error: $error');
       } else {
@@ -116,9 +102,7 @@ class BleManager implements Connection {
 
   void _handleBusMonitor(Uint8List value) {
     final manager = ConnectionManager.instance;
-    // 仅对 type0 网关启用
     if (manager.gatewayType != 0) return;
-    // 空闲状态下收到两个字节依次为 0xFF 0xFD 表示总线异常
     if (value.length >= 2) {
       for (int i = 0; i < value.length - 1; i++) {
         if (value[i] == 0xff && value[i + 1] == 0xfd) {
@@ -129,35 +113,23 @@ class BleManager implements Connection {
     }
   }
 
-  // 网关类型检测已迁移至 ConnectionManager.ensureGatewayType
-
-  Future<void> connectToSavedDevice() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? deviceId = prefs.getString('deviceId');
-    if (deviceId != null) {
-      connect(deviceId);
-    }
-  }
-
   @override
   Future<void> disconnect() async {
     String deviceId = connectedDeviceId;
     if (deviceId.isEmpty) {
-      if (kIsWeb) {
-        DaliLog.instance.debugLog('No device connected, skipping disconnect on Web');
-        return;
-      }
-      List<BleDevice> devices = await UniversalBle.getSystemDevices(withServices: [serviceUuid]);
-      for (BleDevice device in devices) {
-        UniversalBle.disconnect(device.deviceId);
-        DaliLog.instance.debugLog('Disconnected from ${device.deviceId}');
-      }
+      DaliLog.instance.debugLog('No device connected, skipping disconnect on Web');
       return;
     }
-    UniversalBle.disconnect(deviceId);
+    List<BleDevice> devices = await UniversalBle.getSystemDevices(withServices: [serviceUuid]);
+    for (BleDevice device in devices) {
+      UniversalBle.disconnect(device.deviceId);
+      DaliLog.instance.debugLog('Disconnected from ${device.deviceId}');
+    }
     connectedDeviceId = "";
+    readBuffer = null;
     ConnectionManager.instance.updateConnectionStatus(false);
-    DaliLog.instance.debugLog('Disconnected from $deviceId');
+    ConnectionManager.instance.resetBusStatus();
+    ConnectionManager.instance.updateGatewayType(-1);
   }
 
   void sendCommand(String command) {
@@ -180,7 +152,7 @@ class BleManager implements Connection {
       DaliLog.instance.debugLog('ble:read blocked (bus abnormal)');
       return null;
     }
-    if (!isDeviceConnected()) if (!await restoreExistConnection()) return null;
+    if (!isDeviceConnected()) return null;
     try {
       final value = await UniversalBle.read(connectedDeviceId, serviceUuid, readUuid,
           timeout: Duration(milliseconds: timeout));
@@ -198,7 +170,7 @@ class BleManager implements Connection {
       DaliLog.instance.debugLog('ble:send blocked (bus abnormal)');
       return;
     }
-    if (!isDeviceConnected()) if (!await restoreExistConnection()) return;
+    if (!isDeviceConnected()) return;
     int retry = 0;
     while (retry < 3) {
       retry++;
@@ -214,13 +186,12 @@ class BleManager implements Connection {
 
   @override
   void openDeviceSelection(BuildContext context) {
-    _showPermissionRationaleThenScan(context);
+    _showScanDialog(context);
   }
 
   @override
   void renameDeviceDialog(BuildContext context, String currentName) {
     if (!isDeviceConnected()) return;
-
     RenameDeviceDialog.show(
       context,
       currentName: currentName,
@@ -257,115 +228,6 @@ class BleManager implements Connection {
 
   static List<BleDevice> get scanResults => _scanResults;
 
-  // Ensure correct runtime permissions for BLE scanning.
-  // Android 12+ (SDK 31+) needs bluetoothScan & bluetoothConnect.
-  // Android 11 and below need location (fine) permission.
-  Future<bool> _ensurePermissions() async {
-    try {
-      if (kIsWeb || !Platform.isAndroid) return true;
-      final androidInfo = await DeviceInfoPlugin().androidInfo;
-      final sdkInt = androidInfo.version.sdkInt;
-      if (sdkInt >= 31) {
-        // Android 12+
-        final scan = await Permission.bluetoothScan.request();
-        final connect = await Permission.bluetoothConnect.request();
-        if (scan.isGranted && connect.isGranted) return true;
-        if (scan.isPermanentlyDenied || connect.isPermanentlyDenied) openAppSettings();
-        return false;
-      } else {
-        // Android 11 及以下
-        final loc = await Permission.location.request();
-        if (loc.isGranted) return true;
-        if (loc.isPermanentlyDenied) openAppSettings();
-        return false;
-      }
-    } catch (e) {
-      DaliLog.instance.debugLog('Error requesting permissions: $e');
-      return false;
-    }
-  }
-
-  Future<void> _showPermissionRationaleThenScan(BuildContext context) async {
-    // 如果是 Web 直接打开扫描并自动连接第一个设备，无需弹窗
-    if (kIsWeb) {
-      await _startScanCore();
-      // 自动连接第一个设备（如有）
-      BleManager.scanResultsStream.listen((devices) {
-        if (devices.isNotEmpty) {
-          connect(devices.first.deviceId);
-        }
-      }, cancelOnError: true);
-      return;
-    }
-    // 仅 Android 需要解释；其它平台直接扫描
-    if (!Platform.isAndroid) {
-      await _startScanCore();
-      if (!context.mounted) return;
-      _showScanDialog(context);
-      return;
-    }
-    // 先判断是否已经全部权限 OK
-    bool preGranted = await _permissionsAlreadyGranted();
-    if (preGranted) {
-      await _startScanCore();
-      if (!context.mounted) return;
-      _showScanDialog(context);
-      return;
-    }
-    // 说明对话框
-    if (!context.mounted) return;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('权限请求').tr(),
-          content:
-              const Text('需要蓝牙扫描与连接权限 (Android 12+)，或定位权限 (Android 11 及以下) 来搜索并连接到网关设备。请授予以继续。')
-                  .tr(),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                // 用户拒绝，不再弹系统权限，提示 toast
-                Fluttertoast.showToast(msg: tr('权限被取消，无法扫描设备'));
-              },
-              child: const Text('取消').tr(),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(ctx).pop();
-                bool ok = await _ensurePermissions();
-                if (!ok) {
-                  Fluttertoast.showToast(msg: tr('未授予权限，无法扫描设备'));
-                  return;
-                }
-                await _startScanCore();
-                if (!context.mounted) return;
-                _showScanDialog(context);
-              },
-              child: const Text('继续').tr(),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<bool> _permissionsAlreadyGranted() async {
-    if (kIsWeb || !Platform.isAndroid) return true;
-    final androidInfo = await DeviceInfoPlugin().androidInfo;
-    final sdkInt = androidInfo.version.sdkInt;
-    if (sdkInt >= 31) {
-      final scan = await Permission.bluetoothScan.status;
-      final connect = await Permission.bluetoothConnect.status;
-      return scan.isGranted && connect.isGranted;
-    } else {
-      final loc = await Permission.location.status;
-      return loc.isGranted;
-    }
-  }
-
   void _showScanDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -375,7 +237,7 @@ class BleManager implements Connection {
           content: SizedBox(
             width: double.maxFinite,
             child: StreamBuilder<List<BleDevice>>(
-              stream: BleManager.scanResultsStream,
+              stream: BleWebManager.scanResultsStream,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
