@@ -119,8 +119,8 @@ class SerialWebManager implements Connection {
               if (buffer is ByteBuffer) {
                 data = Uint8List.view(buffer);
               } else {
-                DaliLog.instance.debugLog(
-                    'Serial Web recv: unknown value type: ' + value.runtimeType.toString());
+                DaliLog.instance
+                    .debugLog('Serial Web recv: unknown value type: ${value.runtimeType}');
                 debugPrintStack();
                 continue;
               }

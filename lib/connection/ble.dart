@@ -13,7 +13,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'dart:io' show Platform;
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'dart:html' show DomException;
 
 class BleManager implements Connection {
   static final List<BleDevice> _scanResults = [];

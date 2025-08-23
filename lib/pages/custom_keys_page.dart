@@ -39,6 +39,7 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
     await repo.load();
     final prefs = await SharedPreferences.getInstance();
     _gridButtonSize = prefs.getDouble(_kGridBtnSizeKey) ?? 120;
+    if (!mounted) return;
     setState(() => loading = false);
   }
 
@@ -47,6 +48,7 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
   Future<void> _createGroup() async {
     final name = await _inputDialog(title: 'custom_key.group.create'.tr());
     if (name == null || name.trim().isEmpty) return;
+    if (!mounted) return;
     setState(() {
       final g = repo.createGroup(name.trim());
       repo.selectGroup(g.id);
@@ -59,6 +61,7 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
     final name =
         await _inputDialog(title: 'custom_key.group.rename'.tr(), initial: repo.currentGroup!.name);
     if (name == null || name.trim().isEmpty) return;
+    if (!mounted) return;
     setState(() => repo.renameGroup(repo.currentGroup!, name.trim()));
     await _save();
   }
@@ -79,6 +82,7 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
                       child: Text('sequence.delete'.tr()))
                 ]));
     if (ok != true) return;
+    if (!mounted) return;
     setState(() => repo.deleteGroup(repo.currentGroup!));
     await _save();
   }
@@ -111,6 +115,7 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
         context: context,
         builder: (_) => _CustomKeyDialog(definition: def, sequences: seqRepo.sequences));
     if (result != null) {
+      if (!mounted) return;
       setState(() => def == null ? repo.add(result) : repo.replace(result));
       await _save();
     }
@@ -131,6 +136,7 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
                       child: Text('sequence.delete'.tr()))
                 ]));
     if (ok == true) {
+      if (!mounted) return;
       setState(() => repo.remove(def.id));
       await _save();
     }
@@ -221,9 +227,11 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
           final active = _activeToggle.contains(def.id);
           if (active) {
             await Dali.instance.base!.off(addr);
+            if (!mounted) return;
             setState(() => _activeToggle.remove(def.id));
           } else {
             await Dali.instance.base!.on(addr);
+            if (!mounted) return;
             setState(() => _activeToggle.add(def.id));
           }
         }
@@ -267,9 +275,10 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
           FilledButton(
               onPressed: () async {
                 setState(() => _gridButtonSize = temp);
+                final navigator = Navigator.of(context);
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setDouble(_kGridBtnSizeKey, _gridButtonSize);
-                Navigator.pop(context);
+                navigator.pop();
               },
               child: Text('sequence.save'.tr()))
         ],
@@ -344,10 +353,13 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
                         final isToggleActive = _activeToggle.contains(k.id);
                         return ListTile(
                             key: ValueKey(k.id),
-                            tileColor: k.actionType == CustomKeyActionType.toggleOnOff &&
-                                    isToggleActive
-                                ? Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.6)
-                                : null,
+                            tileColor:
+                                k.actionType == CustomKeyActionType.toggleOnOff && isToggleActive
+                                    ? Theme.of(context)
+                                        .colorScheme
+                                        .secondaryContainer
+                                        .withValues(alpha: 0.6)
+                                    : null,
                             title: Text(k.actionType == CustomKeyActionType.toggleOnOff
                                 ? '$summary (${isToggleActive ? 'common.on'.tr() : 'common.off'.tr()})'
                                 : summary),
@@ -483,49 +495,49 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
         return 'custom_key.summary.reset_allocate'.tr();
       case CustomKeyActionType.on:
         return isBroadcast
-            ? (variantPrefix + 'on').tr()
-            : (variantPrefix + 'on').tr(namedArgs: {'addr': addrStr(rawAddr)});
+            ? ('${variantPrefix}on').tr()
+            : ('${variantPrefix}on').tr(namedArgs: {'addr': addrStr(rawAddr)});
       case CustomKeyActionType.off:
         return isBroadcast
-            ? (variantPrefix + 'off').tr()
-            : (variantPrefix + 'off').tr(namedArgs: {'addr': addrStr(rawAddr)});
+            ? ('${variantPrefix}off').tr()
+            : ('${variantPrefix}off').tr(namedArgs: {'addr': addrStr(rawAddr)});
       case CustomKeyActionType.setBright:
         return isBroadcast
-            ? (variantPrefix + 'setBright')
+            ? ('${variantPrefix}setBright')
                 .tr(namedArgs: {'level': k.params.getInt('level').toString()})
-            : (variantPrefix + 'setBright').tr(namedArgs: {
+            : ('${variantPrefix}setBright').tr(namedArgs: {
                 'addr': addrStr(rawAddr),
                 'level': k.params.getInt('level').toString()
               });
       case CustomKeyActionType.toScene:
         return isBroadcast
-            ? (variantPrefix + 'toScene')
+            ? ('${variantPrefix}toScene')
                 .tr(namedArgs: {'scene': k.params.getInt('scene').toString()})
-            : (variantPrefix + 'toScene').tr(namedArgs: {
+            : ('${variantPrefix}toScene').tr(namedArgs: {
                 'addr': addrStr(rawAddr),
                 'scene': k.params.getInt('scene').toString()
               });
       case CustomKeyActionType.setScene:
         return isBroadcast
-            ? (variantPrefix + 'setScene')
+            ? ('${variantPrefix}setScene')
                 .tr(namedArgs: {'scene': k.params.getInt('scene').toString()})
-            : (variantPrefix + 'setScene').tr(namedArgs: {
+            : ('${variantPrefix}setScene').tr(namedArgs: {
                 'addr': addrStr(rawAddr),
                 'scene': k.params.getInt('scene').toString()
               });
       case CustomKeyActionType.addToGroup:
         return isBroadcast
-            ? (variantPrefix + 'addToGroup')
+            ? ('${variantPrefix}addToGroup')
                 .tr(namedArgs: {'group': k.params.getInt('group').toString()})
-            : (variantPrefix + 'addToGroup').tr(namedArgs: {
+            : ('${variantPrefix}addToGroup').tr(namedArgs: {
                 'addr': addrStr(rawAddr),
                 'group': k.params.getInt('group').toString()
               });
       case CustomKeyActionType.removeFromGroup:
         return isBroadcast
-            ? (variantPrefix + 'removeFromGroup')
+            ? ('${variantPrefix}removeFromGroup')
                 .tr(namedArgs: {'group': k.params.getInt('group').toString()})
-            : (variantPrefix + 'removeFromGroup').tr(namedArgs: {
+            : ('${variantPrefix}removeFromGroup').tr(namedArgs: {
                 'addr': addrStr(rawAddr),
                 'group': k.params.getInt('group').toString()
               });
