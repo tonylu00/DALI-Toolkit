@@ -26,6 +26,8 @@
   - Go 1.22+（高并发网络、原生 Casbin/Casdoor/MQTT 生态成熟，单二进制易部署）
 - Web 框架
   - Gin（性能与生态良好，社区广）
+- 实时通道
+  - WebSocket（供 App Cloud 模式使用，路径建议 `/ws`，支持 TLS/反向代理）
 - 身份认证（AuthN）
   - Casdoor OIDC：服务端使用 casdoor-go-sdk 校验 ID/Access Token（JWKS 缓存）
 - 鉴权（AuthZ）
@@ -85,8 +87,9 @@ server/
 - projects(id, org_id, name, remark, created_by, ...)
 - partitions(id, project_id, parent_id, name, path, depth, ...)
   - path 采用“物化路径”或 PostgreSQL ltree（如 org.项目.分区.子分区）
-- devices(id, mac CHAR(12), project_id, partition_id, display_name, status, last_seen_at, meta JSONB, ...)
+- devices(id, mac CHAR(12), imei VARCHAR(16), device_type ENUM(lte_nr|wifi_eth|other), project_id, partition_id, display_name, status, last_seen_at, meta JSONB, ...)
   - mac 正规化为不含分隔符的大写 12 HEX（示例：A1B2C3D4E5F6）
+  - imei 保持为仅数字字符串，长度通常 14~16，存在时可作为主标识
 - device_bindings(device_id, user_id, bound_at, bound_by)
 - device_shares(device_id, subject_type ENUM(user|group), subject_id, role, granted_by, granted_at)
 - device_transfers(id, device_id, from_subject, to_subject, status, created_at, processed_at)
@@ -162,10 +165,13 @@ Casdoor 集成：
   - 客户端 ID 建议：`mac` 或 `mac@something`
   - 若设备未登记，可记为“未绑定”状态，允许连接但限制主题（仅注册/申诉主题）
 - 主题命名与 ACL（订阅/发布权限）
-  - 设备上行：`devices/<MAC>/up`
-  - 设备下行：`devices/<MAC>/down`
-  - 状态/遗嘱：`devices/<MAC>/status`
-  - Hook 内基于 MAC 与授权关系做 ACL：设备仅能发布 `<MAC>/up` 与 `<MAC>/status`，订阅 `<MAC>/down`
+  - 设备标识优先级：IMEI > MAC；均需规范化（IMEI：纯数字；MAC：12 位大写 HEX 无分隔符）
+  - Topic 统一采用设备标识占位：`devices/<ID>/...`，其中 `<ID>` 为 IMEI 或 MAC
+  - 设备上行：`devices/<ID>/up`
+  - 设备下行：`devices/<ID>/down`
+  - 状态/遗嘱：`devices/<ID>/status`
+  - 自注册：`devices/<ID>/register`（设备首次上线发送 JSON 载荷，包含自身 IMEI/MAC 与能力摘要）
+  - Hook 内基于设备标识与授权关系做 ACL：设备仅能发布 `<ID>/up` 与 `<ID>/status|register`，订阅 `<ID>/down`
 - 网关/设备上线后：
   - 更新 `last_seen_at`
   - 若首次见到 MAC，记录为“待绑定”并产生审计事件
@@ -187,13 +193,13 @@ Casdoor 集成：
   - GET /api/v1/auth/me -> 当前用户、所在组织、角色摘要
   - POST /api/v1/auth/switch-org { orgId } -> 切换活跃组织（仅用户属于该组织或为超级组织时生效）
 - 设备
-  - GET /api/v1/devices?projectId=&partitionId=&status=&q=（默认限定当前活跃 org）
-  - GET /api/v1/devices/:mac
-  - POST /api/v1/devices/bind { mac, userId? 默认当前用户, projectId, partitionId }
-  - POST /api/v1/devices/:mac/transfer { toUserId | toGroupId }
-  - POST /api/v1/devices/:mac/share { subjectType: user|group, subjectId, role }
-  - DELETE /api/v1/devices/:mac/share { subjectType, subjectId }
-  - PATCH /api/v1/devices/:mac { displayName, tags, meta }
+  - GET /api/v1/devices?projectId=&partitionId=&status=&q=&idType=imei|mac（默认限定当前活跃 org）
+  - GET /api/v1/devices/:id?by=imei|mac
+  - POST /api/v1/devices/bind { id, idType: imei|mac, userId? 默认当前用户, projectId, partitionId }
+  - POST /api/v1/devices/:id/transfer?by=imei|mac { toUserId | toGroupId }
+  - POST /api/v1/devices/:id/share?by=imei|mac { subjectType: user|group, subjectId, role }
+  - DELETE /api/v1/devices/:id/share?by=imei|mac { subjectType, subjectId }
+  - PATCH /api/v1/devices/:id?by=imei|mac { displayName, tags, meta }
 - 项目 & 分区
   - GET /api/v1/projects
   - POST /api/v1/projects { name, remark }
@@ -229,6 +235,20 @@ Casdoor 集成：
     - 设备树管理（项目/分区/设备）
     - 设备绑定/转移/共享
     - 权限查看与授权
+    - Cloud 连接（WebSocket）：
+      - 入口：连接方式选择“Cloud”，与本地 USB 并列
+      - 点击连接后弹窗展示设备树（调用 `/api/v1/projects`、`/api/v1/projects/:id/partitions/tree`、`/api/v1/devices`）
+      - 选择目标设备后，建立 `wss://<server>/ws?deviceId=<ID>&by=imei|mac` 连接；协议：
+        - App -> Server：与 USB 完全一致的二进制帧或文本命令，按现有编解码
+        - Server -> MQTT：将 App 的数据透传到 `devices/<ID>/down`
+        - MQTT -> Server：订阅 `devices/<ID>/up` 与 `devices/<ID>/status`，反馈通过 WS 推给 App
+      - 关闭连接：WS 关闭即释放 MQTT 订阅；异常断开需重连与节流
+    - 设备添加：
+      - 扫码添加：解析二维码中的 IMEI 或 MAC，进行规范化（IMEI：仅数字；MAC：去分隔转大写）
+      - 手动输入添加：提供 IMEI/MAC 两种输入模式与校验；
+      - LTE/NR 设备通过 IMEI 添加；其他类型通过 MAC 添加；
+      - 规范化后调用 `POST /api/v1/devices/bind` 完成绑定；
+      - 设备自注册：设备首次上线会向 `devices/<ID>/register` 发送 JSON，如 `{ "imei": "861234...", "mac": "A1B2...", "cap": {...} }`，后端将据此创建或补全设备记录。
 - Web Admin（后续里程碑交付）
   - React + AntD：仪表盘、项目/分区树、设备列表、设备详情、用户&组、授权、审计日志、MQTT 监控
 
@@ -248,6 +268,9 @@ Flutter Web 客户端集成与自动登录：
 - 最小权限原则：设备仅能访问自身主题；用户访问仅限其域内资源
 - 速率限制与防刷：对登录回调、绑定/授权等写操作限流
 - 输入校验与标准化：MAC 统一 12 HEX（不含分隔符）
+ - 输入校验与标准化：
+   - MAC：统一 12 位 HEX（不含分隔符，转为大写）
+   - IMEI：仅数字，常见长度 14~16，保留前导 0
 - 审计日志：所有敏感变更记录 actor/ip/ua
 - 配置密钥：从环境变量读取，严禁硬编码
 
@@ -270,6 +293,9 @@ MQTT_LISTEN_ADDR=:1883
 MQTT_DEVICE_USERNAME=device
 APP_EMBED_ENABLED=true               # 是否启用 go:embed 内嵌 Web 客户端
 APP_STATIC_PATH=./app                # 外部 Web 客户端路径（当未内嵌或覆盖时）
+WS_ENABLE=true                       # 是否启用 WebSocket Cloud 通道
+WS_PATH=/ws                          # WS 路由
+WS_MAX_CONN_PER_USER=4               # 单用户最大并发 WS 连接数
 ```
 
 ## 里程碑与任务分解
@@ -290,18 +316,30 @@ M2. 认证与鉴权
  - [ ] 多租户：解析用户所属组织集合与活跃组织；仅超级组织具备跨租户能力
  - [ ] Enforce 适配域：org -> project/partition/device 映射；超级组织放行逻辑
 
+M2.5. Cloud WS Proxy（App<->WS<->MQTT）
+- [ ] WebSocket 服务：`/ws`（支持 TLS，兼容反向代理）
+- [ ] 鉴权：复用 OIDC Bearer（握手时校验），绑定用户上下文
+- [ ] 设备选择：支持 `deviceId` + `by=imei|mac`，校验对目标域的读写权限
+- [ ] 透传编解码：与 USB 协议一致，二进制/文本透明
+- [ ] WS <-> MQTT 映射：下行 -> `devices/<ID>/down`，上行 <- `devices/<ID>/{up,status}`
+- [ ] 会话与限流：单用户并发、心跳、超时与重连策略
+- [ ] 审计：连接、断连、错误与关键命令
+
 M3. MQTT Broker
 - [ ] 嵌入 gmqtt，启动监听 :1883
 - [ ] 认证：用户名固定、密码=MAC；MAC 规范化
 - [ ] ACL：仅允许设备访问自身主题；遗嘱/状态处理
 - [ ] 设备在线状态与 last_seen 维护
+- [ ] 主题：支持 IMEI 或 MAC 作为 `<ID>`；注册通道 `devices/<ID>/register`
+- [ ] 自注册：解析注册 JSON（包含 imei/mac/capabilities），创建或更新设备记录
  - [ ] 未绑定设备的多租户可见性与认领流程（仅超级组织或具备注册权限者可见/可绑定）
 
 M4. 设备/项目/分区 API
-- [ ] 设备查询/绑定/转移/共享 API + 审计
+- [ ] 设备查询/绑定/转移/共享 API + 审计（支持 `idType=imei|mac`）
 - [ ] 项目/分区 CRUD + 树移动 API
 - [ ] 基于 Casbin 的授权校验（域映射）
  - [ ] 设备绑定/转移/共享均需校验 org 一致性或具备跨租户权限
+ - [ ] 设备添加：扫码/手动（字段校验与规范化）
 
 M5. 权限管理 API
 - [ ] 角色列表、授权/回收接口
@@ -318,9 +356,17 @@ M7. 稳定性与发布
 - [ ] 性能与安全加固（限流、CORS、CSRF、Header 安全）
 - [ ] CI/CD 与版本化发布
 
+M8. 规则引擎（低优先级）
+- [ ] 网关分组：定义 `gateway_groups`、`gateway_group_members` 数据模型
+- [ ] 规则模型与 DSL：条件（来源网关/主题/内容匹配）与动作（转发/广播/丢弃）
+- [ ] 执行器：从某网关上行匹配规则并转发到同组其他网关（MQTT 多主题发布）
+- [ ] 管理 API：创建/更新/启用/停用规则与组成员
+- [ ] 性能与安全：循环转发检测、限流与审计
+
 ## 与现有项目的耦合点（从 Flutter 端提取的信息）
 - 登录：Flutter 端已集成 Casdoor，后端仅需校验 Bearer Token
 - 设备标识：使用 MAC 地址作为后端标准主键之一（设备侧 MQTT 密码也用 MAC）
+  - 扩展：蜂窝设备支持 IMEI 作为主标识；MQTT topic 使用 IMEI/MAC 二选一
 - 未来在 `pages/` 中新增设备管理与权限授权页面即可对接后端 REST API
 
 ## 后续扩展（可选）
