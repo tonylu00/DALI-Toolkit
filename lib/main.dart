@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_analytics/observer.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'connection/manager.dart';
 import 'dali/color.dart';
@@ -24,6 +25,27 @@ import 'auth/auth_required.dart';
 import 'dali/log.dart';
 
 FirebaseAnalytics analytics = FirebaseAnalytics.instance;
+// 自定义屏幕名提取：优先 RouteSettings.name；否则从 arguments 中读取；最后回退到路由类型名
+String? _screenNameExtractor(RouteSettings settings) {
+  final name = settings.name;
+  if (name != null && name.isNotEmpty) return name;
+  final args = settings.arguments;
+  if (args is Map) {
+    for (final key in const ['screenName', 'screen_name', 'screen']) {
+      final v = args[key];
+      if (v is String && v.isNotEmpty) return v;
+    }
+  }
+  // 退而求其次，使用 arguments 的类型名；否则返回固定占位名
+  final type = args?.runtimeType.toString();
+  if (type != null && type.isNotEmpty) return type;
+  return 'UnnamedRoute';
+}
+
+FirebaseAnalyticsObserver analyticsObserver = FirebaseAnalyticsObserver(
+  analytics: analytics,
+  nameExtractor: _screenNameExtractor,
+);
 // VS Code 默认蓝色 #007ACC 作为应用默认主题色
 Color themeColor = const Color(0xFF007ACC);
 bool isDarkMode = false;
@@ -145,6 +167,7 @@ class MyAppState extends State<MyApp> {
       locale: context.locale,
       builder: FToastBuilder(),
       navigatorKey: navigatorKey,
+      navigatorObservers: [analyticsObserver],
       title: 'DALI Inspector',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: _themeColor),

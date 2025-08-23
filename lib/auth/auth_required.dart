@@ -34,7 +34,10 @@ class _AuthRequiredState extends State<AuthRequired> {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
         await Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const LoginPage()),
+          MaterialPageRoute(
+            builder: (_) => const LoginPage(),
+            settings: const RouteSettings(name: '/login'),
+          ),
         );
         if (!mounted) return;
         // After returning from login, if still unauthenticated treat as failure/cancel.

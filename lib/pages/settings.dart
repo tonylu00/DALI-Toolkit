@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '/main.dart';
 import 'base_scaffold.dart';
@@ -62,6 +64,7 @@ class SettingsPageState extends State<SettingsPage> {
           const AddressingSettings(),
           const AllowBroadcastReadSetting(),
           const CrashlyticsReportAllErrorsSetting(),
+          if (kDebugMode) const CrashlyticsTestCrashSetting(),
           const ResetAnonymousIdSetting(),
           const SizedBox(height: 12),
           const RememberInternalPageSetting(),
@@ -187,6 +190,30 @@ class _CrashlyticsReportAllErrorsSettingState extends State<CrashlyticsReportAll
         control: Switch(
           value: _value,
           onChanged: _onChanged,
+        ),
+      ),
+    );
+  }
+}
+
+class CrashlyticsTestCrashSetting extends StatelessWidget {
+  const CrashlyticsTestCrashSetting({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SettingsCard(
+      child: SettingsItem(
+        title: 'settings.crashlytics.test_crash.title',
+        subtitle: 'settings.crashlytics.test_crash.subtitle',
+        icon: Icons.bug_report_outlined,
+        control: FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+          onPressed: () async {
+            await FirebaseCrashlytics.instance.log('Debug test crash triggered from Settings');
+            // 触发原生崩溃（Android/iOS），用于验证 Crashlytics 集成
+            FirebaseCrashlytics.instance.crash();
+          },
+          child: const Text('Test Crash'),
         ),
       ),
     );

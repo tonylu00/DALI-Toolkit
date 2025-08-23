@@ -519,6 +519,7 @@ class DaliAddr {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => DeviceSelectionPage(daliAddr: this),
+        settings: const RouteSettings(name: '/deviceSelection'),
       ),
     );
   }

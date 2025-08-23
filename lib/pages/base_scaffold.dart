@@ -14,11 +14,11 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../auth/auth_provider.dart';
-import '../toast.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import 'dart:io' show Platform, File; // 对桌面平台判断
 import 'package:desktop_window/desktop_window.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 import '/dali/log.dart';
 import '/utils/internal_page_prefs.dart';
@@ -79,6 +79,12 @@ class BaseScaffoldState extends State<BaseScaffold> {
   void _changeInternalPage(String key) {
     setState(() => _internalPage = key);
     _prefs.setLastPage(key); // 未开启记忆时内部忽略
+    // 大屏内部切换不触发路由变更，这里手动上报屏幕名
+    try {
+      FirebaseAnalytics.instance.logScreenView(
+        screenName: '/$key',
+      );
+    } catch (_) {}
   }
 
   // 桌面窗口初始化：限定最小尺寸，确保双列布局不被压缩
