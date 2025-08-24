@@ -44,3 +44,24 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Go binaries and build artifacts
+server/bin/
+server/server
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Build output directories
+dist/
+server/internal/web/flutter_web/
+!server/internal/web/flutter_web/.gitkeep
+
+# CI/CD artifacts
+.coverage/
+coverage/
+*.tar.gz
+*.zip
+checksums.txt
+server/.env

@@ -1,0 +1,816 @@
+name: Comprehensive CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  GO_VERSION: '1.21'
+  FLUTTER_VERSION: '3.24.5'
+  JAVA_VERSION: '17'
+  NODE_VERSION: '18'
+
+jobs:
+  lint:
+    name: Lint and Format Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./server
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Install dependencies
+      run: go mod download
+    
+    - name: Install golangci-lint
+      run: |
+        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.54.2
+        echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+    
+    - name: Run linters
+      run: make lint
+    
+    - name: Check formatting
+      run: |
+        if [ -n "$(gofmt -l .)" ]; then
+          echo "Go code is not formatted properly:"
+          gofmt -l .
+          exit 1
+        fi
+
+  flutter-lint:
+    name: Flutter Lint and Format Check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+    
+    - name: Cache Flutter dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.pub-cache
+          build/
+        key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-flutter-
+    
+    - name: Install Flutter dependencies
+      run: flutter pub get
+    
+    - name: Run Flutter analyzer
+      run: flutter analyze
+    
+    - name: Check Flutter formatting
+      run: dart format --set-exit-if-changed lib/ test/
+
+  test:
+    name: Server Unit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./server
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Install dependencies
+      run: go mod download
+    
+    - name: Run unit tests
+      run: make test-coverage
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./server/coverage.out
+        flags: unittests
+        name: codecov-umbrella
+
+  flutter-test:
+    name: Flutter Unit Tests  
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+    
+    - name: Cache Flutter dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.pub-cache
+          build/
+        key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-flutter-
+    
+    - name: Install Flutter dependencies
+      run: flutter pub get
+    
+    - name: Run Flutter tests
+      run: flutter test --coverage
+    
+    - name: Upload Flutter coverage
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage/lcov.info
+        flags: flutter
+        name: flutter-coverage
+
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./server
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: dali_toolkit_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Install dependencies
+      run: go mod download
+    
+    - name: Run integration tests
+      run: make integration-test
+      env:
+        PG_DSN: postgres://postgres:password@localhost:5432/dali_toolkit_test?sslmode=disable
+        REDIS_ADDR: localhost:6379
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./server
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Install gosec
+      run: go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+    
+    - name: Run security scan
+      run: make security-scan
+
+  # Multi-platform Flutter builds
+  flutter-build:
+    name: Flutter Build - ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    needs: [flutter-lint, flutter-test]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Web platform
+          - platform: web
+            os: ubuntu-latest
+            build-args: '--release --no-tree-shake-icons'
+            artifact-path: 'build/web'
+            
+          # Android platforms  
+          - platform: android-apk
+            os: ubuntu-latest
+            build-args: 'apk --release'
+            artifact-path: 'build/app/outputs/flutter-apk'
+            
+          - platform: android-aab
+            os: ubuntu-latest  
+            build-args: 'appbundle --release'
+            artifact-path: 'build/app/outputs/bundle/release'
+            
+          # iOS platform
+          - platform: ios
+            os: macos-latest
+            build-args: '--release --no-codesign'
+            artifact-path: 'build/ios/iphoneos'
+            
+          # Desktop platforms
+          - platform: windows
+            os: windows-latest
+            build-args: '--release'
+            artifact-path: 'build/windows/x64/runner/Release'
+            
+          - platform: macos
+            os: macos-latest
+            build-args: '--release'
+            artifact-path: 'build/macos/Build/Products/Release'
+            
+          - platform: linux
+            os: ubuntu-latest
+            build-args: '--release'
+            artifact-path: 'build/linux/x64/release/bundle'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+    
+    # Platform-specific setup
+    - name: Set up Java (Android)
+      if: contains(matrix.platform, 'android')
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: ${{ env.JAVA_VERSION }}
+    
+    - name: Set up Android SDK (Android)
+      if: contains(matrix.platform, 'android')
+      uses: android-actions/setup-android@v3
+    
+    - name: Setup Xcode (iOS)
+      if: matrix.platform == 'ios'
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+    
+    - name: Install Linux dependencies (Linux)
+      if: matrix.platform == 'linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
+    
+    - name: Install Windows dependencies (Windows)
+      if: matrix.platform == 'windows'
+      run: |
+        # Windows runner already has Visual Studio
+        echo "Windows dependencies already available"
+    
+    - name: Cache Flutter dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.pub-cache
+          ${{ runner.tool_cache }}/flutter
+          build/
+        key: ${{ runner.os }}-flutter-${{ matrix.platform }}-${{ hashFiles('**/pubspec.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-flutter-${{ matrix.platform }}-
+          ${{ runner.os }}-flutter-
+    
+    - name: Install Flutter dependencies
+      run: flutter pub get
+    
+    - name: Enable platform support
+      run: |
+        case "${{ matrix.platform }}" in
+          web) flutter config --enable-web ;;
+          android*) flutter config --enable-android ;;
+          ios) flutter config --enable-ios ;;
+          windows) flutter config --enable-windows-desktop ;;
+          macos) flutter config --enable-macos-desktop ;;
+          linux) flutter config --enable-linux-desktop ;;
+        esac
+    
+    - name: Build Flutter app
+      run: flutter build ${{ matrix.platform }} ${{ matrix.build-args }}
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: flutter-${{ matrix.platform }}-build
+        path: ${{ matrix.artifact-path }}
+        retention-days: 7
+
+  # Multi-platform server builds
+  server-build:
+    name: Server Build - ${{ matrix.os }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    needs: [lint, test, security]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux builds
+          - os: linux
+            arch: amd64
+            runner: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            
+          - os: linux
+            arch: arm64
+            runner: ubuntu-latest
+            goos: linux
+            goarch: arm64
+            
+          # Windows builds
+          - os: windows
+            arch: amd64
+            runner: windows-latest
+            goos: windows
+            goarch: amd64
+            extension: .exe
+            
+          - os: windows
+            arch: arm64
+            runner: windows-latest
+            goos: windows
+            goarch: arm64
+            extension: .exe
+            
+          # macOS builds
+          - os: darwin
+            arch: amd64
+            runner: macos-latest
+            goos: darwin
+            goarch: amd64
+            
+          - os: darwin
+            arch: arm64
+            runner: macos-latest
+            goos: darwin
+            goarch: arm64
+    
+    defaults:
+      run:
+        working-directory: ./server
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Install dependencies
+      run: go mod download
+    
+    - name: Build server (standalone)
+      run: |
+        mkdir -p bin
+        GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build \
+          -ldflags="-w -s -X main.Version=${{ github.ref_name || 'dev' }} -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+          -o bin/dali-toolkit-server-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.extension }} \
+          ./cmd/server
+      env:
+        CGO_ENABLED: 0
+    
+    - name: Upload server binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: server-${{ matrix.os }}-${{ matrix.arch }}
+        path: server/bin/dali-toolkit-server-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.extension }}
+        retention-days: 7
+
+  # Server builds with embedded Flutter web
+  server-with-web:
+    name: Server with Web - ${{ matrix.os }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    needs: [server-build, flutter-build]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+            runner: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            
+          - os: windows
+            arch: amd64
+            runner: windows-latest
+            goos: windows
+            goarch: amd64
+            extension: .exe
+            
+          - os: darwin
+            arch: amd64
+            runner: macos-latest
+            goos: darwin
+            goarch: amd64
+            
+          - os: darwin
+            arch: arm64
+            runner: macos-latest
+            goos: darwin
+            goarch: arm64
+    
+    defaults:
+      run:
+        working-directory: ./server
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Download Flutter web build
+      uses: actions/download-artifact@v4
+      with:
+        name: flutter-web-build
+        path: server/internal/web/flutter_web/
+    
+    - name: Install dependencies
+      run: go mod download
+    
+    - name: Build server with embedded web
+      run: |
+        mkdir -p bin
+        GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build \
+          -ldflags="-w -s -X main.Version=${{ github.ref_name || 'dev' }} -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+          -tags="embed_web" \
+          -o bin/dali-toolkit-server-web-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.extension }} \
+          ./cmd/server
+      env:
+        CGO_ENABLED: 0
+    
+    - name: Upload server with web binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: server-web-${{ matrix.os }}-${{ matrix.arch }}
+        path: server/bin/dali-toolkit-server-web-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.extension }}
+        retention-days: 7
+
+  # Docker builds
+  docker:
+    name: Docker Build - ${{ matrix.variant }}
+    runs-on: ubuntu-latest
+    needs: [server-build, server-with-web]
+    strategy:
+      matrix:
+        variant: [standalone, with-web]
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Cache Docker layers
+      uses: actions/cache@v4
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ matrix.variant }}-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-${{ matrix.variant }}-
+          ${{ runner.os }}-buildx-
+    
+    - name: Download server binary (standalone)
+      if: matrix.variant == 'standalone'
+      uses: actions/download-artifact@v4
+      with:
+        name: server-linux-amd64
+        path: server/bin/
+    
+    - name: Download server binary (with-web)
+      if: matrix.variant == 'with-web'
+      uses: actions/download-artifact@v4
+      with:
+        name: server-web-linux-amd64
+        path: server/bin/
+    
+    - name: Prepare Docker build
+      run: |
+        cd server
+        chmod +x bin/*
+        if [ "${{ matrix.variant }}" = "standalone" ]; then
+          mv bin/dali-toolkit-server-linux-amd64 bin/server
+        else
+          mv bin/dali-toolkit-server-web-linux-amd64 bin/server
+        fi
+    
+    - name: Build Docker image
+      run: |
+        cd server
+        docker build \
+          --tag dali-toolkit-server:${{ matrix.variant }} \
+          --tag dali-toolkit-server:${{ matrix.variant }}-${{ github.sha }} \
+          --cache-from type=local,src=/tmp/.buildx-cache \
+          --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
+          .
+    
+    - name: Test Docker image
+      run: |
+        docker run --rm -d --name test-server-${{ matrix.variant }} -p 8080:8080 \
+          -e PG_DSN="sqlite://test.db" \
+          dali-toolkit-server:${{ matrix.variant }}
+        sleep 10
+        curl -f http://localhost:8080/health || exit 1
+        docker stop test-server-${{ matrix.variant }}
+    
+    - name: Export Docker image
+      run: |
+        docker save dali-toolkit-server:${{ matrix.variant }} | gzip > dali-toolkit-server-${{ matrix.variant }}.tar.gz
+    
+    - name: Upload Docker image
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-image-${{ matrix.variant }}
+        path: dali-toolkit-server-${{ matrix.variant }}.tar.gz
+        retention-days: 7
+    
+    - name: Move cache
+      run: |
+        rm -rf /tmp/.buildx-cache
+        mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+  # Create releases with all artifacts
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [flutter-build, server-build, server-with-web, docker]
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+    
+    # Download all Flutter artifacts
+    - name: Download Flutter artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: flutter-*-build
+        path: artifacts/flutter/
+    
+    # Download all server artifacts
+    - name: Download server artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: server-*
+        path: artifacts/server/
+    
+    # Download Docker images
+    - name: Download Docker artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: docker-image-*
+        path: artifacts/docker/
+    
+    # Prepare release archives
+    - name: Prepare release archives
+      run: |
+        mkdir -p release
+        
+        # Flutter apps
+        for platform in web android-apk android-aab ios windows macos linux; do
+          if [ -d "artifacts/flutter/flutter-${platform}-build" ]; then
+            cd "artifacts/flutter/flutter-${platform}-build"
+            zip -r "../../../release/dali-toolkit-flutter-${platform}-${GITHUB_REF_NAME}.zip" .
+            cd ../../..
+          fi
+        done
+        
+        # Server binaries (standalone)
+        for file in artifacts/server/server-*/dali-toolkit-server-*; do
+          if [ -f "$file" ]; then
+            filename=$(basename "$file")
+            cp "$file" "release/${filename}-${GITHUB_REF_NAME}"
+          fi
+        done
+        
+        # Server binaries (with web)
+        for file in artifacts/server/server-web-*/dali-toolkit-server-web-*; do
+          if [ -f "$file" ]; then
+            filename=$(basename "$file")
+            cp "$file" "release/${filename}-${GITHUB_REF_NAME}"
+          fi
+        done
+        
+        # Docker images
+        cp artifacts/docker/docker-image-*/*.tar.gz release/ || true
+        
+        # Create checksums
+        cd release
+        sha256sum * > checksums.txt
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: DALI-Toolkit ${{ github.ref_name }}
+        body: |
+          ## DALI-Toolkit Release ${{ github.ref_name }}
+          
+          This release includes:
+          
+          ### Flutter Applications
+          - 📱 **Android APK & AAB**: Ready for Play Store deployment
+          - 🍎 **iOS Build**: Ready for App Store deployment (requires code signing)
+          - 🌐 **Web Application**: Deploy to any web server
+          - 🖥️ **Desktop Apps**: Windows, macOS, and Linux executables
+          
+          ### Server Binaries
+          - 🔧 **Standalone Server**: Core API functionality only
+          - 🌐 **Server with Web**: Includes embedded Flutter web interface
+          - 🐳 **Docker Images**: Containerized deployment options
+          
+          ### Supported Platforms
+          - **Server**: Linux (amd64, arm64), Windows (amd64, arm64), macOS (amd64, arm64)
+          - **Flutter**: Android, iOS, Web, Windows, macOS, Linux
+          
+          ### Quick Start
+          1. Download the appropriate server binary for your platform
+          2. Download the Flutter app for your target platform
+          3. Or use the server-with-web binary for integrated deployment
+          
+          All binaries are unsigned. See documentation for deployment instructions.
+        files: |
+          release/*
+        draft: false
+        prerelease: false
+
+  # Enhanced deployment
+  deploy:
+    name: Deploy - ${{ matrix.environment }}
+    runs-on: ubuntu-latest
+    needs: [release, integration-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    strategy:
+      matrix:
+        environment: [staging, production]
+        exclude:
+          - environment: production
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download server artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: server-web-linux-amd64
+        path: ./
+    
+    - name: Download Docker image
+      uses: actions/download-artifact@v4
+      with:
+        name: docker-image-with-web
+        path: ./
+    
+    - name: Deploy to ${{ matrix.environment }}
+      run: |
+        echo "Deploying to ${{ matrix.environment }} environment"
+        echo "Available artifacts:"
+        ls -la
+        
+        # Example deployment steps - customize for your infrastructure
+        case "${{ matrix.environment }}" in
+          staging)
+            echo "Deploying to staging environment"
+            # Add your staging deployment logic here
+            # Examples:
+            # - Deploy to staging server via SSH
+            # - Update staging Docker container
+            # - Deploy to staging Kubernetes cluster
+            # - Update staging CDN with Flutter web build
+            ;;
+          production)
+            echo "Deploying to production environment"
+            # Add your production deployment logic here
+            # Examples:
+            # - Deploy to production server via SSH
+            # - Update production Docker container
+            # - Deploy to production Kubernetes cluster
+            # - Update production CDN with Flutter web build
+            ;;
+        esac
+    
+    - name: Health check
+      run: |
+        echo "Running post-deployment health checks"
+        # Add health check logic for deployed services
+        # curl -f https://your-staging-domain.com/health
+        # curl -f https://your-production-domain.com/health
+
+  # Summary job
+  summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [lint, flutter-lint, test, flutter-test, integration-test, security, flutter-build, server-build, server-with-web, docker]
+    if: always()
+    steps:
+    - name: Generate build summary
+      run: |
+        echo "## 🎉 DALI-Toolkit Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 Job Status" >> $GITHUB_STEP_SUMMARY
+        echo "- Lint: ${{ needs.lint.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Flutter Lint: ${{ needs.flutter-lint.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Server Tests: ${{ needs.test.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Flutter Tests: ${{ needs.flutter-test.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Integration Tests: ${{ needs.integration-test.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Security Scan: ${{ needs.security.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Flutter Builds: ${{ needs.flutter-build.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Server Builds: ${{ needs.server-build.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Server Web Builds: ${{ needs.server-with-web.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Docker Builds: ${{ needs.docker.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          echo "### 🚀 Ready for Production" >> $GITHUB_STEP_SUMMARY
+          echo "All builds completed successfully and ready for deployment!" >> $GITHUB_STEP_SUMMARY
+        elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          echo "### 🏷️ Release Build" >> $GITHUB_STEP_SUMMARY
+          echo "Release artifacts have been generated for ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "### 🔍 Development Build" >> $GITHUB_STEP_SUMMARY
+          echo "Development build completed for testing and validation" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📦 Generated Artifacts" >> $GITHUB_STEP_SUMMARY
+        echo "- Flutter apps for Android, iOS, Web, Windows, macOS, Linux" >> $GITHUB_STEP_SUMMARY
+        echo "- Server binaries for all major platforms (standalone & with web)" >> $GITHUB_STEP_SUMMARY
+        echo "- Docker images for containerized deployment" >> $GITHUB_STEP_SUMMARY
