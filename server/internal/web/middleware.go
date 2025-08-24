@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	
+
 	"github.com/tonylu00/DALI-Toolkit/server/internal/auth"
 )
 
@@ -23,6 +23,15 @@ func WebAuthMiddleware(authService *auth.Service) gin.HandlerFunc {
 			c.Set("user", user)
 			c.Next()
 			return
+		}
+
+		// Try Cookie-based auth for web
+		if cookie, err := c.Cookie("dt_access_token"); err == nil && cookie != "" {
+			if user, err := authService.ValidateToken(cookie); err == nil {
+				c.Set("user", user)
+				c.Next()
+				return
+			}
 		}
 
 		// Try Bearer token authentication (for API)
@@ -44,28 +53,28 @@ func WebAuthMiddleware(authService *auth.Service) gin.HandlerFunc {
 // isStaticAsset checks if the request is for a static asset
 func isStaticAsset(path string) bool {
 	staticExtensions := []string{
-		".js", ".css", ".html", ".png", ".jpg", ".jpeg", ".gif", ".svg", 
+		".js", ".css", ".html", ".png", ".jpg", ".jpeg", ".gif", ".svg",
 		".ico", ".woff", ".woff2", ".ttf", ".eot", ".json", ".txt",
 	}
-	
+
 	path = strings.ToLower(path)
 	for _, ext := range staticExtensions {
 		if strings.HasSuffix(path, ext) {
 			return true
 		}
 	}
-	
+
 	// Also consider paths with these patterns as static
 	staticPaths := []string{
 		"/assets/", "/canvaskit/", "/favicon.png", "/manifest.json",
 	}
-	
+
 	for _, staticPath := range staticPaths {
 		if strings.Contains(path, staticPath) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -74,7 +83,7 @@ func getSessionUser(c *gin.Context) interface{} {
 	// TODO: Implement session-based authentication
 	// This would typically check secure HTTP-only cookies
 	// and validate session tokens stored in Redis/database
-	
+
 	// For now, return nil to fall back to Bearer token auth
 	return nil
 }
@@ -82,8 +91,8 @@ func getSessionUser(c *gin.Context) interface{} {
 // handleUnauthenticated handles unauthenticated requests
 func handleUnauthenticated(c *gin.Context) {
 	// For API requests, return JSON error
-	if strings.HasPrefix(c.Request.Header.Get("Accept"), "application/json") || 
-	   strings.Contains(c.Request.Header.Get("Content-Type"), "application/json") {
+	if strings.HasPrefix(c.Request.Header.Get("Accept"), "application/json") ||
+		strings.Contains(c.Request.Header.Get("Content-Type"), "application/json") {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": gin.H{
 				"code":    "AUTHENTICATION_REQUIRED",
@@ -135,7 +144,7 @@ func handleUnauthenticated(c *gin.Context) {
 	// Default JSON response
 	c.JSON(http.StatusUnauthorized, gin.H{
 		"error": gin.H{
-			"code":    "AUTHENTICATION_REQUIRED", 
+			"code":    "AUTHENTICATION_REQUIRED",
 			"message": "Authentication required",
 		},
 	})
@@ -163,10 +172,10 @@ func AutoLoginMiddleware() gin.HandlerFunc {
 		}
 
 		// Inject user info into HTML for Flutter web app
-		if strings.HasSuffix(c.Request.URL.Path, "/") || 
-		   strings.HasSuffix(c.Request.URL.Path, "/index.html") ||
-		   c.Request.URL.Path == "/app" {
-			
+		if strings.HasSuffix(c.Request.URL.Path, "/") ||
+			strings.HasSuffix(c.Request.URL.Path, "/index.html") ||
+			c.Request.URL.Path == "/app" {
+
 			// This will be handled by the static file server, but we can
 			// add headers for the Flutter app to detect authentication status
 			c.Header("X-User-Authenticated", "true")
@@ -181,13 +190,13 @@ func AutoLoginMiddleware() gin.HandlerFunc {
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
-		
+
 		// Allow requests from same origin and local development
-		if origin == "" || 
-		   strings.HasPrefix(origin, "http://localhost") ||
-		   strings.HasPrefix(origin, "http://127.0.0.1") ||
-		   strings.HasSuffix(origin, c.Request.Host) {
-			
+		if origin == "" ||
+			strings.HasPrefix(origin, "http://localhost") ||
+			strings.HasPrefix(origin, "http://127.0.0.1") ||
+			strings.HasSuffix(origin, c.Request.Host) {
+
 			c.Header("Access-Control-Allow-Origin", origin)
 			c.Header("Access-Control-Allow-Credentials", "true")
 			c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
@@ -216,13 +225,13 @@ func CSPMiddleware() gin.HandlerFunc {
 				"font-src 'self' data:; " +
 				"connect-src 'self' ws: wss:; " +
 				"frame-ancestors 'none'"
-			
+
 			c.Header("Content-Security-Policy", csp)
 			c.Header("X-Frame-Options", "DENY")
 			c.Header("X-Content-Type-Options", "nosniff")
 			c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
 		}
-		
+
 		c.Next()
 	}
 }

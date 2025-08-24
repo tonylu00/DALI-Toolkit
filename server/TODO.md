@@ -34,7 +34,7 @@ DALI-Toolkit: https://github.com/tonylu00/DALI-Toolkit
 - 鉴权（AuthZ）
   - Casbin v2：RBAC with Domains（多租户/层级授权），策略来源优先从 Casdoor 同步（REST 拉取），可落地至本地 Postgres 以加速
 - MQTT Broker
-  - gmqtt（Go 实现、Hook 完整，易做认证与 ACL），后续可支持集群/持久会话
+  - mochi-mqtt（Go 实现、Hook 完整，易做认证与 ACL），后续可支持集群/持久会话
 - 数据库
   - PostgreSQL 15+（UUID、JSONB、可选 ltree 用于树形路径），ORM 使用 GORM
 - 缓存与会话
@@ -59,7 +59,7 @@ server/
     api/                          # REST API 控制器（HTTP handlers）
       v1/
     auth/                         # OIDC 中间件、Token 校验、用户解析
-    broker/                       # MQTT Broker 封装（gmqtt），认证/ACL/Topic 策略
+    broker/                       # MQTT Broker 封装（mochi-mqtt），认证/ACL/Topic 策略
     casdoor/                      # Casdoor 客户端与策略同步器
     casbinx/                      # Enforcer 初始化、Model/Policy 装载
     domain/                       # 领域模型与服务接口
@@ -159,7 +159,7 @@ Casdoor 集成：
 - 启动时加载，后续定时增量同步（或管理操作触发即时同步）
 
 ## MQTT Broker 设计
-- 使用 gmqtt 嵌入式 Broker
+- 使用 mochi-mqtt 嵌入式 Broker
 - 连接认证（CONNECT Hook）
   - 固定用户名：如 `device`
   - 密码：设备 MAC（12 位 HEX，不含冒号/横线），大小写都接受，入库统一上层大写
@@ -327,7 +327,7 @@ M2.5. Cloud WS Proxy（App<->WS<->MQTT）
 - [ ] 审计：连接、断连、错误与关键命令
 
 M3. MQTT Broker
-- [ ] 嵌入 gmqtt，启动监听 :1883
+- [ ] 嵌入 mochi-mqtt，启动监听 :1883
 - [ ] 认证：用户名固定、密码=MAC；MAC 规范化
 - [ ] ACL：仅允许设备访问自身主题；遗嘱/状态处理
 - [ ] 设备在线状态与 last_seen 维护
@@ -371,7 +371,7 @@ M8. 规则引擎（低优先级）
 - 未来在 `pages/` 中新增设备管理与权限授权页面即可对接后端 REST API
 
 ## 后续扩展（可选）
-- MQTT 集群化（gmqtt + Redis/一致性），WebSocket MQTT（前端直连）
+- MQTT 集群化（mochi-mqtt + Redis/一致性），WebSocket MQTT（前端直连）
 - 指令下发编排、长任务/工单系统
 - 设备影子（Device Shadow）与状态缓存
 - 事件总线（Kafka/NATS）对接分析平台

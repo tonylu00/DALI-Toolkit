@@ -24,19 +24,27 @@ type Config struct {
 	CasdoorOrg          string
 	CasdoorApp          string
 	CasdoorSuperOrg     string
+	// Casdoor Application certificate (public key in PEM), used to verify JWT
+	CasdoorCertificate string
 
 	// MQTT
-	MQTTListenAddr      string
-	MQTTDeviceUsername  string
+	MQTTListenAddr     string
+	MQTTDeviceUsername string
 
 	// App/Web
 	AppEmbedEnabled bool
 	AppStaticPath   string
 
 	// WebSocket
-	WSEnable          bool
-	WSPath            string
-	WSMaxConnPerUser  int
+	WSEnable         bool
+	WSPath           string
+	WSMaxConnPerUser int
+
+	// Factory/Production
+	// Whether to allow device self-registration via MQTT register topic when device not exists
+	FactoryAllowRegistration bool
+	// Default project to attach newly registered devices (UUID string). If empty, creation will be skipped.
+	FactoryDefaultProjectID string
 }
 
 // Load loads configuration from environment variables
@@ -58,6 +66,7 @@ func Load() (*Config, error) {
 		CasdoorOrg:          getEnv("CASDOOR_ORG", ""),
 		CasdoorApp:          getEnv("CASDOOR_APP", ""),
 		CasdoorSuperOrg:     getEnv("CASDOOR_SUPER_ORG", "built-in"),
+		CasdoorCertificate:  getEnv("CASDOOR_CERTIFICATE", getEnv("CASDOOR_CERT", "")),
 
 		// MQTT defaults
 		MQTTListenAddr:     getEnv("MQTT_LISTEN_ADDR", ":1883"),
@@ -71,6 +80,10 @@ func Load() (*Config, error) {
 		WSEnable:         getEnvBool("WS_ENABLE", true),
 		WSPath:           getEnv("WS_PATH", "/ws"),
 		WSMaxConnPerUser: getEnvInt("WS_MAX_CONN_PER_USER", 4),
+
+		// Factory defaults
+		FactoryAllowRegistration: getEnvBool("FACTORY_ALLOW_REGISTRATION", true),
+		FactoryDefaultProjectID:  getEnv("FACTORY_PROJECT_ID", ""),
 	}
 
 	return cfg, nil

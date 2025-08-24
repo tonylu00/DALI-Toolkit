@@ -16,19 +16,19 @@ import (
 
 // DeviceHandler handles device-related API endpoints
 type DeviceHandler struct {
-	deviceService     *services.DeviceService
+	deviceService       *services.DeviceService
 	organizationService *services.OrganizationService
-	enforcer          *casbinx.Enforcer
-	logger            *zap.Logger
+	enforcer            *casbinx.Enforcer
+	logger              *zap.Logger
 }
 
 // NewDeviceHandler creates a new device handler
 func NewDeviceHandler(deviceService *services.DeviceService, organizationService *services.OrganizationService, enforcer *casbinx.Enforcer, logger *zap.Logger) *DeviceHandler {
 	return &DeviceHandler{
-		deviceService:     deviceService,
+		deviceService:       deviceService,
 		organizationService: organizationService,
-		enforcer:          enforcer,
-		logger:            logger.With(zap.String("component", "device_handler")),
+		enforcer:            enforcer,
+		logger:              logger.With(zap.String("component", "device_handler")),
 	}
 }
 
@@ -172,12 +172,12 @@ func (h *DeviceHandler) CreateDevice(c *gin.Context) {
 	}
 
 	var req struct {
-		MAC         string                `json:"mac,omitempty"`
-		IMEI        string                `json:"imei,omitempty"`
-		DeviceType  models.DeviceType     `json:"device_type" binding:"required"`
-		ProjectID   uuid.UUID             `json:"project_id" binding:"required"`
-		PartitionID *uuid.UUID            `json:"partition_id,omitempty"`
-		DisplayName string                `json:"display_name" binding:"required"`
+		MAC         string            `json:"mac,omitempty"`
+		IMEI        string            `json:"imei,omitempty"`
+		DeviceType  models.DeviceType `json:"device_type" binding:"required"`
+		ProjectID   uuid.UUID         `json:"project_id" binding:"required"`
+		PartitionID *uuid.UUID        `json:"partition_id,omitempty"`
+		DisplayName string            `json:"display_name" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -293,8 +293,10 @@ func (h *DeviceHandler) UpdateDevice(c *gin.Context) {
 	}
 	// TODO: Add support for tags and meta fields when they are added to the model
 
-	// Save device (this would need to be implemented in the service)
-	// For now, just return the device
+	if err := h.deviceService.UpdateDevice(device); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update device"})
+		return
+	}
 	c.JSON(http.StatusOK, device)
 }
 

@@ -1,0 +1,43 @@
+# Place this file on your Linux server under /etc/systemd/system/dalitoolkit.service
+# and update the absolute paths below to match your deployment.
+# This copy is versioned in the repo for convenience.
+
+[Unit]
+Description=DALI-Toolkit Server
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Change to a dedicated user on your server (recommended)
+User=dalitoolkit
+Group=dalitoolkit
+
+# Absolute path to your deployed server working directory
+# Example: /opt/dali-toolkit/server
+WorkingDirectory=/opt/dali-toolkit/server
+
+# Load environment variables from your .env
+# NOTE: Must be an absolute path on the server
+# Example: /opt/dali-toolkit/server/bin/.env
+EnvironmentFile=/opt/dali-toolkit/server/bin/.env
+
+# Absolute path to the compiled server binary
+# Example: /opt/dali-toolkit/server/bin/server
+ExecStart=/opt/dali-toolkit/server/bin/server
+
+# Graceful shutdown and automatic restart
+KillSignal=SIGINT
+TimeoutStopSec=5s
+Restart=always
+RestartSec=5s
+LimitNOFILE=65535
+
+# (Optional) Harden the service a bit
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

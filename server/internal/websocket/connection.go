@@ -66,6 +66,7 @@ type Connection struct {
 type MQTTBrokerInterface interface {
 	PublishToDevice(deviceID, deviceBy string, payload []byte) error
 	SubscribeToDevice(deviceID, deviceBy string, handler func(topic string, payload []byte)) error
+	Kick(deviceID string) error
 }
 
 // Message represents a WebSocket message
@@ -96,7 +97,7 @@ var upgrader = websocket.Upgrader{
 // NewConnection creates a new WebSocket connection
 func NewConnection(conn *websocket.Conn, userID, deviceID, deviceBy string, hub *Hub, mqttBroker MQTTBrokerInterface, logger *zap.Logger) *Connection {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &Connection{
 		conn:         conn,
 		ID:           uuid.New().String(),
@@ -281,7 +282,7 @@ func (c *Connection) handleDeviceCommand(msg Message) {
 	// Convert message data to bytes for MQTT
 	var payload []byte
 	var err error
-	
+
 	if data, ok := msg.Data.(string); ok {
 		payload = []byte(data)
 	} else {

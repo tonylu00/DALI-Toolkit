@@ -5,16 +5,15 @@ import (
 	"time"
 
 	"github.com/casdoor/casdoor-go-sdk/casdoorsdk"
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/tonylu00/DALI-Toolkit/server/internal/config"
 	"github.com/tonylu00/DALI-Toolkit/server/pkg/errors"
+	"golang.org/x/oauth2"
 )
 
 // Client wraps Casdoor SDK functionality
 type Client struct {
-	client    *casdoorsdk.Client
-	config    *config.Config
-	publicKey string
+	client *casdoorsdk.Client
+	config *config.Config
 }
 
 // UserInfo represents user information from Casdoor
@@ -34,7 +33,7 @@ func New(cfg *config.Config) (*Client, error) {
 		cfg.CasdoorServerURL,
 		cfg.CasdoorClientID,
 		cfg.CasdoorClientSecret,
-		"",    // Certificate (we'll use JWKS)
+		cfg.CasdoorCertificate, // Certificate (PEM public key) required for JWT verify
 		cfg.CasdoorOrg,
 		cfg.CasdoorApp,
 	)
@@ -44,103 +43,60 @@ func New(cfg *config.Config) (*Client, error) {
 		config: cfg,
 	}
 
-	// Get public key from JWKS endpoint
-	if err := casdoorClient.refreshPublicKey(); err != nil {
-		return nil, err
-	}
-
 	return casdoorClient, nil
 }
 
-// refreshPublicKey fetches the public key from Casdoor JWKS endpoint
-func (c *Client) refreshPublicKey() error {
-	// For now, we'll use a placeholder. In production, this should fetch from JWKS
-	// endpoint: {casdoorServerURL}/.well-known/openid_configuration
-	// Then fetch keys from jwks_uri
-	c.publicKey = "" // Will be set from JWKS
-	return nil
-}
+// No JWKS fetching here; casdoor-go-sdk expects the app certificate to verify JWT.
 
 // VerifyToken verifies a JWT token and returns user information
 func (c *Client) VerifyToken(tokenString string) (*UserInfo, error) {
-	// Parse the token
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// Validate the signing method
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, errors.NewUnauthorizedError("Unexpected signing method")
-		}
-		
-		// For testing, we'll return a dummy key. In production, use JWKS
-		// return jwt.ParseRSAPublicKeyFromPEM([]byte(c.publicKey))
-		return []byte("test-secret"), nil // Temporary for development
-	})
-
+	// Use casdoor-go-sdk to parse and verify JWT using configured certificate
+	claims, err := c.client.ParseJwtToken(tokenString)
 	if err != nil {
 		return nil, errors.NewUnauthorizedError("Invalid token")
 	}
 
-	if !token.Valid {
-		return nil, errors.NewUnauthorizedError("Token is not valid")
-	}
-
-	// Extract claims
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return nil, errors.NewUnauthorizedError("Invalid token claims")
-	}
-
-	// Validate required claims
-	if !claims.VerifyExpiresAt(time.Now().Unix(), true) {
+	// Basic expiry check (sdk already validates via jwt library)
+	if claims.ExpiresAt != nil && time.Until(claims.ExpiresAt.Time) <= 0 {
 		return nil, errors.NewUnauthorizedError("Token has expired")
 	}
 
-	if !claims.VerifyIssuer(c.config.CasdoorServerURL, true) {
-		return nil, errors.NewUnauthorizedError("Invalid token issuer")
+	// Map to UserInfo
+	userInfo := &UserInfo{
+		ID:           claims.Id,
+		Name:         claims.DisplayName,
+		Username:     claims.Name,
+		Email:        claims.Email,
+		Organization: claims.Owner,
+		Groups:       claims.Groups,
 	}
-
-	// Extract user information
-	userInfo := &UserInfo{}
-	
-	if sub, ok := claims["sub"].(string); ok {
-		userInfo.ID = sub
-	}
-	
-	if name, ok := claims["name"].(string); ok {
-		userInfo.Name = name
-	}
-	
-	if username, ok := claims["preferred_username"].(string); ok {
-		userInfo.Username = username
-	}
-	
-	if email, ok := claims["email"].(string); ok {
-		userInfo.Email = email
-	}
-	
-	if org, ok := claims["organization"].(string); ok {
-		userInfo.Organization = org
-	}
-	
-	// Extract roles and groups if present
-	if roles, ok := claims["roles"].([]interface{}); ok {
-		userInfo.Roles = make([]string, len(roles))
-		for i, role := range roles {
-			if roleStr, ok := role.(string); ok {
-				userInfo.Roles[i] = roleStr
+	// Roles mapping if available via permissions/roles
+	if claims.Roles != nil {
+		names := make([]string, 0, len(claims.Roles))
+		for _, r := range claims.Roles {
+			if r != nil && r.Name != "" {
+				names = append(names, r.Name)
 			}
 		}
-	}
-	
-	if groups, ok := claims["groups"].([]interface{}); ok {
-		userInfo.Groups = make([]string, len(groups))
-		for i, group := range groups {
-			if groupStr, ok := group.(string); ok {
-				userInfo.Groups[i] = groupStr
-			}
-		}
+		userInfo.Roles = names
 	}
 
 	return userInfo, nil
+}
+
+// GetSigninURL builds Casdoor sign-in URL with redirect
+func (c *Client) GetSigninURL(redirectURI string) string {
+	return c.client.GetSigninUrl(redirectURI)
+}
+
+// ExchangeOAuthToken exchanges code+state for an OAuth token from Casdoor
+func (c *Client) ExchangeOAuthToken(code, state string) (*oauth2.Token, error) {
+	return c.client.GetOAuthToken(code, state)
+}
+
+// ParseClaims parses and verifies JWT access token and returns Casdoor claims
+func (c *Client) ParseClaims(accessToken string) (*casdoorsdk.Claims, error) {
+	return c.client.ParseJwtToken(accessToken)
 }
 
 // GetUsers fetches users from Casdoor organization

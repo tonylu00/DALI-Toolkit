@@ -75,12 +75,12 @@ func (h *Handler) RegisterRoutes(r *gin.RouterGroup) error {
 // BuildFlutterWeb builds the Flutter web app (for development)
 func (h *Handler) BuildFlutterWeb(projectRoot string) error {
 	buildPath := filepath.Join(projectRoot, "build", "web")
-	
+
 	// Create symlink from build/web to configured static path
 	if h.config.AppStaticPath != "./app" {
 		os.RemoveAll(h.config.AppStaticPath)
 		return os.Symlink(buildPath, h.config.AppStaticPath)
 	}
-	
+
 	return nil
 }

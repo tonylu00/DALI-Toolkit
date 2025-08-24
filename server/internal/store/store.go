@@ -2,10 +2,12 @@ package store
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/tonylu00/DALI-Toolkit/server/internal/config"
 	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/models"
 	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -16,12 +18,38 @@ type Store struct {
 }
 
 // New creates a new store instance
+// New creates a new store instance based on DSN:
+// - postgres://... -> use PostgreSQL driver
+// - sqlite://path or sqlite::memory: -> use SQLite driver (for dev/test)
 func New(cfg *config.Config) (*Store, error) {
-	db, err := gorm.Open(postgres.Open(cfg.PostgresDSN), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
-	})
+	var (
+		db  *gorm.DB
+		err error
+	)
+
+	dsn := cfg.PostgresDSN
+	// Allow sqlite for development if DSN starts with "sqlite://" or "sqlite:"
+	lower := strings.ToLower(dsn)
+	switch {
+	case strings.HasPrefix(lower, "sqlite://") || strings.HasPrefix(lower, "sqlite:"):
+		// normalize: trim leading "sqlite://" to get actual DSN path accepted by sqlite.Open
+		normalized := strings.TrimPrefix(dsn, "sqlite://")
+		normalized = strings.TrimPrefix(normalized, "sqlite:")
+		if normalized == "" {
+			normalized = ":memory:"
+		}
+		db, err = gorm.Open(sqlite.Open(normalized), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Info),
+		})
+	default:
+		// default to postgres
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Info),
+		})
+	}
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+		return nil, fmt.Errorf("failed to connect to database (dsn=%s): %w", dsn, err)
 	}
 
 	return &Store{db: db}, nil
@@ -46,6 +74,8 @@ func (s *Store) AutoMigrate() error {
 		&models.DeviceTransfer{},
 		&models.CasbinRule{},
 		&models.AuditLog{},
+		&models.OrganizationSetting{},
+		&models.SystemSetting{},
 	)
 }
 

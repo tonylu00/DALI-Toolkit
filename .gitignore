@@ -64,3 +64,4 @@ coverage/
 *.tar.gz
 *.zip
 checksums.txt
+server/.env

@@ -20,6 +20,84 @@ func NewOrganizationService(db *gorm.DB) *OrganizationService {
 	}
 }
 
+// ProjectService handles project business logic
+type ProjectService struct {
+	projRepo *store.ProjectRepository
+}
+
+// NewProjectService creates a new project service
+func NewProjectService(db *gorm.DB) *ProjectService {
+	return &ProjectService{
+		projRepo: store.NewProjectRepository(db),
+	}
+}
+
+// CreateProject creates a new project in org
+func (s *ProjectService) CreateProject(orgID uuid.UUID, name, remark string, createdBy uuid.UUID) (*models.Project, error) {
+	project := &models.Project{
+		BaseModel: models.BaseModel{ID: uuid.New()},
+		OrgID:     orgID,
+		Name:      name,
+		Remark:    remark,
+		CreatedBy: createdBy,
+	}
+	if err := s.projRepo.Create(project); err != nil {
+		return nil, errors.NewInternalError("Failed to create project")
+	}
+	return project, nil
+}
+
+// GetProject returns a project by ID
+func (s *ProjectService) GetProject(id uuid.UUID) (*models.Project, error) {
+	proj, err := s.projRepo.GetByID(id)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, errors.NewNotFoundError("Project not found")
+		}
+		return nil, errors.NewInternalError("Failed to get project")
+	}
+	return proj, nil
+}
+
+// ListProjectsByOrg lists projects by organization
+func (s *ProjectService) ListProjectsByOrg(orgID uuid.UUID) ([]models.Project, error) {
+	projects, err := s.projRepo.ListByOrg(orgID)
+	if err != nil {
+		return nil, errors.NewInternalError("Failed to list projects")
+	}
+	return projects, nil
+}
+
+// UpdateProject updates name/remark
+func (s *ProjectService) UpdateProject(id uuid.UUID, name, remark string) (*models.Project, error) {
+	proj, err := s.GetProject(id)
+	if err != nil {
+		return nil, err
+	}
+	if name != "" {
+		proj.Name = name
+	}
+	if remark != "" {
+		proj.Remark = remark
+	}
+	if err := s.projRepo.Update(proj); err != nil {
+		return nil, errors.NewInternalError("Failed to update project")
+	}
+	return proj, nil
+}
+
+// DeleteProject deletes a project
+func (s *ProjectService) DeleteProject(id uuid.UUID) error {
+	// Ensure exists
+	if _, err := s.GetProject(id); err != nil {
+		return err
+	}
+	if err := s.projRepo.Delete(id); err != nil {
+		return errors.NewInternalError("Failed to delete project")
+	}
+	return nil
+}
+
 // CreateOrganization creates a new organization
 func (s *OrganizationService) CreateOrganization(casdoorOrg, name string) (*models.Organization, error) {
 	// Check if organization already exists
