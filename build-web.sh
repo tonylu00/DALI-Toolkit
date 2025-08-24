@@ -2,11 +2,16 @@
 
 # Flutter Web Build Script for DALI-Toolkit Integration
 # This script builds the Flutter web app and integrates it with the Go server
+# Enhanced for CI/CD pipeline compatibility
 
 set -e
 
 echo "DALI-Toolkit Flutter Web Build Script"
 echo "======================================"
+
+# Build configuration
+BUILD_TYPE="${1:-development}"
+SKIP_SERVER_BUILD="${2:-false}"
 
 PROJECT_ROOT="$(pwd)"
 FLUTTER_PROJECT_ROOT="$PROJECT_ROOT"
@@ -18,6 +23,14 @@ if [[ ! -f "pubspec.yaml" ]]; then
     echo "Error: This script must be run from the Flutter project root (where pubspec.yaml is located)"
     exit 1
 fi
+
+echo "🔧 Configuration:"
+echo "  Build Type: $BUILD_TYPE"
+echo "  Skip Server Build: $SKIP_SERVER_BUILD"
+echo "  Flutter Project: $FLUTTER_PROJECT_ROOT"
+echo "  Server Project: $SERVER_ROOT"
+echo "  Web Embed Directory: $WEB_EMBED_DIR"
+echo ""
 
 # Check if Flutter is installed
 if ! command -v flutter &> /dev/null; then
@@ -215,7 +228,11 @@ else
     
     # Build web app
     echo "🔨 Building Flutter web app..."
-    flutter build web --release --no-tree-shake-icons
+    if [[ "$BUILD_TYPE" == "production" ]]; then
+        flutter build web --release --no-tree-shake-icons --dart-define=FLUTTER_WEB_AUTO_DETECT=true
+    else
+        flutter build web --no-tree-shake-icons --dart-define=FLUTTER_WEB_AUTO_DETECT=true
+    fi
     
     echo "✅ Flutter web build completed"
 fi
@@ -229,16 +246,43 @@ cp -r build/web/* "$WEB_EMBED_DIR/"
 echo "✅ Flutter web integrated into server"
 
 # Rebuild server with embedded web app
-echo "🔨 Rebuilding server with embedded web app..."
-cd "$SERVER_ROOT"
-make build
+if [[ "$SKIP_SERVER_BUILD" != "true" ]]; then
+    echo "🔨 Rebuilding server with embedded web app..."
+    cd "$SERVER_ROOT"
+    
+    # Check if make build target exists
+    if make -n build &>/dev/null; then
+        make build
+    else
+        # Fallback to direct go build
+        mkdir -p bin
+        go build -o bin/server ./cmd/server
+    fi
+else
+    echo "⏭️ Skipping server build (SKIP_SERVER_BUILD=true)"
+fi
 
 echo ""
 echo "🎉 Build completed successfully!"
 echo ""
-echo "Next steps:"
-echo "1. Start the server: cd server && ./bin/server"
-echo "2. Open web interface: http://localhost:8080/app/"
-echo "3. Check API status: http://localhost:8080/health"
+echo "📁 Build Output:"
+echo "  Flutter Web: $WEB_EMBED_DIR/"
+if [[ "$SKIP_SERVER_BUILD" != "true" ]]; then
+    echo "  Server Binary: $SERVER_ROOT/bin/server"
+fi
 echo ""
-echo "Note: For production deployment, build with real Flutter web app by installing Flutter SDK"
+echo "🚀 Next steps:"
+if [[ "$SKIP_SERVER_BUILD" != "true" ]]; then
+    echo "1. Start the server: cd server && ./bin/server"
+    echo "2. Open web interface: http://localhost:8080/app/"
+    echo "3. Check API status: http://localhost:8080/health"
+else
+    echo "1. Web files ready for embedding in server"
+    echo "2. Build server with: cd server && make build"
+    echo "3. Or use the comprehensive build script: ./build-all.sh"
+fi
+echo ""
+if [[ "$BUILD_TYPE" == "development" ]]; then
+    echo "💡 For production builds, use: ./build-web.sh production"
+fi
+echo "💡 For all platform builds, use: ./build-all.sh"
