@@ -44,3 +44,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Go binaries and build artifacts
+server/bin/
+server/server
+*.exe
+*.dll
+*.so
+*.dylib
