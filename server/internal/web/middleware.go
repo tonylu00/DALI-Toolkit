@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/tonylu00/DALI-Toolkit/server/internal/auth"
+	"server/internal/auth"
 )
 
 // WebAuthMiddleware provides authentication for web app routes
@@ -240,11 +240,8 @@ func CSPMiddleware() gin.HandlerFunc {
 func RequestLoggingMiddleware() gin.HandlerFunc {
 	return gin.LoggerWithConfig(gin.LoggerConfig{
 		Formatter: func(param gin.LogFormatterParams) string {
-			if strings.HasPrefix(param.Path, "/app") {
-				// Use gin's built-in logging for now
-				// TODO: integrate with structured logger
-			}
-			return ""
+			// Use gin's built-in logging format; avoid no-op conditions
+			return param.TimeStamp.Format("2006/01/02 - 15:04:05") + " | " + param.ClientIP + " | " + param.Method + " " + param.Path + " | " + param.ErrorMessage + "\n"
 		},
 	})
 }

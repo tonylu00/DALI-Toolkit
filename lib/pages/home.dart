@@ -17,7 +17,8 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin {
   bool isDrawerOpen = false;
   double brightness = 50;
   Color color = Colors.red;
@@ -53,7 +54,8 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     final selAddr = Dali.instance.base!.selectedAddress;
     final allowBroadcast = BroadcastReadPrefs.instance.allow;
     final bool isReadable = selAddr <= 63 || allowBroadcast; // 普通读取条件
-    final bool canReadGroup = selAddr <= 63 || allowBroadcast; // 组读取同条件 (地址>63 禁止)
+    final bool canReadGroup =
+        selAddr <= 63 || allowBroadcast; // 组读取同条件 (地址>63 禁止)
     final content = Row(
       children: <Widget>[
         Expanded(

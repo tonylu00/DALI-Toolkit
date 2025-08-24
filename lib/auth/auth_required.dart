@@ -28,7 +28,9 @@ class _AuthRequiredState extends State<AuthRequired> {
     if (_checking) return;
     _checking = true;
     final auth = context.read<AuthProvider>();
-    if (!auth.state.authenticated && !auth.state.loading && !_loginRoutePushed) {
+    if (!auth.state.authenticated &&
+        !auth.state.loading &&
+        !_loginRoutePushed) {
       _loginRoutePushed = true;
       // Defer navigation until after current frame to avoid push during build
       WidgetsBinding.instance.addPostFrameCallback((_) async {

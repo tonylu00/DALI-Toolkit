@@ -65,7 +65,8 @@ class LoginPageState extends State<LoginPage> {
                 children: [
                   if (_error != null) ...[
                     Text(_error!,
-                        style: const TextStyle(color: Colors.red), textAlign: TextAlign.center),
+                        style: const TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center),
                     const SizedBox(height: 12),
                   ],
                   ElevatedButton(

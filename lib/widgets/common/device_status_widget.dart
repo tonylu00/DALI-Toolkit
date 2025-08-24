@@ -18,7 +18,9 @@ class DeviceStatusWidget extends StatelessWidget {
               ? null
               : () {
                   // 仅打开设备列表，不自动扫描
-                  if (!ConnectionManager.instance.ensureReadyForOperation()) return;
+                  if (!ConnectionManager.instance.ensureReadyForOperation()) {
+                    return;
+                  }
                   Dali.instance.addr?.openDeviceSelectionPage(context);
                 },
           borderRadius: BorderRadius.circular(12.0),

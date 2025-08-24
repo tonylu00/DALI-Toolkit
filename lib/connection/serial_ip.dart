@@ -99,7 +99,8 @@ class TcpClient implements Connection {
   @override
   Future<void> connect(String address, {int port = 12345}) async {
     disconnect();
-    final s = await Socket.connect(address, port, timeout: const Duration(seconds: 5));
+    final s = await Socket.connect(address, port,
+        timeout: const Duration(seconds: 5));
     _socket = s;
     _isConnected = true;
     connectedDeviceId = '${s.remoteAddress.address}:$port';
@@ -172,7 +173,9 @@ class TcpClient implements Connection {
   bool isDeviceConnected() => _isConnected;
 
   @override
-  void openDeviceSelection(BuildContext context) {/* IP 连接弹窗由 ConnectionManager 统一处理 */}
+  void openDeviceSelection(BuildContext context) {
+    /* IP 连接弹窗由 ConnectionManager 统一处理 */
+  }
 
   @override
   void renameDeviceDialog(BuildContext context, String currentName) {
@@ -217,8 +220,8 @@ class UdpClient implements Connection {
         }
       }
     });
-    DaliLog.instance
-        .debugLog('UDP ready to $connectedDeviceId (local ${s.address.address}:${s.port})');
+    DaliLog.instance.debugLog(
+        'UDP ready to $connectedDeviceId (local ${s.address.address}:${s.port})');
     ConnectionManager.instance.updateConnectionStatus(true);
     unawaited(ConnectionManager.instance.ensureGatewayType());
   }
@@ -278,7 +281,9 @@ class UdpClient implements Connection {
   bool isDeviceConnected() => _socket != null;
 
   @override
-  void openDeviceSelection(BuildContext context) {/* IP 连接弹窗由 ConnectionManager 统一处理 */}
+  void openDeviceSelection(BuildContext context) {
+    /* IP 连接弹窗由 ConnectionManager 统一处理 */
+  }
 
   @override
   void renameDeviceDialog(BuildContext context, String currentName) {

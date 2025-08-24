@@ -66,7 +66,8 @@ class ConnectionMethodSettingState extends State<ConnectionMethodSetting> {
               height: 1,
               color: Theme.of(context).dividerColor,
             ),
-            items: _availableConnectionMethods.map<DropdownMenuItem<String>>((String method) {
+            items: _availableConnectionMethods
+                .map<DropdownMenuItem<String>>((String method) {
               return DropdownMenuItem<String>(
                 value: method,
                 child: Text(

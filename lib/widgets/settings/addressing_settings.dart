@@ -57,7 +57,10 @@ class AddressingSettingsState extends State<AddressingSettings> {
               Container(
                 padding: const EdgeInsets.all(8.0),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8.0),
                 ),
                 child: Icon(
@@ -83,7 +86,10 @@ class AddressingSettingsState extends State<AddressingSettings> {
               Container(
                 padding: const EdgeInsets.all(6.0),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6.0),
                 ),
                 child: Icon(
@@ -108,7 +114,8 @@ class AddressingSettingsState extends State<AddressingSettings> {
                     Text(
                       'settings.addressing.remove.subtitle'.tr(),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                   ],
@@ -139,7 +146,10 @@ class AddressingSettingsState extends State<AddressingSettings> {
               Container(
                 padding: const EdgeInsets.all(6.0),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6.0),
                 ),
                 child: Icon(
@@ -164,7 +174,8 @@ class AddressingSettingsState extends State<AddressingSettings> {
                     Text(
                       'settings.addressing.close_light.subtitle'.tr(),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                   ],

@@ -28,7 +28,8 @@ class BaseScaffold extends StatefulWidget {
   final Widget body;
   final String currentPage;
 
-  const BaseScaffold({required this.body, required this.currentPage, super.key});
+  const BaseScaffold(
+      {required this.body, required this.currentPage, super.key});
 
   @override
   BaseScaffoldState createState() => BaseScaffoldState();
@@ -90,19 +91,25 @@ class BaseScaffoldState extends State<BaseScaffold> {
 
   // 桌面窗口初始化：限定最小尺寸，确保双列布局不被压缩
   Future<void> _initDesktopWindow() async {
-    if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+    if (!kIsWeb &&
+        (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
       // 需要同时容纳：左侧设备面板 + 导航 Rail + 最小功能区宽度 + 余量
-      const minWidth =
-          _kLeftPanelWidth + _kNavRailWidth + _kMinFunctionalWidth + _kExtraMargin; // 1004 默认
+      const minWidth = _kLeftPanelWidth +
+          _kNavRailWidth +
+          _kMinFunctionalWidth +
+          _kExtraMargin; // 1004 默认
       const minHeight = 600.0; // 经验值
       try {
-        await DesktopWindow.setMinWindowSize(Size(minWidth.toDouble(), minHeight));
+        await DesktopWindow.setMinWindowSize(
+            Size(minWidth.toDouble(), minHeight));
         // 如果当前窗口比我们要求的小，主动放大到最小逻辑尺寸，避免首次显示压缩布局
         final current = await DesktopWindow.getWindowSize();
         if (current.width < minWidth - 1) {
           // 容差
-          final targetHeight = current.height < minHeight ? minHeight : current.height;
-          await DesktopWindow.setWindowSize(Size(minWidth.toDouble(), targetHeight));
+          final targetHeight =
+              current.height < minHeight ? minHeight : current.height;
+          await DesktopWindow.setWindowSize(
+              Size(minWidth.toDouble(), targetHeight));
         }
       } catch (_) {}
     }
@@ -114,10 +121,12 @@ class BaseScaffoldState extends State<BaseScaffold> {
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final size = media.size;
-    final diagonalLogical = math.sqrt(size.width * size.width + size.height * size.height);
+    final diagonalLogical =
+        math.sqrt(size.width * size.width + size.height * size.height);
     final approxInches = diagonalLogical / 150.0; // 经验系数
     bool isUltraLarge = approxInches >= 10.0;
-    final isDesktop = (!kIsWeb) && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
+    final isDesktop = (!kIsWeb) &&
+        (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
     // 桌面窗口模式强制使用超大屏布局
     if (isDesktop) {
       isUltraLarge = true;
@@ -189,7 +198,8 @@ class BaseScaffoldState extends State<BaseScaffold> {
     ];
 
     // 若当前 internalPage 不在集合中，回退首页
-    if (isUltraLarge && internalPages.indexWhere((e) => e.key == _internalPage) == -1) {
+    if (isUltraLarge &&
+        internalPages.indexWhere((e) => e.key == _internalPage) == -1) {
       _internalPage = 'Home';
     }
 
@@ -204,15 +214,20 @@ class BaseScaffoldState extends State<BaseScaffold> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  isConnected ? 'connection.connected'.tr() : 'connection.disconnected'.tr(),
+                  isConnected
+                      ? 'connection.connected'.tr()
+                      : 'connection.disconnected'.tr(),
                   style: const TextStyle(fontSize: 12),
                 ),
                 const SizedBox(height: 1),
                 Text(connection.type, style: const TextStyle(fontSize: 12)),
-                Text(connection.connectedDeviceId, style: const TextStyle(fontSize: 8)),
+                Text(connection.connectedDeviceId,
+                    style: const TextStyle(fontSize: 8)),
                 if (isConnected && ConnectionManager.instance.gatewayType == 0)
                   Text(
-                    ConnectionManager.instance.busStatus == 'abnormal' ? '总线异常' : '总线正常',
+                    ConnectionManager.instance.busStatus == 'abnormal'
+                        ? '总线异常'
+                        : '总线正常',
                     style: TextStyle(
                       fontSize: 10,
                       color: ConnectionManager.instance.busStatus == 'abnormal'
@@ -242,7 +257,8 @@ class BaseScaffoldState extends State<BaseScaffold> {
               } else if (result == 'Option 3') {
                 final prefs = await SharedPreferences.getInstance();
                 if (!context.mounted) return;
-                connection.renameDeviceDialog(context, prefs.getString('deviceName') ?? '');
+                connection.renameDeviceDialog(
+                    context, prefs.getString('deviceName') ?? '');
               } else if (result == 'Option 4') {
                 log.showLogDialog(context, 'Log');
               }
@@ -284,7 +300,9 @@ class BaseScaffoldState extends State<BaseScaffold> {
                         .withValues(alpha: 0.5),
                     border: Border(
                         right: BorderSide(
-                            color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
+                            color: Theme.of(context)
+                                .dividerColor
+                                .withValues(alpha: 0.2))),
                   ),
                   child: SafeArea(
                     child: DeviceSelectionPanel(
@@ -297,23 +315,30 @@ class BaseScaffoldState extends State<BaseScaffold> {
                 Container(
                   width: _kNavRailWidth,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.6),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .surface
+                        .withValues(alpha: 0.6),
                     border: Border(
-                      right:
-                          BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.15)),
+                      right: BorderSide(
+                          color: Theme.of(context)
+                              .dividerColor
+                              .withValues(alpha: 0.15)),
                     ),
                   ),
                   child: SafeArea(
                     child: NavigationRail(
-                      selectedIndex: internalPages.indexWhere((e) => e.key == _internalPage),
-                      onDestinationSelected: (i) => _changeInternalPage(internalPages[i].key),
+                      selectedIndex: internalPages
+                          .indexWhere((e) => e.key == _internalPage),
+                      onDestinationSelected: (i) =>
+                          _changeInternalPage(internalPages[i].key),
                       labelType: NavigationRailLabelType.all,
                       destinations: [
                         for (final p in internalPages)
                           NavigationRailDestination(
                             icon: Icon(p.icon),
-                            selectedIcon:
-                                Icon(p.icon, color: Theme.of(context).colorScheme.primary),
+                            selectedIcon: Icon(p.icon,
+                                color: Theme.of(context).colorScheme.primary),
                             label: Text(p.label, textAlign: TextAlign.center),
                           ),
                       ],
@@ -334,7 +359,8 @@ class BaseScaffoldState extends State<BaseScaffold> {
                         )
                       : Builder(
                           builder: (c) {
-                            final spec = internalPages.firstWhere((e) => e.key == _internalPage,
+                            final spec = internalPages.firstWhere(
+                                (e) => e.key == _internalPage,
                                 orElse: () => internalPages.first);
                             return spec.builder(c);
                           },
@@ -355,15 +381,18 @@ class BaseScaffoldState extends State<BaseScaffold> {
 
   Widget _buildDrawer(BuildContext context) {
     final media = MediaQuery.of(context);
-    final diagonalLogical =
-        math.sqrt(media.size.width * media.size.width + media.size.height * media.size.height);
+    final diagonalLogical = math.sqrt(media.size.width * media.size.width +
+        media.size.height * media.size.height);
     final approxInches = diagonalLogical / 150.0;
-    final isDesktop = (!kIsWeb) && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
+    final isDesktop = (!kIsWeb) &&
+        (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
     final isUltraLarge = isDesktop || approxInches >= 10.0;
     final auth = context.watch<AuthProvider>();
     final loggedIn = auth.state.authenticated;
     final displayName = loggedIn
-        ? (auth.state.user?['preferred_username'] ?? auth.state.user?['name'] ?? 'User')
+        ? (auth.state.user?['preferred_username'] ??
+            auth.state.user?['name'] ??
+            'User')
         : 'auth.not_logged_in'.tr();
     final displayEmail = loggedIn ? (auth.state.user?['email'] ?? '') : '';
 
@@ -385,13 +414,16 @@ class BaseScaffoldState extends State<BaseScaffold> {
               child: CircleAvatar(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 backgroundImage: () {
-                  final prefsAvatarFile =
-                      auth.state.user == null ? null : auth.state.user?['avatar_file'];
+                  final prefsAvatarFile = auth.state.user == null
+                      ? null
+                      : auth.state.user?['avatar_file'];
                   final avatar = auth.state.user?['avatar'] ??
                       auth.state.user?['avatarUrl'] ??
                       auth.state.user?['picture'];
                   try {
-                    if (!kIsWeb && prefsAvatarFile is String && prefsAvatarFile.isNotEmpty) {
+                    if (!kIsWeb &&
+                        prefsAvatarFile is String &&
+                        prefsAvatarFile.isNotEmpty) {
                       final f = File(prefsAvatarFile);
                       if (f.existsSync()) return FileImage(f);
                     }
@@ -403,8 +435,9 @@ class BaseScaffoldState extends State<BaseScaffold> {
                 }(),
                 child: auth.state.user == null
                     ? const Text('U')
-                    : Text(
-                        (displayName.isNotEmpty ? displayName.substring(0, 1).toUpperCase() : 'U')),
+                    : Text((displayName.isNotEmpty
+                        ? displayName.substring(0, 1).toUpperCase()
+                        : 'U')),
               ),
             ),
           ),
@@ -412,8 +445,10 @@ class BaseScaffoldState extends State<BaseScaffold> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text('common.free').tr(),
-              Icon(Icons.star_border, color: Theme.of(context).colorScheme.primary),
-              Text('${'common.expires'.tr()}: 2099-12-31', style: const TextStyle(fontSize: 10)),
+              Icon(Icons.star_border,
+                  color: Theme.of(context).colorScheme.primary),
+              Text('${'common.expires'.tr()}: 2099-12-31',
+                  style: const TextStyle(fontSize: 10)),
             ],
           ),
           const Divider(),
@@ -506,5 +541,9 @@ class _PageSpec {
   final String label;
   final IconData icon;
   final WidgetBuilder builder;
-  _PageSpec({required this.key, required this.label, required this.icon, required this.builder});
+  _PageSpec(
+      {required this.key,
+      required this.label,
+      required this.icon,
+      required this.builder});
 }

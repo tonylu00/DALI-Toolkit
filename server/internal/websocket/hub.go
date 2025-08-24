@@ -188,12 +188,12 @@ func (h *Hub) Stop() {
 func (h *Hub) handleRegister(conn *Connection) {
 	// Initialize MQTT subscription for this device if needed
 	// This will be implemented when MQTT broker is added
-	h.logger.Debug("Processing connection registration", 
+	h.logger.Debug("Processing connection registration",
 		zap.String("connection_id", conn.ID),
 		zap.String("device_id", conn.DeviceID))
 }
 
-// handleUnregister processes connection unregistration  
+// handleUnregister processes connection unregistration
 func (h *Hub) handleUnregister(conn *Connection) {
 	// Cleanup MQTT subscriptions for this device if needed
 	// This will be implemented when MQTT broker is added
@@ -238,7 +238,7 @@ func (h *Hub) shutdown() {
 				zap.String("connection_id", connID))
 		}
 	}
-	
+
 	h.connections = make(map[string]map[string]*Connection)
 	h.logger.Info("WebSocket hub shutdown complete")
 }

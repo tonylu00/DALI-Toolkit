@@ -58,8 +58,9 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
 
   Future<void> _renameGroup() async {
     if (repo.currentGroup == null) return;
-    final name =
-        await _inputDialog(title: 'custom_key.group.rename'.tr(), initial: repo.currentGroup!.name);
+    final name = await _inputDialog(
+        title: 'custom_key.group.rename'.tr(),
+        initial: repo.currentGroup!.name);
     if (name == null || name.trim().isEmpty) return;
     if (!mounted) return;
     setState(() => repo.renameGroup(repo.currentGroup!, name.trim()));
@@ -96,11 +97,13 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
           title: Text(title),
           content: TextField(
             controller: ctrl,
-            decoration: InputDecoration(labelText: 'custom_key.group.name'.tr()),
+            decoration:
+                InputDecoration(labelText: 'custom_key.group.name'.tr()),
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(context), child: Text('sequence.cancel'.tr())),
+                onPressed: () => Navigator.pop(context),
+                child: Text('sequence.cancel'.tr())),
             FilledButton(
                 onPressed: () => Navigator.pop(context, ctrl.text),
                 child: Text('sequence.save'.tr())),
@@ -113,7 +116,8 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
   Future<void> _addOrEdit({CustomKeyDefinition? def}) async {
     final result = await showDialog<CustomKeyDefinition>(
         context: context,
-        builder: (_) => _CustomKeyDialog(definition: def, sequences: seqRepo.sequences));
+        builder: (_) =>
+            _CustomKeyDialog(definition: def, sequences: seqRepo.sequences));
     if (result != null) {
       if (!mounted) return;
       setState(() => def == null ? repo.add(result) : repo.replace(result));
@@ -172,57 +176,69 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
         break;
       case CustomKeyActionType.on:
         {
-          int a = def.params.getInt('addr', Dali.instance.base!.selectedAddress);
+          int a =
+              def.params.getInt('addr', Dali.instance.base!.selectedAddress);
           if (def.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
           await Dali.instance.base!.on(a);
         }
         break;
       case CustomKeyActionType.off:
         {
-          int a = def.params.getInt('addr', Dali.instance.base!.selectedAddress);
+          int a =
+              def.params.getInt('addr', Dali.instance.base!.selectedAddress);
           if (def.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
           await Dali.instance.base!.off(a);
         }
         break;
       case CustomKeyActionType.setBright:
         {
-          int a = def.params.getInt('addr', Dali.instance.base!.selectedAddress);
+          int a =
+              def.params.getInt('addr', Dali.instance.base!.selectedAddress);
           if (def.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
-          await Dali.instance.base!.setBright(a, def.params.getInt('level', 128));
+          await Dali.instance.base!
+              .setBright(a, def.params.getInt('level', 128));
         }
         break;
       case CustomKeyActionType.toScene:
         {
-          int a = def.params.getInt('addr', Dali.instance.base!.selectedAddress);
+          int a =
+              def.params.getInt('addr', Dali.instance.base!.selectedAddress);
           if (def.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
           await Dali.instance.base!.toScene(a, def.params.getInt('scene', 0));
         }
         break;
       case CustomKeyActionType.setScene:
         {
-          int a = def.params.getInt('addr', Dali.instance.base!.selectedAddress);
+          int a =
+              def.params.getInt('addr', Dali.instance.base!.selectedAddress);
           if (def.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
           await Dali.instance.base!.setScene(a, def.params.getInt('scene', 0));
         }
         break;
       case CustomKeyActionType.addToGroup:
         {
-          int a = def.params.getInt('addr', Dali.instance.base!.selectedAddress);
+          int a =
+              def.params.getInt('addr', Dali.instance.base!.selectedAddress);
           if (def.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
-          await Dali.instance.base!.addToGroup(a, def.params.getInt('group', 0));
+          await Dali.instance.base!
+              .addToGroup(a, def.params.getInt('group', 0));
         }
         break;
       case CustomKeyActionType.removeFromGroup:
         {
-          int a = def.params.getInt('addr', Dali.instance.base!.selectedAddress);
+          int a =
+              def.params.getInt('addr', Dali.instance.base!.selectedAddress);
           if (def.params.data['isGroupAddr'] == 1 && a != 127) a += 64;
-          await Dali.instance.base!.removeFromGroup(a, def.params.getInt('group', 0));
+          await Dali.instance.base!
+              .removeFromGroup(a, def.params.getInt('group', 0));
         }
         break;
       case CustomKeyActionType.toggleOnOff:
         {
-          int addr = def.params.getInt('addr', Dali.instance.base!.selectedAddress);
-          final bool isGroup = def.params.data['isGroupAddr'] == 1 && addr != 127;
+          int addr =
+              def.params.getInt('addr', Dali.instance.base!.selectedAddress);
+          final bool isGroup =
+              def.params.data['isGroupAddr'] == 1 && addr != 127;
           if (isGroup) addr += 64;
           final active = _activeToggle.contains(def.id);
           if (active) {
@@ -244,7 +260,8 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
     await showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('custom_key.grid.size'.tr(), style: const TextStyle(fontSize: 16)),
+        title: Text('custom_key.grid.size'.tr(),
+            style: const TextStyle(fontSize: 16)),
         content: SizedBox(
           width: 340,
           child: Column(
@@ -271,7 +288,9 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('sequence.cancel'.tr())),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('sequence.cancel'.tr())),
           FilledButton(
               onPressed: () async {
                 setState(() => _gridButtonSize = temp);
@@ -295,7 +314,8 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
               isExpanded: true,
               value: repo.currentGroup?.id,
               items: repo.groups
-                  .map((g) => DropdownMenuItem(value: g.id, child: Text(g.name)))
+                  .map(
+                      (g) => DropdownMenuItem(value: g.id, child: Text(g.name)))
                   .toList(),
               onChanged: (v) {
                 if (v == null) return;
@@ -323,11 +343,13 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
             const SizedBox(height: 8),
             Row(children: [
               Expanded(
-                  child:
-                      Text('', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+                  child: Text('',
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold))),
               // 新增：编辑模式切换
               IconButton(
-                  tooltip: _editMode ? 'sequence.save'.tr() : 'common.edit'.tr(),
+                  tooltip:
+                      _editMode ? 'sequence.save'.tr() : 'common.edit'.tr(),
                   onPressed: () => setState(() => _editMode = !_editMode),
                   icon: Icon(_editMode ? Icons.check : Icons.edit_square)),
               IconButton(
@@ -353,34 +375,41 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
                         final isToggleActive = _activeToggle.contains(k.id);
                         return ListTile(
                             key: ValueKey(k.id),
-                            tileColor:
-                                k.actionType == CustomKeyActionType.toggleOnOff && isToggleActive
-                                    ? Theme.of(context)
-                                        .colorScheme
-                                        .secondaryContainer
-                                        .withValues(alpha: 0.6)
-                                    : null,
-                            title: Text(k.actionType == CustomKeyActionType.toggleOnOff
+                            tileColor: k.actionType ==
+                                        CustomKeyActionType.toggleOnOff &&
+                                    isToggleActive
+                                ? Theme.of(context)
+                                    .colorScheme
+                                    .secondaryContainer
+                                    .withValues(alpha: 0.6)
+                                : null,
+                            title: Text(k.actionType ==
+                                    CustomKeyActionType.toggleOnOff
                                 ? '$summary (${isToggleActive ? 'common.on'.tr() : 'common.off'.tr()})'
                                 : summary),
                             subtitle: k.name.isNotEmpty
-                                ? Text(k.name, style: Theme.of(context).textTheme.bodySmall)
+                                ? Text(k.name,
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall)
                                 : null,
                             leading: const Icon(Icons.smart_button_outlined),
-                            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                            trailing:
+                                Row(mainAxisSize: MainAxisSize.min, children: [
                               IconButton(
                                   onPressed: () => _addOrEdit(def: k),
                                   icon: const Icon(Icons.edit, size: 18)),
                               IconButton(
                                   onPressed: () => _delete(k),
                                   icon: const Icon(Icons.delete, size: 18)),
-                              ReorderableDragStartListener(index: i, child: const ReorderHandle())
+                              ReorderableDragStartListener(
+                                  index: i, child: const ReorderHandle())
                             ]),
                             onTap: () => _execute(k));
                       })
                   : LayoutBuilder(builder: (context, constraints) {
                       final width = constraints.maxWidth;
-                      final cross = width ~/ (_gridButtonSize + 24); // 24 近似包含边距/间距
+                      final cross =
+                          width ~/ (_gridButtonSize + 24); // 24 近似包含边距/间距
                       final crossAxisCount = cross.clamp(1, 8);
                       return GridView.builder(
                         padding: const EdgeInsets.fromLTRB(12, 4, 12, 32),
@@ -402,13 +431,19 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
                               onPressed: () => _execute(k),
                               style: ElevatedButton.styleFrom(
                                 padding: const EdgeInsets.all(8),
-                                backgroundColor: k.actionType == CustomKeyActionType.toggleOnOff &&
+                                backgroundColor: k.actionType ==
+                                            CustomKeyActionType.toggleOnOff &&
                                         isToggleActive
-                                    ? Theme.of(context).colorScheme.secondaryContainer
+                                    ? Theme.of(context)
+                                        .colorScheme
+                                        .secondaryContainer
                                     : null,
-                                foregroundColor: k.actionType == CustomKeyActionType.toggleOnOff &&
+                                foregroundColor: k.actionType ==
+                                            CustomKeyActionType.toggleOnOff &&
                                         isToggleActive
-                                    ? Theme.of(context).colorScheme.onSecondaryContainer
+                                    ? Theme.of(context)
+                                        .colorScheme
+                                        .onSecondaryContainer
                                     : null,
                               ),
                               child: Column(
@@ -417,22 +452,33 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
                                   Text(
                                     summary,
                                     textAlign: TextAlign.center,
-                                    style:
-                                        const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                    style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600),
                                     maxLines: 3,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  if (k.actionType == CustomKeyActionType.toggleOnOff) ...[
+                                  if (k.actionType ==
+                                      CustomKeyActionType.toggleOnOff) ...[
                                     const SizedBox(height: 4),
                                     Text(
-                                      isToggleActive ? 'common.on'.tr() : 'common.off'.tr(),
+                                      isToggleActive
+                                          ? 'common.on'.tr()
+                                          : 'common.off'.tr(),
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
-                                        color: k.actionType == CustomKeyActionType.toggleOnOff &&
+                                        color: k.actionType ==
+                                                    CustomKeyActionType
+                                                        .toggleOnOff &&
                                                 isToggleActive
-                                            ? Theme.of(context).colorScheme.onSecondaryContainer
-                                            : Theme.of(context).textTheme.bodyMedium?.color,
+                                            ? Theme.of(context)
+                                                .colorScheme
+                                                .onSecondaryContainer
+                                            : Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.color,
                                       ),
                                     ),
                                   ],
@@ -443,7 +489,9 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodySmall
-                                            ?.copyWith(fontSize: 11, color: Colors.white70),
+                                            ?.copyWith(
+                                                fontSize: 11,
+                                                color: Colors.white70),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis),
                                   ]
@@ -545,9 +593,11 @@ class _CustomKeysPageState extends State<CustomKeysPage> {
         if (isBroadcast) {
           return 'custom_key.summary.toggleOnOff.broadcast'.tr();
         } else if (isGroupAddr) {
-          return 'custom_key.summary.toggleOnOff.group'.tr(namedArgs: {'addr': addrStr(rawAddr)});
+          return 'custom_key.summary.toggleOnOff.group'
+              .tr(namedArgs: {'addr': addrStr(rawAddr)});
         } else {
-          return 'custom_key.summary.toggleOnOff'.tr(namedArgs: {'addr': addrStr(rawAddr)});
+          return 'custom_key.summary.toggleOnOff'
+              .tr(namedArgs: {'addr': addrStr(rawAddr)});
         }
     }
   }
@@ -573,7 +623,8 @@ class _CustomKeyDialogState extends State<_CustomKeyDialog> {
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController(text: widget.definition?.name ?? '');
-    _actionType = widget.definition?.actionType ?? CustomKeyActionType.runSequence;
+    _actionType =
+        widget.definition?.actionType ?? CustomKeyActionType.runSequence;
     _selectedSequenceId = widget.definition?.params.get('sequenceId');
     _initParamCtrls();
   }
@@ -582,11 +633,14 @@ class _CustomKeyDialogState extends State<_CustomKeyDialog> {
     _paramCtrls.clear();
     final existing = widget.definition?.params.data ?? {};
     for (final m in customKeyActionMeta(_actionType)) {
-      _paramCtrls[m.key] = TextEditingController(text: existing[m.key]?.toString() ?? '');
+      _paramCtrls[m.key] =
+          TextEditingController(text: existing[m.key]?.toString() ?? '');
     }
     if (_paramCtrls.containsKey('addr')) {
       _broadcast = _paramCtrls['addr']!.text == '127';
-      _groupAddr = (existing['isGroupAddr'] == 1 || existing['isGroupAddr'] == true) && !_broadcast;
+      _groupAddr =
+          (existing['isGroupAddr'] == 1 || existing['isGroupAddr'] == true) &&
+              !_broadcast;
     } else {
       _broadcast = false;
       _groupAddr = false;
@@ -604,7 +658,9 @@ class _CustomKeyDialogState extends State<_CustomKeyDialog> {
   Widget build(BuildContext context) {
     final fields = customKeyActionMeta(_actionType);
     return AlertDialog(
-      title: Text(widget.definition == null ? 'custom_key.add'.tr() : 'custom_key.edit'.tr()),
+      title: Text(widget.definition == null
+          ? 'custom_key.add'.tr()
+          : 'custom_key.edit'.tr()),
       content: SizedBox(
         width: 420,
         child: SingleChildScrollView(
@@ -620,9 +676,11 @@ class _CustomKeyDialogState extends State<_CustomKeyDialog> {
               const SizedBox(height: 12),
               DropdownButtonFormField<CustomKeyActionType>(
                 value: _actionType,
-                decoration: InputDecoration(labelText: 'custom_key.field.action'.tr()),
+                decoration:
+                    InputDecoration(labelText: 'custom_key.field.action'.tr()),
                 items: CustomKeyActionType.values
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e.label())))
+                    .map((e) =>
+                        DropdownMenuItem(value: e, child: Text(e.label())))
                     .toList(),
                 onChanged: (v) => _changeType(v!),
               ),
@@ -630,13 +688,16 @@ class _CustomKeyDialogState extends State<_CustomKeyDialog> {
               if (_actionType == CustomKeyActionType.runSequence)
                 DropdownButtonFormField<String>(
                   value: _selectedSequenceId,
-                  decoration: InputDecoration(labelText: 'custom_key.field.sequence'.tr()),
+                  decoration: InputDecoration(
+                      labelText: 'custom_key.field.sequence'.tr()),
                   items: widget.sequences
-                      .map((s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
+                      .map((s) =>
+                          DropdownMenuItem(value: s.id, child: Text(s.name)))
                       .toList(),
                   onChanged: (v) => setState(() => _selectedSequenceId = v),
                 ),
-              if (_actionType != CustomKeyActionType.runSequence && fields.isNotEmpty)
+              if (_actionType != CustomKeyActionType.runSequence &&
+                  fields.isNotEmpty)
                 Column(
                   children: [
                     for (final f in fields)
@@ -650,7 +711,8 @@ class _CustomKeyDialogState extends State<_CustomKeyDialog> {
                                 controller: _paramCtrls[f.key],
                                 keyboardType: TextInputType.number,
                                 enabled: !(f.key == 'addr' && _broadcast),
-                                decoration: InputDecoration(labelText: f.labelKey.tr()),
+                                decoration:
+                                    InputDecoration(labelText: f.labelKey.tr()),
                               ),
                             ),
                             if (f.key == 'addr') ...[
@@ -722,13 +784,17 @@ class _CustomKeyDialogState extends State<_CustomKeyDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text('sequence.cancel'.tr())),
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('sequence.cancel'.tr())),
         FilledButton(
           onPressed: () {
             final name = _nameCtrl.text.trim();
             // 备注可选，不再强制校验
-            if (_actionType == CustomKeyActionType.runSequence && _selectedSequenceId == null) {
-              ToastManager().showErrorToast('custom_key.no_sequence_selected'.tr());
+            if (_actionType == CustomKeyActionType.runSequence &&
+                _selectedSequenceId == null) {
+              ToastManager()
+                  .showErrorToast('custom_key.no_sequence_selected'.tr());
               return;
             }
             // 参数解析
@@ -743,27 +809,33 @@ class _CustomKeyDialogState extends State<_CustomKeyDialog> {
                   txt = '127';
                 }
                 if (txt.isEmpty) {
-                  ToastManager().showErrorToast('sequence.validation.field_required'.tr());
+                  ToastManager().showErrorToast(
+                      'sequence.validation.field_required'.tr());
                   return;
                 }
                 final v = int.tryParse(txt);
                 if (v == null) {
-                  ToastManager().showErrorToast('sequence.validation.field_required'.tr());
+                  ToastManager().showErrorToast(
+                      'sequence.validation.field_required'.tr());
                   return;
                 }
-                if ((f.min != null && v < f.min!) || (f.max != null && v > f.max!)) {
-                  ToastManager().showErrorToast('sequence.validation.field_required'.tr());
+                if ((f.min != null && v < f.min!) ||
+                    (f.max != null && v > f.max!)) {
+                  ToastManager().showErrorToast(
+                      'sequence.validation.field_required'.tr());
                   return;
                 }
                 if (f.key == 'addr' && !_broadcast) {
                   if (_groupAddr) {
                     if (v < 0 || v > 15) {
-                      ToastManager().showErrorToast('sequence.validation.field_required'.tr());
+                      ToastManager().showErrorToast(
+                          'sequence.validation.field_required'.tr());
                       return;
                     }
                   } else {
                     if (v < 0 || v > 63) {
-                      ToastManager().showErrorToast('sequence.validation.field_required'.tr());
+                      ToastManager().showErrorToast(
+                          'sequence.validation.field_required'.tr());
                       return;
                     }
                   }
@@ -782,7 +854,8 @@ class _CustomKeyDialogState extends State<_CustomKeyDialog> {
               name: name,
               actionType: _actionType,
               params: CustomKeyParams(params),
-              order: widget.definition?.order ?? DateTime.now().millisecondsSinceEpoch,
+              order: widget.definition?.order ??
+                  DateTime.now().millisecondsSinceEpoch,
             );
             Navigator.pop(context, def);
           },

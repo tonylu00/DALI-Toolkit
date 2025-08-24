@@ -7,10 +7,10 @@ import (
 
 // AppError represents an application error
 type AppError struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-	Details map[string]interface{} `json:"details,omitempty"`
-	HTTPStatus int `json:"-"`
+	Code       string                 `json:"code"`
+	Message    string                 `json:"message"`
+	Details    map[string]interface{} `json:"details,omitempty"`
+	HTTPStatus int                    `json:"-"`
 }
 
 func (e *AppError) Error() string {
@@ -19,13 +19,13 @@ func (e *AppError) Error() string {
 
 // Common error codes
 const (
-	ErrCodeInternal           = "INTERNAL_ERROR"
-	ErrCodeValidation         = "VALIDATION_ERROR"
-	ErrCodeNotFound           = "NOT_FOUND"
-	ErrCodeUnauthorized       = "UNAUTHORIZED"
-	ErrCodeForbidden          = "FORBIDDEN"
-	ErrCodeConflict           = "CONFLICT"
-	ErrCodeBadRequest         = "BAD_REQUEST"
+	ErrCodeInternal     = "INTERNAL_ERROR"
+	ErrCodeValidation   = "VALIDATION_ERROR"
+	ErrCodeNotFound     = "NOT_FOUND"
+	ErrCodeUnauthorized = "UNAUTHORIZED"
+	ErrCodeForbidden    = "FORBIDDEN"
+	ErrCodeConflict     = "CONFLICT"
+	ErrCodeBadRequest   = "BAD_REQUEST"
 )
 
 // Helper functions for common errors

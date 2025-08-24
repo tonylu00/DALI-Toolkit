@@ -125,7 +125,9 @@ class ToastManager {
   }
 
   bool _isDuplicate(String message, ToastType type, DateTime now) {
-    if (_lastMessage == null || _lastType == null || _lastShownAt == null) return false;
+    if (_lastMessage == null || _lastType == null || _lastShownAt == null) {
+      return false;
+    }
     if (_lastMessage != message || _lastType != type) return false;
     return now.difference(_lastShownAt!) < minDuplicateInterval;
   }

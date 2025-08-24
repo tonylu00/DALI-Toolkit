@@ -153,7 +153,9 @@ class SerialUsbConnection implements Connection {
         final sp = SerialPort(devicePath);
         if (!sp.openReadWrite()) {
           DaliLog.instance.debugLog('Failed to open $devicePath: ${SerialPort.lastError}');
-          if (attempts >= maxAttemptsThisRound) ToastManager().showErrorToast('USB open failed');
+          if (attempts >= maxAttemptsThisRound) {
+            ToastManager().showErrorToast('USB open failed');
+          }
           await Future.delayed(const Duration(milliseconds: 300));
           continue;
         }
@@ -361,7 +363,9 @@ class SerialUsbConnection implements Connection {
   }
 
   void _startPortMonitor() {
-    if (!Platform.isMacOS && !Platform.isLinux && !Platform.isWindows) return; // desktop only
+    if (!Platform.isMacOS && !Platform.isLinux && !Platform.isWindows) {
+      return; // desktop only
+    }
     _portMonitorTimer?.cancel();
     _portMonitorTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_port == null || !_port!.isOpen) return; // not connected
@@ -406,7 +410,9 @@ class SerialUsbConnection implements Connection {
   }
 
   void _handlePortClosedOrError([Object? e]) async {
-    if (e != null) DaliLog.instance.debugLog('Serial USB port error/closed: $e');
+    if (e != null) {
+      DaliLog.instance.debugLog('Serial USB port error/closed: $e');
+    }
     if (_port != null && _port!.isOpen) return; // still open
     if (!_autoReconnectEnabled) {
       await _internalDisconnect(manual: false);

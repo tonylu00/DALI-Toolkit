@@ -21,8 +21,10 @@ class SequenceRepository {
     }
     try {
       final list = jsonDecode(raw) as List<dynamic>;
-      _sequences =
-          list.map((e) => CommandSequence.fromJson((e as Map).cast<String, dynamic>())).toList();
+      _sequences = list
+          .map((e) =>
+              CommandSequence.fromJson((e as Map).cast<String, dynamic>()))
+          .toList();
     } catch (_) {
       _sequences = [];
     }

@@ -7,12 +7,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"server/internal/domain/models"
+	"server/internal/domain/services"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/models"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/services"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -155,7 +156,7 @@ func TestE2E_DeviceFiltering(t *testing.T) {
 	// Create project directly in database for testing
 	// This would normally be done through a proper service
 	// For now, testing the device filtering functionality
-	
+
 	// Test device listing with org filter
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/v1/devices?org_id="+org.ID.String(), nil)

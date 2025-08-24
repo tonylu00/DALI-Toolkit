@@ -72,8 +72,10 @@ class MyColorState extends State<MyColorPicker> {
   }
 
   Color _getContrastColor(Color color) {
-    double luminance =
-        (0.299 * color.r * 255.0 + 0.587 * color.g * 255.0 + 0.114 * color.b * 255.0) / 255;
+    double luminance = (0.299 * color.r * 255.0 +
+            0.587 * color.g * 255.0 +
+            0.114 * color.b * 255.0) /
+        255;
     return luminance > 0.5 ? Colors.black : Colors.white;
   }
 
@@ -193,12 +195,14 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
                           segments: [
                             ButtonSegment(
                               value: ColorPickerMode.wheel,
-                              icon: const Icon(Icons.color_lens_outlined, size: 20),
+                              icon: const Icon(Icons.color_lens_outlined,
+                                  size: 20),
                               tooltip: 'color.wheel'.tr(),
                             ),
                             ButtonSegment(
                               value: ColorPickerMode.grid,
-                              icon: const Icon(Icons.grid_on_outlined, size: 20),
+                              icon:
+                                  const Icon(Icons.grid_on_outlined, size: 20),
                               tooltip: 'color.grid'.tr(),
                             ),
                             ButtonSegment(
@@ -210,13 +214,17 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
                           selected: {mode},
                           style: ButtonStyle(
                             // 增加高度但允许宽度继续自适应
-                            visualDensity: const VisualDensity(horizontal: -1, vertical: -1),
+                            visualDensity: const VisualDensity(
+                                horizontal: -1, vertical: -1),
                             padding: WidgetStateProperty.all(
-                              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 10),
                             ),
-                            minimumSize: WidgetStateProperty.all(const Size(0, 44)),
+                            minimumSize:
+                                WidgetStateProperty.all(const Size(0, 44)),
                           ),
-                          onSelectionChanged: (Set<ColorPickerMode> newSelection) {
+                          onSelectionChanged:
+                              (Set<ColorPickerMode> newSelection) {
                             setState(() {
                               mode = newSelection.first;
                             });
@@ -237,7 +245,10 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
                 color: dialogColor,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .outline
+                      .withValues(alpha: 0.5),
                   width: 2,
                 ),
               ),
@@ -267,7 +278,8 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
                       })
                     : SizedBox(
                         height: narrowPickerHeight,
-                        child: _buildNarrowScreenLayout(mode, dialogColor, (color) {
+                        child: _buildNarrowScreenLayout(mode, dialogColor,
+                            (color) {
                           setState(() => dialogColor = _sanitize(color));
                         }),
                       ),
@@ -393,24 +405,27 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
     return Column(
       children: [
         _buildRGBSlider('R', (color.r * 255.0).round(), Colors.red, (value) {
-          onChanged(
-              Color.fromRGBO(value, (color.g * 255.0).round(), (color.b * 255.0).round(), alpha));
+          onChanged(Color.fromRGBO(value, (color.g * 255.0).round(),
+              (color.b * 255.0).round(), alpha));
         }),
         const SizedBox(height: 16),
         _buildRGBSlider('G', (color.g * 255.0).round(), Colors.green, (value) {
-          onChanged(
-              Color.fromRGBO((color.r * 255.0).round(), value, (color.b * 255.0).round(), alpha));
+          onChanged(Color.fromRGBO((color.r * 255.0).round(), value,
+              (color.b * 255.0).round(), alpha));
         }),
         const SizedBox(height: 16),
         _buildRGBSlider('B', (color.b * 255.0).round(), Colors.blue, (value) {
-          onChanged(
-              Color.fromRGBO((color.r * 255.0).round(), (color.g * 255.0).round(), value, alpha));
+          onChanged(Color.fromRGBO((color.r * 255.0).round(),
+              (color.g * 255.0).round(), value, alpha));
         }),
         if (widget.enableAlpha) ...[
           const SizedBox(height: 16),
           _buildAlphaSlider((color.a * 255.0).round(), (value) {
-            onChanged(Color.fromRGBO((color.r * 255.0).round(), (color.g * 255.0).round(),
-                (color.b * 255.0).round(), value / 255.0));
+            onChanged(Color.fromRGBO(
+                (color.r * 255.0).round(),
+                (color.g * 255.0).round(),
+                (color.b * 255.0).round(),
+                value / 255.0));
           }),
         ],
       ],
@@ -475,7 +490,8 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
     );
   }
 
-  Widget _buildRGBSlider(String label, int value, Color sliderColor, ValueChanged<int> onChanged) {
+  Widget _buildRGBSlider(
+      String label, int value, Color sliderColor, ValueChanged<int> onChanged) {
     return Row(
       children: [
         SizedBox(
@@ -526,8 +542,10 @@ class _ColorPickerContentState extends State<_ColorPickerContent> {
   }
 
   Color _getContrastColor(Color color) {
-    double luminance =
-        (0.299 * color.r * 255.0 + 0.587 * color.g * 255.0 + 0.114 * color.b * 255.0) / 255;
+    double luminance = (0.299 * color.r * 255.0 +
+            0.587 * color.g * 255.0 +
+            0.114 * color.b * 255.0) /
+        255;
     return luminance > 0.5 ? Colors.black : Colors.white;
   }
 }

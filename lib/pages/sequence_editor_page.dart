@@ -47,8 +47,8 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
 
   CommandSequence _newSequence() {
     final id = Random().nextInt(1 << 32).toString();
-    final name =
-        'sequence.sequence.default_name'.tr(namedArgs: {'index': '${repo.sequences.length + 1}'});
+    final name = 'sequence.sequence.default_name'
+        .tr(namedArgs: {'index': '${repo.sequences.length + 1}'});
     return CommandSequence(id: id, name: name);
   }
 
@@ -77,9 +77,12 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
       builder: (_) => AlertDialog(
         title: Text('sequence.sequence.rename'.tr()),
         content: TextField(
-            controller: ctrl, decoration: InputDecoration(labelText: 'sequence.field.name'.tr())),
+            controller: ctrl,
+            decoration: InputDecoration(labelText: 'sequence.field.name'.tr())),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('sequence.cancel'.tr())),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('sequence.cancel'.tr())),
           FilledButton(
               onPressed: () => Navigator.pop(context, ctrl.text.trim()),
               child: Text('sequence.save'.tr()))
@@ -101,9 +104,11 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
         content: Text('sequence.sequence.delete_confirm'.tr()),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false), child: Text('sequence.cancel'.tr())),
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('sequence.cancel'.tr())),
           FilledButton(
-              onPressed: () => Navigator.pop(context, true), child: Text('sequence.delete'.tr()))
+              onPressed: () => Navigator.pop(context, true),
+              child: Text('sequence.delete'.tr()))
         ],
       ),
     );
@@ -113,7 +118,8 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
         if (current?.id == s.id) {
           current = repo.sequences.isEmpty ? null : repo.sequences.first;
           if (current != null) {
-            runner = SequenceRunner(current!)..addListener(() => setState(() {}));
+            runner = SequenceRunner(current!)
+              ..addListener(() => setState(() {}));
           } else {
             runner = null;
           }
@@ -191,10 +197,14 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
                 icon: const Icon(Icons.add)),
           if (runner?.isRunning == true)
             IconButton(
-                onPressed: _stop, tooltip: 'sequence.stop'.tr(), icon: const Icon(Icons.stop))
+                onPressed: _stop,
+                tooltip: 'sequence.stop'.tr(),
+                icon: const Icon(Icons.stop))
           else
             IconButton(
-                onPressed: _run, tooltip: 'sequence.run'.tr(), icon: const Icon(Icons.play_arrow)),
+                onPressed: _run,
+                tooltip: 'sequence.run'.tr(),
+                icon: const Icon(Icons.play_arrow)),
           PopupMenuButton<String>(
             onSelected: (v) {
               if (v == 'rename') {
@@ -204,8 +214,12 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
               }
             },
             itemBuilder: (c) => [
-              PopupMenuItem(value: 'rename', child: Text('sequence.sequence.rename'.tr())),
-              PopupMenuItem(value: 'delete', child: Text('sequence.sequence.delete'.tr())),
+              PopupMenuItem(
+                  value: 'rename',
+                  child: Text('sequence.sequence.rename'.tr())),
+              PopupMenuItem(
+                  value: 'delete',
+                  child: Text('sequence.sequence.delete'.tr())),
             ],
           )
         ],
@@ -235,7 +249,9 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
                   children: [
                     Text('sequence.sequences'.tr(),
                         style: const TextStyle(fontWeight: FontWeight.bold)),
-                    IconButton(onPressed: _createSequence, icon: const Icon(Icons.add, size: 20))
+                    IconButton(
+                        onPressed: _createSequence,
+                        icon: const Icon(Icons.add, size: 20))
                   ],
                 ),
               ),
@@ -261,9 +277,11 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
                 child: DropdownButtonFormField<String>(
                   value: seq.id,
                   isExpanded: true,
-                  decoration: InputDecoration(labelText: 'sequence.sequences'.tr()),
+                  decoration:
+                      InputDecoration(labelText: 'sequence.sequences'.tr()),
                   items: repo.sequences
-                      .map((s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
+                      .map((s) =>
+                          DropdownMenuItem(value: s.id, child: Text(s.name)))
                       .toList(),
                   onChanged: (v) {
                     final target = repo.sequences.firstWhere((e) => e.id == v);
@@ -297,7 +315,9 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
           onTap: () => _selectSequence(s),
           trailing: selected && runner?.isRunning == true
               ? const SizedBox(
-                  width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2))
               : null,
         );
       },
@@ -323,7 +343,8 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
       itemBuilder: (context, index) {
         final s = seq.steps[index];
         final meta = _paramsSummary(s);
-        final running = runner?.isRunning == true && runner?.currentIndex == index;
+        final running =
+            runner?.isRunning == true && runner?.currentIndex == index;
         return Container(
             key: ValueKey(s.id),
             decoration: BoxDecoration(
@@ -342,9 +363,12 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
               dense: MediaQuery.of(context).size.width < 600,
               leading: running
                   ? const SizedBox(
-                      width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2))
                   : Text('${index + 1}'),
-              title: Text(s.type.label(), maxLines: 1, overflow: TextOverflow.ellipsis),
+              title: Text(s.type.label(),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
               subtitle: Text(meta,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         // 跟随主题，不再手动调低透明度，确保暗色模式下对比度充足
@@ -382,8 +406,8 @@ class _SequenceEditorPageState extends State<SequenceEditorPage> {
       return v.toString();
     }
 
-    final bool isBroadcast =
-        s.type != DaliCommandType.modifyShortAddress && s.params.getInt('addr') == 127;
+    final bool isBroadcast = s.type != DaliCommandType.modifyShortAddress &&
+        s.params.getInt('addr') == 127;
     final bool isGroupAddr = s.params.data['isGroupAddr'] == 1 && !isBroadcast;
     String variantPrefix = '';
     if (isBroadcast) {
@@ -521,7 +545,8 @@ class _StepDialogState extends State<StepDialog> {
         _groupAddr = false;
       } else {
         _broadcast = false;
-        _groupAddr = (existing['isGroupAddr'] == 1 || existing['isGroupAddr'] == true);
+        _groupAddr =
+            (existing['isGroupAddr'] == 1 || existing['isGroupAddr'] == true);
       }
     } else {
       _broadcast = false;
@@ -549,19 +574,23 @@ class _StepDialogState extends State<StepDialog> {
               DropdownButtonFormField<DaliCommandType>(
                 value: _type,
                 items: DaliCommandType.values
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e.label())))
+                    .map((e) =>
+                        DropdownMenuItem(value: e, child: Text(e.label())))
                     .toList(),
                 onChanged: (v) => _changeType(v!),
-                decoration: InputDecoration(labelText: 'sequence.field.name'.tr()),
+                decoration:
+                    InputDecoration(labelText: 'sequence.field.name'.tr()),
               ),
               TextField(
                 controller: _remarkCtrl,
-                decoration: InputDecoration(labelText: 'sequence.field.remark'.tr()),
+                decoration:
+                    InputDecoration(labelText: 'sequence.field.remark'.tr()),
               ),
               const SizedBox(height: 12),
               ...commandMeta(_type).map((f) {
                 final isAddrField = f.key == 'addr';
-                final showBroadcast = isAddrField && _type != DaliCommandType.modifyShortAddress;
+                final showBroadcast =
+                    isAddrField && _type != DaliCommandType.modifyShortAddress;
                 if (isAddrField) {
                   // 如果是广播且当前勾选，锁定为 127
                   if (_broadcast) {
@@ -572,7 +601,8 @@ class _StepDialogState extends State<StepDialog> {
                   controller: paramCtrls[f.key],
                   enabled: !(isAddrField && _broadcast),
                   keyboardType: TextInputType.number,
-                  decoration: InputDecoration(labelText: f.label, hintText: f.hint),
+                  decoration:
+                      InputDecoration(labelText: f.label, hintText: f.hint),
                 );
                 if (showBroadcast) {
                   return Padding(
@@ -643,7 +673,9 @@ class _StepDialogState extends State<StepDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text('sequence.cancel'.tr())),
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('sequence.cancel'.tr())),
         FilledButton(
           onPressed: () {
             final params = <String, dynamic>{};
@@ -687,7 +719,8 @@ class _StepDialogState extends State<StepDialog> {
             }
             if (missing) {
               // 改用全局 Toast 提示
-              ToastManager().showErrorToast('sequence.validation.field_required'.tr());
+              ToastManager()
+                  .showErrorToast('sequence.validation.field_required'.tr());
               return;
             }
             final step = SequenceStep(

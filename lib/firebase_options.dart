@@ -85,5 +85,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'dalimaster-5d226.firebasestorage.app',
     measurementId: 'G-41R11VW346',
   );
-
 }

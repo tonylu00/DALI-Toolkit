@@ -33,8 +33,10 @@ class DelaysSettingState extends State<DelaysSetting> {
   Future<void> _loadDelays() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _sendDelaysController.text = (prefs.getInt('sendDelays') ?? 50).toString();
-      _queryDelaysController.text = (prefs.getInt('queryDelays') ?? 50).toString();
+      _sendDelaysController.text =
+          (prefs.getInt('sendDelays') ?? 50).toString();
+      _queryDelaysController.text =
+          (prefs.getInt('queryDelays') ?? 50).toString();
       _extDelaysController.text = (prefs.getInt('extDelays') ?? 100).toString();
     });
   }
@@ -42,13 +44,16 @@ class DelaysSettingState extends State<DelaysSetting> {
   Future<void> _saveDelays() async {
     final prefs = await SharedPreferences.getInstance();
     if (_sendDelaysController.text.isNotEmpty) {
-      await prefs.setInt('sendDelays', int.tryParse(_sendDelaysController.text) ?? 50);
+      await prefs.setInt(
+          'sendDelays', int.tryParse(_sendDelaysController.text) ?? 50);
     }
     if (_queryDelaysController.text.isNotEmpty) {
-      await prefs.setInt('queryDelays', int.tryParse(_queryDelaysController.text) ?? 50);
+      await prefs.setInt(
+          'queryDelays', int.tryParse(_queryDelaysController.text) ?? 50);
     }
     if (_extDelaysController.text.isNotEmpty) {
-      await prefs.setInt('extDelays', int.tryParse(_extDelaysController.text) ?? 100);
+      await prefs.setInt(
+          'extDelays', int.tryParse(_extDelaysController.text) ?? 100);
     }
   }
 

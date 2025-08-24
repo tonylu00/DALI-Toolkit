@@ -3,26 +3,27 @@ package api
 import (
 	"net/http"
 
+	"server/internal/auth"
+	"server/internal/casbinx"
+	"server/internal/domain/services"
+
 	"github.com/gin-gonic/gin"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/auth"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/casbinx"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/services"
 	"go.uber.org/zap"
 )
 
 // PermissionHandler handles permission-related API endpoints
 type PermissionHandler struct {
 	organizationService *services.OrganizationService
-	enforcer           *casbinx.Enforcer
-	logger             *zap.Logger
+	enforcer            *casbinx.Enforcer
+	logger              *zap.Logger
 }
 
 // NewPermissionHandler creates a new permission handler
 func NewPermissionHandler(organizationService *services.OrganizationService, enforcer *casbinx.Enforcer, logger *zap.Logger) *PermissionHandler {
 	return &PermissionHandler{
 		organizationService: organizationService,
-		enforcer:           enforcer,
-		logger:             logger.With(zap.String("component", "permission_handler")),
+		enforcer:            enforcer,
+		logger:              logger.With(zap.String("component", "permission_handler")),
 	}
 }
 
@@ -310,10 +311,10 @@ func (h *PermissionHandler) CheckPermission(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"subject":       subject,
-		"domain":        domain,
-		"object":        object,
-		"action":        action,
+		"subject":        subject,
+		"domain":         domain,
+		"object":         object,
+		"action":         action,
 		"has_permission": hasPermission,
 	})
 }

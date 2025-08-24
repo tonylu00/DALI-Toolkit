@@ -5,9 +5,10 @@ import (
 	"net/url"
 	"time"
 
+	"server/internal/auth"
+	"server/internal/casdoor"
+
 	"github.com/gin-gonic/gin"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/auth"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/casdoor"
 )
 
 // AuthHandler exposes minimal auth endpoints for web login flow

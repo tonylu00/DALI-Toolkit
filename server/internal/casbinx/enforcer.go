@@ -119,7 +119,7 @@ func (e *Enforcer) InitDefaultPolicies() error {
 		// Organization admin can manage everything in their org
 		{"role:org_admin", "org:*", "*", "manage"},
 		{"role:org_viewer", "org:*", "*", "read"},
-		
+
 		// Project roles
 		{"role:project_owner", "project:*", "projects", "manage"},
 		{"role:project_owner", "project:*", "devices", "manage"},
@@ -130,7 +130,7 @@ func (e *Enforcer) InitDefaultPolicies() error {
 		{"role:project_viewer", "project:*", "projects", "read"},
 		{"role:project_viewer", "project:*", "devices", "read"},
 		{"role:project_viewer", "project:*", "partitions", "read"},
-		
+
 		// Device roles
 		{"role:device_owner", "device:*", "devices", "manage"},
 		{"role:device_editor", "device:*", "devices", "write"},

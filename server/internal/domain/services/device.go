@@ -5,10 +5,11 @@ import (
 	"strings"
 	"time"
 
+	"server/internal/domain/models"
+	"server/internal/store"
+	"server/pkg/errors"
+
 	"github.com/google/uuid"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/models"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/store"
-	"github.com/tonylu00/DALI-Toolkit/server/pkg/errors"
 	"gorm.io/gorm"
 )
 
@@ -47,8 +48,10 @@ func NormalizeMAC(mac string) (string, error) {
 
 	// Validate hex characters
 	for _, char := range mac {
-		if !((char >= '0' && char <= '9') || (char >= 'A' && char <= 'F')) {
-			return "", fmt.Errorf("MAC address contains invalid character: %c", char)
+		if char < '0' || char > '9' {
+			if char < 'A' || char > 'F' {
+				return "", fmt.Errorf("MAC address contains invalid character: %c", char)
+			}
 		}
 	}
 

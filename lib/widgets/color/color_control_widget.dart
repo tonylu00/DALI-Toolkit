@@ -23,17 +23,20 @@ class ColorControlWidget extends StatefulWidget {
 }
 
 class _ColorControlWidgetState extends State<ColorControlWidget> {
-  bool _checkDeviceConnection() => ConnectionManager.instance.ensureReadyForOperation();
+  bool _checkDeviceConnection() =>
+      ConnectionManager.instance.ensureReadyForOperation();
 
   Future<void> _readColor() async {
     if (!_checkDeviceConnection()) return;
 
-    final colorRGB = await Dali.instance.dt8!.getColourRGB(Dali.instance.base!.selectedAddress);
+    final colorRGB = await Dali.instance.dt8!
+        .getColourRGB(Dali.instance.base!.selectedAddress);
     if (colorRGB.isEmpty) {
       return;
     }
     DaliLog.instance.debugLog('Color: $colorRGB');
-    final colorObj = Color((0xFF << 24) + (colorRGB[0] << 16) + (colorRGB[1] << 8) + colorRGB[2]);
+    final colorObj = Color(
+        (0xFF << 24) + (colorRGB[0] << 16) + (colorRGB[1] << 8) + colorRGB[2]);
     widget.onColorChanged(colorObj);
   }
 
@@ -41,8 +44,8 @@ class _ColorControlWidgetState extends State<ColorControlWidget> {
     final colorRGB = DaliColor.toIntList(colorNew);
     widget.onColorChanged(colorNew);
     if (!_checkDeviceConnection()) return;
-    Dali.instance.dt8!
-        .setColourRGB(Dali.instance.base!.selectedAddress, colorRGB[1], colorRGB[2], colorRGB[3]);
+    Dali.instance.dt8!.setColourRGB(Dali.instance.base!.selectedAddress,
+        colorRGB[1], colorRGB[2], colorRGB[3]);
   }
 
   @override
@@ -91,8 +94,10 @@ class _ColorControlWidgetState extends State<ColorControlWidget> {
                 ),
                 tooltip: 'common.read'.tr(),
                 style: IconButton.styleFrom(
-                  backgroundColor:
-                      Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  backgroundColor: Theme.of(context)
+                      .colorScheme
+                      .primaryContainer
+                      .withValues(alpha: 0.3),
                 ),
               ),
             ],
@@ -108,7 +113,10 @@ class _ColorControlWidgetState extends State<ColorControlWidget> {
                   color: widget.color,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .outline
+                        .withValues(alpha: 0.3),
                     width: 2,
                   ),
                   boxShadow: [
@@ -126,11 +134,14 @@ class _ColorControlWidgetState extends State<ColorControlWidget> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildRGBValue('R', (widget.color.r * 255).toInt(), Colors.red),
+                    _buildRGBValue(
+                        'R', (widget.color.r * 255).toInt(), Colors.red),
                     const SizedBox(height: 4),
-                    _buildRGBValue('G', (widget.color.g * 255).toInt(), Colors.green),
+                    _buildRGBValue(
+                        'G', (widget.color.g * 255).toInt(), Colors.green),
                     const SizedBox(height: 4),
-                    _buildRGBValue('B', (widget.color.b * 255).toInt(), Colors.blue),
+                    _buildRGBValue(
+                        'B', (widget.color.b * 255).toInt(), Colors.blue),
                   ],
                 ),
               ),
@@ -248,8 +259,10 @@ class _ColorControlWidgetState extends State<ColorControlWidget> {
 
   Color _getContrastColor(Color color) {
     // Calculate relative luminance
-    double luminance =
-        (0.299 * color.r * 255.0 + 0.587 * color.g * 255.0 + 0.114 * color.b * 255.0) / 255;
+    double luminance = (0.299 * color.r * 255.0 +
+            0.587 * color.g * 255.0 +
+            0.114 * color.b * 255.0) /
+        255;
     return luminance > 0.5 ? Colors.black : Colors.white;
   }
 }

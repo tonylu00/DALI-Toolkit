@@ -4,9 +4,10 @@ import (
 	"context"
 	"time"
 
+	"server/internal/config"
+	"server/pkg/errors"
+
 	"github.com/casdoor/casdoor-go-sdk/casdoorsdk"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/config"
-	"github.com/tonylu00/DALI-Toolkit/server/pkg/errors"
 	"golang.org/x/oauth2"
 )
 

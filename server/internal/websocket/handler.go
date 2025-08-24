@@ -4,11 +4,12 @@ import (
 	"errors"
 	"net/http"
 
+	"server/internal/auth"
+	"server/internal/casbinx"
+	"server/internal/domain/services"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/auth"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/casbinx"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/services"
 	"go.uber.org/zap"
 )
 
@@ -114,7 +115,7 @@ func (h *Handler) HandleWebSocket(c *gin.Context) {
 	// Register connection with hub
 	if err := h.hub.Register(wsConn); err != nil {
 		h.logger.Error("Failed to register WebSocket connection", zap.Error(err))
-		wsConn.SendError("Connection registration failed", "REGISTRATION_FAILED", err.Error())
+		_ = wsConn.SendError("Connection registration failed", "REGISTRATION_FAILED", err.Error())
 		wsConn.Close()
 		return
 	}
@@ -128,11 +129,11 @@ func (h *Handler) HandleWebSocket(c *gin.Context) {
 	}
 
 	// Send welcome message
-	wsConn.Send("connected", map[string]interface{}{
-		"device_id":   normalizedDeviceID,
-		"device_by":   deviceBy,
+	_ = wsConn.Send("connected", map[string]interface{}{
+		"device_id":     normalizedDeviceID,
+		"device_by":     deviceBy,
 		"connection_id": wsConn.ID,
-		"message":     "WebSocket connection established",
+		"message":       "WebSocket connection established",
 	})
 
 	// Start connection pumps

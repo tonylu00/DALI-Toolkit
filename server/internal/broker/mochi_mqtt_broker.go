@@ -11,9 +11,9 @@ import (
 	"github.com/mochi-mqtt/server/v2/packets"
 	"go.uber.org/zap"
 
-	"github.com/tonylu00/DALI-Toolkit/server/internal/config"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/models"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/services"
+	"server/internal/config"
+	"server/internal/domain/models"
+	"server/internal/domain/services"
 )
 
 // MochiBroker implements MQTT using mochi-mqtt/server v2
@@ -67,7 +67,10 @@ func (b *MochiBroker) Start(ctx context.Context) error {
 	}
 
 	// Custom hook to implement connect auth and ACL precisely
-	srv.AddHook(&mochiHook{b: b}, nil)
+	if err := srv.AddHook(&mochiHook{b: b}, nil); err != nil {
+		b.logger.Error("Failed to add MQTT hook", zap.Error(err))
+		return err
+	}
 
 	// Start serving
 	go func() {

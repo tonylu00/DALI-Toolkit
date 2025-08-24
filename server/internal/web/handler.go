@@ -78,7 +78,9 @@ func (h *Handler) BuildFlutterWeb(projectRoot string) error {
 
 	// Create symlink from build/web to configured static path
 	if h.config.AppStaticPath != "./app" {
-		os.RemoveAll(h.config.AppStaticPath)
+		if err := os.RemoveAll(h.config.AppStaticPath); err != nil {
+			return err
+		}
 		return os.Symlink(buildPath, h.config.AppStaticPath)
 	}
 

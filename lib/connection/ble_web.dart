@@ -12,8 +12,10 @@ import '../widgets/common/rename_device_dialog.dart';
 class BleWebManager implements Connection {
   static final List<BleDevice> _scanResults = [];
   static final Set<String> _uniqueDeviceIds = {};
-  static final _scanResultsController = StreamController<List<BleDevice>>.broadcast();
-  static Stream<List<BleDevice>> get scanResultsStream => _scanResultsController.stream;
+  static final _scanResultsController =
+      StreamController<List<BleDevice>>.broadcast();
+  static Stream<List<BleDevice>> get scanResultsStream =>
+      _scanResultsController.stream;
   static final String serviceUuid = BleUuidParser.number(0xfff0);
   static final String readUuid = BleUuidParser.number(0xfff1);
   static final String writeUuid = BleUuidParser.number(0xfff1);
@@ -67,7 +69,8 @@ class BleWebManager implements Connection {
   Future<void> connect(String deviceId, {int? port}) async {
     stopScan();
     UniversalBle.onConnectionChange = ((deviceId, isConnected, error) {
-      DaliLog.instance.debugLog('OnConnectionChange $deviceId, $isConnected Error: $error');
+      DaliLog.instance
+          .debugLog('OnConnectionChange $deviceId, $isConnected Error: $error');
       if (isConnected) {
         connectedDeviceId = deviceId;
         ConnectionManager.instance.updateConnectionStatus(true);
@@ -77,7 +80,8 @@ class BleWebManager implements Connection {
         });
         UniversalBle.discoverServices(deviceId);
         UniversalBle.subscribeNotifications(deviceId, serviceUuid, readUuid);
-        UniversalBle.onValueChange = (String deviceId, String characteristicId, Uint8List value) {
+        UniversalBle.onValueChange =
+            (String deviceId, String characteristicId, Uint8List value) {
           DaliLog.instance.debugLog(
               'HEX Value changed: ${value.map((e) => e.toRadixString(16).padLeft(2, '0')).join(' ')}');
           readBuffer = value;
@@ -117,10 +121,12 @@ class BleWebManager implements Connection {
   Future<void> disconnect() async {
     String deviceId = connectedDeviceId;
     if (deviceId.isEmpty) {
-      DaliLog.instance.debugLog('No device connected, skipping disconnect on Web');
+      DaliLog.instance
+          .debugLog('No device connected, skipping disconnect on Web');
       return;
     }
-    List<BleDevice> devices = await UniversalBle.getSystemDevices(withServices: [serviceUuid]);
+    List<BleDevice> devices =
+        await UniversalBle.getSystemDevices(withServices: [serviceUuid]);
     for (BleDevice device in devices) {
       UniversalBle.disconnect(device.deviceId);
       DaliLog.instance.debugLog('Disconnected from ${device.deviceId}');
@@ -154,7 +160,8 @@ class BleWebManager implements Connection {
     }
     if (!isDeviceConnected()) return null;
     try {
-      final value = await UniversalBle.read(connectedDeviceId, serviceUuid, readUuid,
+      final value = await UniversalBle.read(
+          connectedDeviceId, serviceUuid, readUuid,
           timeout: Duration(milliseconds: timeout));
       DaliLog.instance.debugLog('Read value: $value');
       return value;
@@ -175,7 +182,8 @@ class BleWebManager implements Connection {
     while (retry < 3) {
       retry++;
       try {
-        await UniversalBle.write(connectedDeviceId, serviceUuid, writeUuid, value);
+        await UniversalBle.write(
+            connectedDeviceId, serviceUuid, writeUuid, value);
       } catch (e) {
         DaliLog.instance.debugLog('Error writing characteristic: $e');
         continue;
@@ -202,7 +210,8 @@ class BleWebManager implements Connection {
 
   @override
   void onReceived(void Function(Uint8List) onData) {
-    UniversalBle.onValueChange = (String deviceId, String characteristicId, Uint8List value) {
+    UniversalBle.onValueChange =
+        (String deviceId, String characteristicId, Uint8List value) {
       _handleBusMonitor(value);
       onData(value);
     };
@@ -210,7 +219,8 @@ class BleWebManager implements Connection {
 
   Future<bool> restoreExistConnection() async {
     if (connectedDeviceId.isEmpty) {
-      List<BleDevice> devices = await UniversalBle.getSystemDevices(withServices: [serviceUuid]);
+      List<BleDevice> devices =
+          await UniversalBle.getSystemDevices(withServices: [serviceUuid]);
       if (devices.isEmpty) {
         ConnectionManager.instance.updateConnectionStatus(false);
         return false;
@@ -250,7 +260,9 @@ class BleWebManager implements Connection {
                     itemCount: snapshot.data!.length,
                     itemBuilder: (context, index) {
                       return ListTile(
-                        title: Text(snapshot.data![index].name ?? 'common.unknown').tr(),
+                        title:
+                            Text(snapshot.data![index].name ?? 'common.unknown')
+                                .tr(),
                         subtitle: Text(
                             'ID: ${snapshot.data![index].deviceId}\nRSSI: ${snapshot.data![index].rssi}'),
                         onTap: () {

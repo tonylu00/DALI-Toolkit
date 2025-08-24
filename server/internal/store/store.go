@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tonylu00/DALI-Toolkit/server/internal/config"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/models"
+	"server/internal/config"
+	"server/internal/domain/models"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

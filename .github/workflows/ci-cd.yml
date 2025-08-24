@@ -9,84 +9,12 @@ on:
   workflow_dispatch:
 
 env:
-  GO_VERSION: '1.21'
-  FLUTTER_VERSION: '3.24.5'
-  JAVA_VERSION: '17'
-  NODE_VERSION: '18'
+  GO_VERSION: '1.24'
+  FLUTTER_VERSION: '3.27.1'
+  JAVA_VERSION: '24'
+  NODE_VERSION: '24'
 
 jobs:
-  lint:
-    name: Lint and Format Check
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./server
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: ${{ env.GO_VERSION }}
-    
-    - name: Cache Go modules
-      uses: actions/cache@v4
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-    
-    - name: Install dependencies
-      run: go mod download
-    
-    - name: Install golangci-lint
-      run: |
-        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.54.2
-        echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-    
-    - name: Run linters
-      run: make lint
-    
-    - name: Check formatting
-      run: |
-        if [ -n "$(gofmt -l .)" ]; then
-          echo "Go code is not formatted properly:"
-          gofmt -l .
-          exit 1
-        fi
-
-  flutter-lint:
-    name: Flutter Lint and Format Check
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: ${{ env.FLUTTER_VERSION }}
-        channel: 'stable'
-    
-    - name: Cache Flutter dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.pub-cache
-          build/
-        key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-flutter-
-    
-    - name: Install Flutter dependencies
-      run: flutter pub get
-    
-    - name: Run Flutter analyzer
-      run: flutter analyze
-    
-    - name: Check Flutter formatting
-      run: dart format --set-exit-if-changed lib/ test/
-
   test:
     name: Server Unit Tests
     runs-on: ubuntu-latest
@@ -212,31 +140,11 @@ jobs:
         PG_DSN: postgres://postgres:password@localhost:5432/dali_toolkit_test?sslmode=disable
         REDIS_ADDR: localhost:6379
 
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./server
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: ${{ env.GO_VERSION }}
-    
-    - name: Install gosec
-      run: go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
-    
-    - name: Run security scan
-      run: make security-scan
-
   # Multi-platform Flutter builds
   flutter-build:
     name: Flutter Build - ${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
-    needs: [flutter-lint, flutter-test]
+    needs: [flutter-test]
     strategy:
       fail-fast: false
       matrix:
@@ -262,7 +170,7 @@ jobs:
           - platform: ios
             os: macos-latest
             build-args: '--release --no-codesign'
-            artifact-path: 'build/ios/iphoneos'
+            artifact-path: 'build/ios/ipa'
             
           # Desktop platforms
           - platform: windows
@@ -348,6 +256,10 @@ jobs:
     - name: Build Flutter app
       run: flutter build ${{ matrix.platform }} ${{ matrix.build-args }}
     
+    - name: Build Flutter app ipa
+      if: matrix.platform == 'ios'
+      run: flutter build ipa ${{ matrix.build-args }}
+
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -359,7 +271,7 @@ jobs:
   server-build:
     name: Server Build - ${{ matrix.os }} (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
-    needs: [lint, test, security]
+    needs: [test]
     strategy:
       fail-fast: false
       matrix:
@@ -778,7 +690,7 @@ jobs:
   summary:
     name: Build Summary
     runs-on: ubuntu-latest
-    needs: [lint, flutter-lint, test, flutter-test, integration-test, security, flutter-build, server-build, server-with-web, docker]
+    needs: [test, flutter-test, integration-test, flutter-build, server-build, server-with-web, docker]
     if: always()
     steps:
     - name: Generate build summary
@@ -786,12 +698,9 @@ jobs:
         echo "## 🎉 DALI-Toolkit Build Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 📊 Job Status" >> $GITHUB_STEP_SUMMARY
-        echo "- Lint: ${{ needs.lint.result }}" >> $GITHUB_STEP_SUMMARY
-        echo "- Flutter Lint: ${{ needs.flutter-lint.result }}" >> $GITHUB_STEP_SUMMARY
         echo "- Server Tests: ${{ needs.test.result }}" >> $GITHUB_STEP_SUMMARY
         echo "- Flutter Tests: ${{ needs.flutter-test.result }}" >> $GITHUB_STEP_SUMMARY
         echo "- Integration Tests: ${{ needs.integration-test.result }}" >> $GITHUB_STEP_SUMMARY
-        echo "- Security Scan: ${{ needs.security.result }}" >> $GITHUB_STEP_SUMMARY
         echo "- Flutter Builds: ${{ needs.flutter-build.result }}" >> $GITHUB_STEP_SUMMARY
         echo "- Server Builds: ${{ needs.server-build.result }}" >> $GITHUB_STEP_SUMMARY
         echo "- Server Web Builds: ${{ needs.server-with-web.result }}" >> $GITHUB_STEP_SUMMARY

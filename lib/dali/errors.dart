@@ -47,9 +47,13 @@ class DaliInvalidGatewayFrameException extends DaliQueryException {
 String mapDaliErrorToMessage(DaliQueryException e) {
   if (e is DaliBusUnavailableException) return 'dali.error.bus_unavailable';
   if (e is DaliGatewayTimeoutException) return 'dali.error.gateway_timeout';
-  if (e is DaliDeviceNoResponseException) return 'dali.error.device_no_response';
+  if (e is DaliDeviceNoResponseException) {
+    return 'dali.error.device_no_response';
+  }
   if (e is DaliInvalidFrameException) return 'dali.error.invalid_frame';
-  if (e is DaliInvalidGatewayFrameException) return 'dali.error.invalid_gateway_frame';
+  if (e is DaliInvalidGatewayFrameException) {
+    return 'dali.error.invalid_gateway_frame';
+  }
   return 'dali.error.unknown';
 }
 

@@ -26,8 +26,10 @@ class _AutoReconnectSettingState extends State<AutoReconnectSetting> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _enabled = prefs.getBool('autoReconnectEnabled') ?? true;
-      _intervalController.text = (prefs.getInt('autoReconnectInterval') ?? 2000).toString();
-      _maxAttemptsController.text = (prefs.getInt('autoReconnectMaxAttempts') ?? 5).toString();
+      _intervalController.text =
+          (prefs.getInt('autoReconnectInterval') ?? 2000).toString();
+      _maxAttemptsController.text =
+          (prefs.getInt('autoReconnectMaxAttempts') ?? 5).toString();
     });
   }
 
@@ -81,7 +83,8 @@ class _AutoReconnectSettingState extends State<AutoReconnectSetting> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   onChanged: (_) => _save(),
                 ),
@@ -103,7 +106,8 @@ class _AutoReconnectSettingState extends State<AutoReconnectSetting> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   onChanged: (_) => _save(),
                 ),

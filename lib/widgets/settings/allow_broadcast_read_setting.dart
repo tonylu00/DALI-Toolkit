@@ -7,7 +7,8 @@ class AllowBroadcastReadSetting extends StatefulWidget {
   const AllowBroadcastReadSetting({super.key});
 
   @override
-  State<AllowBroadcastReadSetting> createState() => _AllowBroadcastReadSettingState();
+  State<AllowBroadcastReadSetting> createState() =>
+      _AllowBroadcastReadSettingState();
 }
 
 class _AllowBroadcastReadSettingState extends State<AllowBroadcastReadSetting> {

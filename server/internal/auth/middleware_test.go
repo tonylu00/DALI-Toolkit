@@ -6,15 +6,16 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"server/internal/casbinx"
+	"server/internal/casdoor"
+	"server/internal/config"
+	"server/internal/domain/models"
+	"server/internal/domain/services"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/casdoor"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/casbinx"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/config"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/models"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/services"
 	"go.uber.org/zap"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -63,7 +64,7 @@ func setupTestMiddleware(t *testing.T) (*Middleware, *gin.Engine) {
 
 	// Setup router
 	router := gin.New()
-	
+
 	// Test endpoints
 	router.GET("/public", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "public"})
@@ -98,7 +99,7 @@ func TestAuthMiddleware_PublicEndpoint(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	
+
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)

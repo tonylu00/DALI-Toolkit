@@ -1,6 +1,7 @@
 import 'dart:core';
 
 import 'package:flutter/material.dart';
+
 class DaliColor {
   static List<int> toIntList(Color color) {
     final a = (color.a * 255).toInt();
@@ -21,7 +22,8 @@ class DaliColor {
   }
 
   /// Gamma correction for RGB color
-  static List<double> gammaCorrection(double r, double g, double b, {double gamma = 2.8}) {
+  static List<double> gammaCorrection(double r, double g, double b,
+      {double gamma = 2.8}) {
     double rr = mathPow(r, gamma);
     double gg = mathPow(g, gamma);
     double bb = mathPow(b, gamma);
@@ -42,9 +44,9 @@ class DaliColor {
 
   /// Converts XYZ to RGB
   static List<int> xyz2rgb(double x, double y, double z) {
-    double r =  3.2406 * x - 1.5372 * y - 0.4986 * z;
+    double r = 3.2406 * x - 1.5372 * y - 0.4986 * z;
     double g = -0.9689 * x + 1.8758 * y + 0.0415 * z;
-    double b =  0.0557 * x - 0.2040 * y + 1.0570 * z;
+    double b = 0.0557 * x - 0.2040 * y + 1.0570 * z;
 
     // Apply gamma correction
     //r = r > 0.0031308 ? 1.055 * mathPow(r, 1.0 / 2.4) - 0.055 : 12.92 * r;
@@ -97,9 +99,15 @@ class DaliColor {
     double fy = y / yn;
     double fz = z / zn;
 
-    fx = (fx > 0.008856) ? mathPow(fx, 1.0 / 3.0) : (7.787 * fx) + (16.0 / 116.0);
-    fy = (fy > 0.008856) ? mathPow(fy, 1.0 / 3.0) : (7.787 * fy) + (16.0 / 116.0);
-    fz = (fz > 0.008856) ? mathPow(fz, 1.0 / 3.0) : (7.787 * fz) + (16.0 / 116.0);
+    fx = (fx > 0.008856)
+        ? mathPow(fx, 1.0 / 3.0)
+        : (7.787 * fx) + (16.0 / 116.0);
+    fy = (fy > 0.008856)
+        ? mathPow(fy, 1.0 / 3.0)
+        : (7.787 * fy) + (16.0 / 116.0);
+    fz = (fz > 0.008856)
+        ? mathPow(fz, 1.0 / 3.0)
+        : (7.787 * fz) + (16.0 / 116.0);
 
     double l = (116.0 * fy) - 16.0;
     double a = 500.0 * (fx - fy);
@@ -120,9 +128,15 @@ class DaliColor {
     double fx = fy + (a / 500.0);
     double fz = fy - (b / 200.0);
 
-    double xr = (fx * fx * fx > 0.008856) ? (fx * fx * fx) : ((fx - (16.0 / 116.0)) / 7.787);
-    double yr = (fy * fy * fy > 0.008856) ? (fy * fy * fy) : ((fy - (16.0 / 116.0)) / 7.787);
-    double zr = (fz * fz * fz > 0.008856) ? (fz * fz * fz) : ((fz - (16.0 / 116.0)) / 7.787);
+    double xr = (fx * fx * fx > 0.008856)
+        ? (fx * fx * fx)
+        : ((fx - (16.0 / 116.0)) / 7.787);
+    double yr = (fy * fy * fy > 0.008856)
+        ? (fy * fy * fy)
+        : ((fy - (16.0 / 116.0)) / 7.787);
+    double zr = (fz * fz * fz > 0.008856)
+        ? (fz * fz * fz)
+        : ((fz - (16.0 / 116.0)) / 7.787);
 
     double xn = 0.950456;
     double yn = 1.000000;
@@ -144,7 +158,8 @@ class DaliColor {
 }
 
 /// Simple math pow replacement
-double mathPow(double base, double exp) => base == 0 && exp > 0 ? 0 : base.pow(exp);
+double mathPow(double base, double exp) =>
+    base == 0 && exp > 0 ? 0 : base.pow(exp);
 
 extension _DoublePow on double {
   double pow(double exp) {

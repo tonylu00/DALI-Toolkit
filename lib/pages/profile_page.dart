@@ -36,7 +36,8 @@ class ProfilePage extends StatelessWidget {
       } else {
         return CircleAvatar(
           radius: 40,
-          child: Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U'),
+          child:
+              Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U'),
         );
       }
     }();
@@ -92,7 +93,8 @@ class ProfilePage extends StatelessWidget {
                 ? () async {
                     await auth.logout();
                     if (context.mounted) {
-                      Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                      Navigator.of(context)
+                          .pushNamedAndRemoveUntil('/login', (route) => false);
                     }
                   }
                 : null,

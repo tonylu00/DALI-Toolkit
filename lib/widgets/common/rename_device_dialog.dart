@@ -89,7 +89,8 @@ class _RenameDeviceDialogState extends State<RenameDeviceDialog> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('deviceName', controller.text);
-      widget.sendCommand(Uint8List.fromList('AT+NAME=${controller.text}\r\n'.codeUnits));
+      widget.sendCommand(
+          Uint8List.fromList('AT+NAME=${controller.text}\r\n'.codeUnits));
 
       if (mounted) {
         Navigator.of(context).pop();

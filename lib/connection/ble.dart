@@ -269,7 +269,9 @@ class BleManager implements Connection {
         final scan = await Permission.bluetoothScan.request();
         final connect = await Permission.bluetoothConnect.request();
         if (scan.isGranted && connect.isGranted) return true;
-        if (scan.isPermanentlyDenied || connect.isPermanentlyDenied) openAppSettings();
+        if (scan.isPermanentlyDenied || connect.isPermanentlyDenied) {
+          openAppSettings();
+        }
         return false;
       } else {
         // Android 11 及以下

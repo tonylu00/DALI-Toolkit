@@ -1,10 +1,11 @@
 package services
 
 import (
+	"server/internal/domain/models"
+	"server/internal/store"
+	"server/pkg/errors"
+
 	"github.com/google/uuid"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/models"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/store"
-	"github.com/tonylu00/DALI-Toolkit/server/pkg/errors"
 	"gorm.io/gorm"
 )
 

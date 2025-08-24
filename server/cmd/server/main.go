@@ -9,21 +9,22 @@ import (
 	"syscall"
 	"time"
 
+	"server/internal/api"
+	"server/internal/auth"
+	"server/internal/broker"
+	"server/internal/casbinx"
+	"server/internal/casdoor"
+	"server/internal/config"
+	"server/internal/domain/services"
+	"server/internal/logger"
+	"server/internal/middleware"
+	storepkg "server/internal/store"
+	"server/internal/web"
+	"server/internal/websocket"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/api"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/auth"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/broker"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/casbinx"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/casdoor"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/config"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/services"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/logger"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/middleware"
-	storepkg "github.com/tonylu00/DALI-Toolkit/server/internal/store"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/web"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/websocket"
 	"go.uber.org/zap"
 )
 
@@ -48,7 +49,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize logger: %v", err)
 	}
-	defer logger.Sync()
+	defer func() {
+		_ = logger.Sync()
+	}()
 
 	logger.Info("Starting DALI-Toolkit server", zap.String("version", "v0.1.0"))
 
@@ -57,7 +60,9 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to initialize database", zap.Error(err))
 	}
-	defer dataStore.Close()
+	defer func() {
+		_ = dataStore.Close()
+	}()
 
 	// Run database migrations
 	if err := dataStore.AutoMigrate(); err != nil {

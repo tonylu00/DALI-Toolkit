@@ -24,8 +24,10 @@ class CustomKeyRepository {
     if (rawGroups != null && rawGroups.isNotEmpty) {
       try {
         final list = jsonDecode(rawGroups) as List<dynamic>;
-        _groups =
-            list.map((e) => CustomKeyGroup.fromJson((e as Map).cast<String, dynamic>())).toList();
+        _groups = list
+            .map((e) =>
+                CustomKeyGroup.fromJson((e as Map).cast<String, dynamic>()))
+            .toList();
       } catch (_) {
         _groups = [];
       }
@@ -35,11 +37,15 @@ class CustomKeyRepository {
         try {
           final list = jsonDecode(rawLegacy) as List<dynamic>;
           final legacyKeys = list
-              .map((e) => CustomKeyDefinition.fromJson((e as Map).cast<String, dynamic>()))
+              .map((e) => CustomKeyDefinition.fromJson(
+                  (e as Map).cast<String, dynamic>()))
               .toList();
           _groups = [
             CustomKeyGroup(
-                id: 'g1', name: 'custom_key.group.default'.tr(), keys: legacyKeys, order: 0)
+                id: 'g1',
+                name: 'custom_key.group.default'.tr(),
+                keys: legacyKeys,
+                order: 0)
           ];
           await prefs.remove(_kCustomKeysStoreKey);
           await save();
@@ -49,7 +55,10 @@ class CustomKeyRepository {
       }
     }
     if (_groups.isEmpty) {
-      _groups = [CustomKeyGroup(id: 'g1', name: 'custom_key.group.default'.tr(), order: 0)];
+      _groups = [
+        CustomKeyGroup(
+            id: 'g1', name: 'custom_key.group.default'.tr(), order: 0)
+      ];
     }
     currentGroup ??= _groups.first;
     _keys = currentGroup!.keys;
@@ -62,14 +71,17 @@ class CustomKeyRepository {
   }
 
   void selectGroup(String id) {
-    final g = _groups.firstWhere((e) => e.id == id, orElse: () => _groups.first);
+    final g =
+        _groups.firstWhere((e) => e.id == id, orElse: () => _groups.first);
     currentGroup = g;
     _keys = g.keys;
   }
 
   CustomKeyGroup createGroup(String name) {
     final g = CustomKeyGroup(
-        id: DateTime.now().microsecondsSinceEpoch.toString(), name: name, order: _groups.length);
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        name: name,
+        order: _groups.length);
     _groups.add(g);
     currentGroup ??= g;
     return g;
@@ -82,7 +94,10 @@ class CustomKeyRepository {
   void deleteGroup(CustomKeyGroup g) {
     _groups.removeWhere((e) => e.id == g.id);
     if (_groups.isEmpty) {
-      _groups = [CustomKeyGroup(id: 'g1', name: 'custom_key.group.default'.tr(), order: 0)];
+      _groups = [
+        CustomKeyGroup(
+            id: 'g1', name: 'custom_key.group.default'.tr(), order: 0)
+      ];
     }
     if (currentGroup == null || !_groups.any((e) => e.id == currentGroup!.id)) {
       currentGroup = _groups.first;

@@ -124,7 +124,7 @@ func (c *Connection) Run() {
 func (c *Connection) Close() {
 	c.cancel()
 	close(c.send)
-	c.conn.Close()
+	_ = c.conn.Close()
 }
 
 // Send sends a message to the connection
@@ -179,13 +179,13 @@ func (c *Connection) updateActivity() {
 func (c *Connection) readPump() {
 	defer func() {
 		c.hub.Unregister(c)
-		c.conn.Close()
+		_ = c.conn.Close()
 	}()
 
 	c.conn.SetReadLimit(maxMessageSize)
-	c.conn.SetReadDeadline(time.Now().Add(pongWait))
+	_ = c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error {
-		c.conn.SetReadDeadline(time.Now().Add(pongWait))
+		_ = c.conn.SetReadDeadline(time.Now().Add(pongWait))
 		c.updateActivity()
 		return nil
 	})
@@ -217,16 +217,16 @@ func (c *Connection) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		c.conn.Close()
+		_ = c.conn.Close()
 	}()
 
 	for {
 		select {
 		case message, ok := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				_ = c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
@@ -236,7 +236,7 @@ func (c *Connection) writePump() {
 			}
 
 		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
@@ -252,7 +252,7 @@ func (c *Connection) handleMessage(data []byte) {
 	var msg Message
 	if err := json.Unmarshal(data, &msg); err != nil {
 		c.logger.Warn("Invalid message format", zap.Error(err), zap.ByteString("data", data))
-		c.SendError("Invalid message format", "INVALID_FORMAT", err.Error())
+		_ = c.SendError("Invalid message format", "INVALID_FORMAT", err.Error())
 		return
 	}
 
@@ -267,7 +267,7 @@ func (c *Connection) handleMessage(data []byte) {
 		c.handlePing()
 	default:
 		c.logger.Warn("Unknown message type", zap.String("type", msg.Type))
-		c.SendError("Unknown message type", "UNKNOWN_TYPE", msg.Type)
+		_ = c.SendError("Unknown message type", "UNKNOWN_TYPE", msg.Type)
 	}
 }
 
@@ -275,7 +275,7 @@ func (c *Connection) handleMessage(data []byte) {
 func (c *Connection) handleDeviceCommand(msg Message) {
 	// Validate device ID matches connection
 	if msg.DeviceID != c.DeviceID {
-		c.SendError("Device ID mismatch", "DEVICE_MISMATCH", "Message device ID does not match connection device ID")
+		_ = c.SendError("Device ID mismatch", "DEVICE_MISMATCH", "Message device ID does not match connection device ID")
 		return
 	}
 
@@ -288,7 +288,7 @@ func (c *Connection) handleDeviceCommand(msg Message) {
 	} else {
 		payload, err = json.Marshal(msg.Data)
 		if err != nil {
-			c.SendError("Invalid message data", "INVALID_DATA", err.Error())
+			_ = c.SendError("Invalid message data", "INVALID_DATA", err.Error())
 			return
 		}
 	}
@@ -299,7 +299,7 @@ func (c *Connection) handleDeviceCommand(msg Message) {
 			c.logger.Error("Failed to publish to MQTT",
 				zap.String("device_id", c.DeviceID),
 				zap.Error(err))
-			c.SendError("Failed to send command to device", "MQTT_ERROR", err.Error())
+			_ = c.SendError("Failed to send command to device", "MQTT_ERROR", err.Error())
 			return
 		}
 	}
@@ -309,7 +309,7 @@ func (c *Connection) handleDeviceCommand(msg Message) {
 		zap.Int("payload_size", len(payload)))
 
 	// Send acknowledgment
-	c.Send("command_ack", map[string]interface{}{
+	_ = c.Send("command_ack", map[string]interface{}{
 		"status":    "forwarded",
 		"timestamp": time.Now(),
 	})
@@ -350,7 +350,7 @@ func (c *Connection) HandleMQTTMessage(topic string, payload []byte) {
 
 // handlePing processes ping messages
 func (c *Connection) handlePing() {
-	c.Send("pong", map[string]interface{}{
+	_ = c.Send("pong", map[string]interface{}{
 		"timestamp": time.Now(),
 	})
 }

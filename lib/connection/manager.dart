@@ -98,7 +98,9 @@ class ConnectionManager extends ChangeNotifier {
   void openDeviceSelection(BuildContext context) async {
     final perfs = await SharedPreferences.getInstance();
     String connectionMethod = perfs.getString('connectionMethod') ?? 'BLE';
-    if (connectionMethod == 'TCP' || connectionMethod == 'UDP') connectionMethod = 'IP';
+    if (connectionMethod == 'TCP' || connectionMethod == 'UDP') {
+      connectionMethod = 'IP';
+    }
     if (!context.mounted) return;
     if (connectionMethod == 'IP') {
       _openIpDialog(context);

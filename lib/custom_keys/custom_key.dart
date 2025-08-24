@@ -29,7 +29,8 @@ class CustomKeyParams {
   T? get<T>(String k) => data[k] as T?;
   int getInt(String k, [int def = 0]) => (data[k] as int?) ?? def;
   Map<String, dynamic> toJson() => data;
-  factory CustomKeyParams.fromJson(Map<String, dynamic> json) => CustomKeyParams(json);
+  factory CustomKeyParams.fromJson(Map<String, dynamic> json) =>
+      CustomKeyParams(json);
 }
 
 class CustomKeyDefinition {
@@ -53,12 +54,15 @@ class CustomKeyDefinition {
         'params': params.toJson(),
         'order': order,
       };
-  factory CustomKeyDefinition.fromJson(Map<String, dynamic> json) => CustomKeyDefinition(
+  factory CustomKeyDefinition.fromJson(Map<String, dynamic> json) =>
+      CustomKeyDefinition(
         id: json['id'],
         name: json['name'],
-        actionType: CustomKeyActionType.values.firstWhere((e) => e.name == json['actionType'],
+        actionType: CustomKeyActionType.values.firstWhere(
+            (e) => e.name == json['actionType'],
             orElse: () => CustomKeyActionType.runSequence),
-        params: CustomKeyParams.fromJson((json['params'] as Map?)?.cast<String, dynamic>() ?? {}),
+        params: CustomKeyParams.fromJson(
+            (json['params'] as Map?)?.cast<String, dynamic>() ?? {}),
         order: (json['order'] as int?) ?? 0,
       );
 }
@@ -80,26 +84,38 @@ List<CustomKeyActionFieldMeta> customKeyActionMeta(CustomKeyActionType t) {
       return [];
     case CustomKeyActionType.on:
     case CustomKeyActionType.off:
-      return [CustomKeyActionFieldMeta('addr', 'sequence.field.addr', min: 0, max: 127)];
+      return [
+        CustomKeyActionFieldMeta('addr', 'sequence.field.addr',
+            min: 0, max: 127)
+      ];
     case CustomKeyActionType.setBright:
       return [
-        CustomKeyActionFieldMeta('addr', 'sequence.field.addr', min: 0, max: 127),
-        CustomKeyActionFieldMeta('level', 'sequence.field.level', min: 0, max: 254),
+        CustomKeyActionFieldMeta('addr', 'sequence.field.addr',
+            min: 0, max: 127),
+        CustomKeyActionFieldMeta('level', 'sequence.field.level',
+            min: 0, max: 254),
       ];
     case CustomKeyActionType.toScene:
     case CustomKeyActionType.setScene:
       return [
-        CustomKeyActionFieldMeta('addr', 'sequence.field.addr', min: 0, max: 127),
-        CustomKeyActionFieldMeta('scene', 'sequence.field.scene', min: 0, max: 15),
+        CustomKeyActionFieldMeta('addr', 'sequence.field.addr',
+            min: 0, max: 127),
+        CustomKeyActionFieldMeta('scene', 'sequence.field.scene',
+            min: 0, max: 15),
       ];
     case CustomKeyActionType.addToGroup:
     case CustomKeyActionType.removeFromGroup:
       return [
-        CustomKeyActionFieldMeta('addr', 'sequence.field.addr', min: 0, max: 127),
-        CustomKeyActionFieldMeta('group', 'sequence.field.group', min: 0, max: 15),
+        CustomKeyActionFieldMeta('addr', 'sequence.field.addr',
+            min: 0, max: 127),
+        CustomKeyActionFieldMeta('group', 'sequence.field.group',
+            min: 0, max: 15),
       ];
     case CustomKeyActionType.toggleOnOff:
-      return [CustomKeyActionFieldMeta('addr', 'sequence.field.addr', min: 0, max: 127)];
+      return [
+        CustomKeyActionFieldMeta('addr', 'sequence.field.addr',
+            min: 0, max: 127)
+      ];
   }
 }
 
@@ -109,7 +125,10 @@ String encodeCustomKeys(List<CustomKeyDefinition> list) =>
 List<CustomKeyDefinition> decodeCustomKeys(String raw) {
   final data = jsonDecode(raw);
   if (data is! List) return [];
-  return data.map((e) => CustomKeyDefinition.fromJson((e as Map).cast<String, dynamic>())).toList();
+  return data
+      .map((e) =>
+          CustomKeyDefinition.fromJson((e as Map).cast<String, dynamic>()))
+      .toList();
 }
 
 class CustomKeyGroup {
@@ -118,7 +137,10 @@ class CustomKeyGroup {
   List<CustomKeyDefinition> keys;
   int order;
   CustomKeyGroup(
-      {required this.id, required this.name, List<CustomKeyDefinition>? keys, required this.order})
+      {required this.id,
+      required this.name,
+      List<CustomKeyDefinition>? keys,
+      required this.order})
       : keys = keys ?? [];
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -131,7 +153,8 @@ class CustomKeyGroup {
         name: json['name'] ?? '',
         order: (json['order'] as int?) ?? 0,
         keys: (json['keys'] as List? ?? [])
-            .map((e) => CustomKeyDefinition.fromJson((e as Map).cast<String, dynamic>()))
+            .map((e) => CustomKeyDefinition.fromJson(
+                (e as Map).cast<String, dynamic>()))
             .toList(),
       );
 }

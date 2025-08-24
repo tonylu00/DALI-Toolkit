@@ -60,7 +60,8 @@ void main() async {
   await EasyLocalization.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   // 如果还没有保存的主题色，使用 VS Code 蓝 #007ACC
-  int colorValue = prefs.getInt('themeColor') ?? DaliColor.toInt(const Color(0xFF007ACC));
+  int colorValue =
+      prefs.getInt('themeColor') ?? DaliColor.toInt(const Color(0xFF007ACC));
   themeColor = Color(colorValue);
   isDarkMode = prefs.getBool('isDarkMode') ?? false;
   // 读取 Crashlytics 上报策略
@@ -191,7 +192,8 @@ class MyAppState extends State<MyApp> {
         useMaterial3: true,
       ),
       darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: _themeColor, brightness: Brightness.dark),
+        colorScheme: ColorScheme.fromSeed(
+            seedColor: _themeColor, brightness: Brightness.dark),
         useMaterial3: true,
       ),
       themeMode: _themeMode,
@@ -205,7 +207,8 @@ class MyAppState extends State<MyApp> {
               onThemeColorChanged: _changeThemeColor,
             ),
         '/login': (context) => const LoginPage(),
-        '/shortAddressManager': (context) => ShortAddressManagerPage(daliAddr: dali.addr!),
+        '/shortAddressManager': (context) =>
+            ShortAddressManagerPage(daliAddr: dali.addr!),
         '/sequenceEditor': (context) => const SequenceEditorPage(),
         '/customKeys': (context) => const CustomKeysPage(),
         '/about': (context) => const AuthRequired(child: AboutPage()),

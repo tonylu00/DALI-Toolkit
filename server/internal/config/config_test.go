@@ -23,12 +23,16 @@ func TestLoad(t *testing.T) {
 
 func TestLoadWithEnvVars(t *testing.T) {
 	// Set environment variables
-	os.Setenv("SERVER_ADDR", ":9090")
-	os.Setenv("LOG_LEVEL", "debug")
-	defer func() {
-		os.Unsetenv("SERVER_ADDR")
-		os.Unsetenv("LOG_LEVEL")
-	}()
+	if err := os.Setenv("SERVER_ADDR", ":9090"); err != nil {
+		t.Fatalf("failed to set env: %v", err)
+	}
+	if err := os.Setenv("LOG_LEVEL", "debug"); err != nil {
+		t.Fatalf("failed to set env: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Unsetenv("SERVER_ADDR")
+		_ = os.Unsetenv("LOG_LEVEL")
+	})
 
 	cfg, err := Load()
 	if err != nil {

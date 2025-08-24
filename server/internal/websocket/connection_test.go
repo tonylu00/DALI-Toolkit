@@ -32,10 +32,7 @@ func TestHandleDeviceCommand(t *testing.T) {
 	// Dialer to create a dummy connection; we won't use network IO in the test
 	u := "ws://example/"
 	d := websocket.Dialer{}
-	c, _, _ := d.Dial(u, nil)
-	if c == nil {
-		// If dial fails (expected), create a fake conn via nil pointer; methods don't use conn in this test path
-	}
+	_, _, _ = d.Dial(u, nil) // best-effort; this may fail in tests and is not required
 
 	broker := &fakeBroker{}
 	logger, _ := zap.NewDevelopment()

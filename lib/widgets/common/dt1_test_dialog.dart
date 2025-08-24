@@ -117,8 +117,12 @@ class _DT1TestDialogState extends State<DT1TestDialog> with TickerProviderStateM
 
                 if (hasFailure) {
                   List<String> failures = [];
-                  if (detailedStatus['lampFailure'] == true) failures.add('Lamp failure');
-                  if (detailedStatus['batteryFailure'] == true) failures.add('Battery failure');
+                  if (detailedStatus['lampFailure'] == true) {
+                    failures.add('Lamp failure');
+                  }
+                  if (detailedStatus['batteryFailure'] == true) {
+                    failures.add('Battery failure');
+                  }
                   _testStatus = 'Test completed with failures: ${failures.join(', ')}';
                   _statusColor = Colors.red;
                 } else {

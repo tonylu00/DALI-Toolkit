@@ -20,7 +20,8 @@ class DaliLog {
 
   static const String _kLogLevelKey = 'logLevel';
   LogLevel _currentLevel = LogLevel.info; // default until init
-  final StreamController<LogLevel> _levelController = StreamController<LogLevel>.broadcast();
+  final StreamController<LogLevel> _levelController =
+      StreamController<LogLevel>.broadcast();
 
   // Initialize log level from SharedPreferences; set default on first launch
   Future<void> init() async {
@@ -88,7 +89,8 @@ class DaliLog {
       // 2) Flutter Web (dev compiler) format:
       //    'package:foo/bar.dart 10:2  Class.method' or 'packages/foo/bar.dart 10:2  function'
       if (symbol == null) {
-        final mDevc = RegExp(r'^[^\s]+\.dart\s+\d+:\d+\s+(.+)$').firstMatch(line);
+        final mDevc =
+            RegExp(r'^[^\s]+\.dart\s+\d+:\d+\s+(.+)$').firstMatch(line);
         if (mDevc != null) {
           symbol = mDevc.group(1);
         }
@@ -114,7 +116,9 @@ class DaliLog {
             .trim();
 
         // Skip uninformative Web symbols like <fn> or pure anonymous markers
-        if (symbol == '<fn>' || symbol == 'anon' || RegExp(r'^<[^>]+>$').hasMatch(symbol)) {
+        if (symbol == '<fn>' ||
+            symbol == 'anon' ||
+            RegExp(r'^<[^>]+>$').hasMatch(symbol)) {
           // keep scanning for a better frame; fallback will be file.dart:line
           continue;
         }
@@ -164,7 +168,8 @@ class DaliLog {
 
       // Prepare a lightweight fallback like 'file.dart:line' in case we never find a symbol
       fallback ??= () {
-        final mf = RegExp(r'([A-Za-z0-9_\-/]+\.dart)\s+(\d+):\d+').firstMatch(line);
+        final mf =
+            RegExp(r'([A-Za-z0-9_\-/]+\.dart)\s+(\d+):\d+').firstMatch(line);
         if (mf != null) {
           return '${mf.group(1)}:${mf.group(2)}';
         }
@@ -215,7 +220,8 @@ class DaliLog {
     );
   }
 
-  void showLogDialog(BuildContext context, String title, {bool clear = true, onCanceled}) {
+  void showLogDialog(BuildContext context, String title,
+      {bool clear = true, onCanceled}) {
     showDialog(
       context: context,
       builder: (BuildContext context) {

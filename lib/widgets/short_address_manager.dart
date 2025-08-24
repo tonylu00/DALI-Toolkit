@@ -247,7 +247,9 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
       return;
     }
     _cancelApply = false;
-    setState(() { _applyingOrder = true; });
+    setState(() {
+      _applyingOrder = true;
+    });
 
     Map<int, int> mapping = {};
     for (int i = 0; i < window.length; i++) {
@@ -255,19 +257,34 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
       final desired = startSlot + i;
       if (actualAddr != desired) mapping[actualAddr] = desired;
     }
-    if (mapping.isEmpty) { setState(() { _applyingOrder = false; }); _showSnack('short_addr_manager.no_change'.tr()); return; }
+    if (mapping.isEmpty) {
+      setState(() {
+        _applyingOrder = false;
+      });
+      _showSnack('short_addr_manager.no_change'.tr());
+      return;
+    }
 
     // 新实现：统一处理所有依赖链，使用临时地址避免链写过程中的覆盖
     Set<int> sources = mapping.keys.toSet();
     Set<int> targets = mapping.values.toSet();
     int? temp;
     for (int t = 63; t >= 0; t--) {
-      if (!sources.contains(t) && !targets.contains(t) && !_addresses.contains(t)) { temp = t; break; }
+      if (!sources.contains(t) && !targets.contains(t) && !_addresses.contains(t)) {
+        temp = t;
+        break;
+      }
     }
     temp ??= Iterable<int>.generate(64).firstWhere((t) => !targets.contains(t), orElse: () => -1);
-    if (temp == -1) { _showSnack('short_addr_manager.temp_addr_fail'.tr()); setState(() { _applyingOrder = false; }); return; }
+    if (temp == -1) {
+      _showSnack('short_addr_manager.temp_addr_fail'.tr());
+      setState(() {
+        _applyingOrder = false;
+      });
+      return;
+    }
 
-    Map<int,int> mapCopy = Map.from(mapping);
+    Map<int, int> mapCopy = Map.from(mapping);
     Set<int> visited = {};
     List<List<int>> chainsOrCycles = [];
     for (final start in mapCopy.keys) {
@@ -277,7 +294,9 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
       Set<int> local = {};
       while (true) {
         if (visited.contains(cur)) break;
-        path.add(cur); visited.add(cur); local.add(cur);
+        path.add(cur);
+        visited.add(cur);
+        local.add(cur);
         final next = mapCopy[cur];
         if (next == null) break;
         if (local.contains(next)) {
@@ -310,11 +329,11 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
         await Future.delayed(const Duration(milliseconds: 40));
         for (int i = chain.length - 1; i >= 1; i--) {
           if (_cancelApply) throw Exception('cancelled');
-            final prev = chain[i-1];
-            final cur = chain[i];
-            final target = mapping[prev]!;
-            await widget.daliAddr.writeAddr(cur, target);
-            await Future.delayed(const Duration(milliseconds: 30));
+          final prev = chain[i - 1];
+          final cur = chain[i];
+          final target = mapping[prev]!;
+          await widget.daliAddr.writeAddr(cur, target);
+          await Future.delayed(const Duration(milliseconds: 30));
         }
         final lastTarget = mapping[chain.last]!;
         await widget.daliAddr.writeAddr(temp, lastTarget);
@@ -329,7 +348,11 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
         _showSnack('short_addr_manager.reorder_fail'.tr(namedArgs: {'error': e.toString()}));
       }
     }
-    if (mounted) setState(() { _applyingOrder = false; });
+    if (mounted) {
+      setState(() {
+        _applyingOrder = false;
+      });
+    }
   }
 
   @override

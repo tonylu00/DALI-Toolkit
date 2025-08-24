@@ -1,8 +1,9 @@
 package store
 
 import (
+	"server/internal/domain/models"
+
 	"github.com/google/uuid"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/models"
 	"gorm.io/gorm"
 )
 
@@ -55,11 +56,11 @@ func (r *DeviceRepository) GetByIMEI(imei string) (*models.Device, error) {
 func (r *DeviceRepository) ListByProject(projectID uuid.UUID, filters map[string]interface{}) ([]models.Device, error) {
 	var devices []models.Device
 	query := r.db.Preload("Project").Preload("Partition").Where("project_id = ?", projectID)
-	
+
 	for key, value := range filters {
 		query = query.Where(key+" = ?", value)
 	}
-	
+
 	err := query.Find(&devices).Error
 	return devices, err
 }
@@ -70,13 +71,13 @@ func (r *DeviceRepository) ListByOrg(orgID uuid.UUID, filters map[string]interfa
 	query := r.db.Preload("Project").Preload("Partition").
 		Joins("JOIN projects ON devices.project_id = projects.id").
 		Where("projects.org_id = ?", orgID)
-	
+
 	for key, value := range filters {
 		if key == "status" || key == "device_type" {
 			query = query.Where("devices."+key+" = ?", value)
 		}
 	}
-	
+
 	err := query.Find(&devices).Error
 	return devices, err
 }

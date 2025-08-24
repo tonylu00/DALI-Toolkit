@@ -1,4 +1,4 @@
-module github.com/tonylu00/DALI-Toolkit/server
+module server
 
 go 1.24.6
 

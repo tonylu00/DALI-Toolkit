@@ -36,7 +36,8 @@ class DaliCommandParams {
   int getInt(String k, [int def = 0]) => (data[k] as int?) ?? def;
   DaliCommandParams copy() => DaliCommandParams({...data});
   Map<String, dynamic> toJson() => data;
-  factory DaliCommandParams.fromJson(Map<String, dynamic> json) => DaliCommandParams(json);
+  factory DaliCommandParams.fromJson(Map<String, dynamic> json) =>
+      DaliCommandParams(json);
 }
 
 class SequenceStep {
@@ -44,10 +45,15 @@ class SequenceStep {
   String? remark; // 用户备注
   DaliCommandType type;
   DaliCommandParams params;
-  SequenceStep({required this.id, required this.type, this.remark, DaliCommandParams? params})
+  SequenceStep(
+      {required this.id,
+      required this.type,
+      this.remark,
+      DaliCommandParams? params})
       : params = params ?? DaliCommandParams();
 
-  SequenceStep copy() => SequenceStep(id: id, type: type, remark: remark, params: params.copy());
+  SequenceStep copy() =>
+      SequenceStep(id: id, type: type, remark: remark, params: params.copy());
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -57,10 +63,11 @@ class SequenceStep {
       };
   factory SequenceStep.fromJson(Map<String, dynamic> json) => SequenceStep(
         id: json['id'],
-        type: DaliCommandType.values
-            .firstWhere((e) => e.name == json['type'], orElse: () => DaliCommandType.setBright),
+        type: DaliCommandType.values.firstWhere((e) => e.name == json['type'],
+            orElse: () => DaliCommandType.setBright),
         remark: json['remark'],
-        params: DaliCommandParams.fromJson((json['params'] as Map).cast<String, dynamic>()),
+        params: DaliCommandParams.fromJson(
+            (json['params'] as Map).cast<String, dynamic>()),
       );
 }
 
@@ -68,7 +75,8 @@ class CommandSequence {
   String id;
   String name;
   List<SequenceStep> steps;
-  CommandSequence({required this.id, required this.name, List<SequenceStep>? steps})
+  CommandSequence(
+      {required this.id, required this.name, List<SequenceStep>? steps})
       : steps = steps ?? [];
 
   Map<String, dynamic> toJson() => {
@@ -76,11 +84,13 @@ class CommandSequence {
         'name': name,
         'steps': steps.map((e) => e.toJson()).toList(),
       };
-  factory CommandSequence.fromJson(Map<String, dynamic> json) => CommandSequence(
+  factory CommandSequence.fromJson(Map<String, dynamic> json) =>
+      CommandSequence(
         id: json['id'],
         name: json['name'],
         steps: (json['steps'] as List<dynamic>? ?? [])
-            .map((e) => SequenceStep.fromJson((e as Map).cast<String, dynamic>()))
+            .map((e) =>
+                SequenceStep.fromJson((e as Map).cast<String, dynamic>()))
             .toList(),
       );
 }
@@ -103,7 +113,8 @@ class SequenceRunner with ChangeNotifier {
     try {
       final cm = Dali.instance.cm;
       if (!cm.connection.isDeviceConnected()) {
-        DaliLog.instance.debugLog('[SequenceRunner] Connection not established, abort run');
+        DaliLog.instance
+            .debugLog('[SequenceRunner] Connection not established, abort run');
         return;
       }
     } catch (_) {}
@@ -267,13 +278,19 @@ List<CommandMetaField> commandMeta(DaliCommandType t) {
         CommandMetaField('value', 'sequence.field.value'.tr(), min: 0, max: 255)
       ];
     case DaliCommandType.wait:
-      return [CommandMetaField('ms', 'sequence.field.ms'.tr(), min: 1, max: 60000)];
+      return [
+        CommandMetaField('ms', 'sequence.field.ms'.tr(), min: 1, max: 60000)
+      ];
     case DaliCommandType.modifyShortAddress:
       return [
-        CommandMetaField('oldAddr', 'sequence.field.oldAddr'.tr(), min: 0, max: 63),
-        CommandMetaField('newAddr', 'sequence.field.newAddr'.tr(), min: 0, max: 63),
+        CommandMetaField('oldAddr', 'sequence.field.oldAddr'.tr(),
+            min: 0, max: 63),
+        CommandMetaField('newAddr', 'sequence.field.newAddr'.tr(),
+            min: 0, max: 63),
       ];
     case DaliCommandType.deleteShortAddress:
-      return [CommandMetaField('addr', 'sequence.field.addr'.tr(), min: 0, max: 63)];
+      return [
+        CommandMetaField('addr', 'sequence.field.addr'.tr(), min: 0, max: 63)
+      ];
   }
 }

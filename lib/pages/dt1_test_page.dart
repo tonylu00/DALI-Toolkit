@@ -80,7 +80,8 @@ class _DT1TestPageState extends State<DT1TestPage> {
                           _deviceAddress = int.tryParse(value) ?? 1;
                         });
                       },
-                      controller: TextEditingController(text: _deviceAddress.toString()),
+                      controller: TextEditingController(
+                          text: _deviceAddress.toString()),
                     ),
                     const SizedBox(height: 16),
 
@@ -115,7 +116,8 @@ class _DT1TestPageState extends State<DT1TestPage> {
             StreamBuilder<int>(
               stream: Dali.instance.addr?.selectedDeviceStream,
               builder: (context, snapshot) {
-                final selectedAddress = snapshot.data ?? Dali.instance.base?.selectedAddress ?? 127;
+                final selectedAddress =
+                    snapshot.data ?? Dali.instance.base?.selectedAddress ?? 127;
                 return Card(
                   elevation: 1,
                   color: Theme.of(context).colorScheme.surfaceContainerHigh,
@@ -133,7 +135,10 @@ class _DT1TestPageState extends State<DT1TestPage> {
                             const SizedBox(width: 8),
                             Text(
                               'Current Selection',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
                             ),
@@ -147,9 +152,12 @@ class _DT1TestPageState extends State<DT1TestPage> {
                         const SizedBox(height: 8),
                         Text(
                           'You can use this address for testing by clicking "Use Selected Address" below.',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
                         ),
                       ],
                     ),
@@ -167,8 +175,9 @@ class _DT1TestPageState extends State<DT1TestPage> {
                   child: StreamBuilder<int>(
                     stream: Dali.instance.addr?.selectedDeviceStream,
                     builder: (context, snapshot) {
-                      final selectedAddress =
-                          snapshot.data ?? Dali.instance.base?.selectedAddress ?? 127;
+                      final selectedAddress = snapshot.data ??
+                          Dali.instance.base?.selectedAddress ??
+                          127;
                       return ElevatedButton.icon(
                         onPressed: () {
                           setState(() {

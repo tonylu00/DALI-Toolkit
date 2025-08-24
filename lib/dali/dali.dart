@@ -11,6 +11,7 @@ class Dali {
     _instance ??= Dali();
     return _instance!;
   }
+
   static const int broadcast = 127;
   String name = "dali1";
   int gw = 0;

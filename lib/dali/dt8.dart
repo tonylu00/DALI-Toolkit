@@ -8,28 +8,36 @@ class ColorStatus {
   ColorStatus(this._status);
 
   bool get xyOutOfRange => (_status & 0x01) == 0x01;
-  set xyOutOfRange(bool value) => _status = value ? (_status | 0x01) : (_status & ~0x01);
+  set xyOutOfRange(bool value) =>
+      _status = value ? (_status | 0x01) : (_status & ~0x01);
 
   bool get ctOutOfRange => (_status & 0x02) == 0x02;
-  set ctOutOfRange(bool value) => _status = value ? (_status | 0x02) : (_status & ~0x02);
+  set ctOutOfRange(bool value) =>
+      _status = value ? (_status | 0x02) : (_status & ~0x02);
 
   bool get autoCalibrationActive => (_status & 0x04) == 0x04;
-  set autoCalibrationActive(bool value) => _status = value ? (_status | 0x04) : (_status & ~0x04);
+  set autoCalibrationActive(bool value) =>
+      _status = value ? (_status | 0x04) : (_status & ~0x04);
 
   bool get autoCalibrationSuccess => (_status & 0x08) == 0x08;
-  set autoCalibrationSuccess(bool value) => _status = value ? (_status | 0x08) : (_status & ~0x08);
+  set autoCalibrationSuccess(bool value) =>
+      _status = value ? (_status | 0x08) : (_status & ~0x08);
 
   bool get xyActive => (_status & 0x10) == 0x10;
-  set xyActive(bool value) => _status = value ? (_status | 0x10) : (_status & ~0x10);
+  set xyActive(bool value) =>
+      _status = value ? (_status | 0x10) : (_status & ~0x10);
 
   bool get ctActive => (_status & 0x20) == 0x20;
-  set ctActive(bool value) => _status = value ? (_status | 0x20) : (_status & ~0x20);
+  set ctActive(bool value) =>
+      _status = value ? (_status | 0x20) : (_status & ~0x20);
 
   bool get primaryNActive => (_status & 0x40) == 0x40;
-  set primaryNActive(bool value) => _status = value ? (_status | 0x40) : (_status & ~0x40);
+  set primaryNActive(bool value) =>
+      _status = value ? (_status | 0x40) : (_status & ~0x40);
 
   bool get rgbwafActive => (_status & 0x80) == 0x80;
-  set rgbwafActive(bool value) => _status = value ? (_status | 0x80) : (_status & ~0x80);
+  set rgbwafActive(bool value) =>
+      _status = value ? (_status | 0x80) : (_status & ~0x80);
 }
 
 class ColorType {

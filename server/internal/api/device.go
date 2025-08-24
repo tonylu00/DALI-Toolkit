@@ -4,13 +4,14 @@ import (
 	"net/http"
 	"strconv"
 
+	"server/internal/auth"
+	"server/internal/casbinx"
+	"server/internal/domain/models"
+	"server/internal/domain/services"
+	"server/pkg/errors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/auth"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/casbinx"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/models"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/services"
-	"github.com/tonylu00/DALI-Toolkit/server/pkg/errors"
 	"go.uber.org/zap"
 )
 

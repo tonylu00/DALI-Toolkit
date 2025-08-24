@@ -19,18 +19,22 @@ class ColorTemperatureControlWidget extends StatefulWidget {
   });
 
   @override
-  State<ColorTemperatureControlWidget> createState() => _ColorTemperatureControlWidgetState();
+  State<ColorTemperatureControlWidget> createState() =>
+      _ColorTemperatureControlWidgetState();
 }
 
-class _ColorTemperatureControlWidgetState extends State<ColorTemperatureControlWidget> {
+class _ColorTemperatureControlWidgetState
+    extends State<ColorTemperatureControlWidget> {
   Timer? _debounce;
 
-  bool _checkDeviceConnection() => ConnectionManager.instance.ensureReadyForOperation();
+  bool _checkDeviceConnection() =>
+      ConnectionManager.instance.ensureReadyForOperation();
 
   Future<void> _readColorTemperature() async {
     if (!_checkDeviceConnection()) return;
     final colorTemp0 = await daliSafeToast<int>(() async {
-      return await Dali.instance.dt8!.getColorTemperature(Dali.instance.base!.selectedAddress);
+      return await Dali.instance.dt8!
+          .getColorTemperature(Dali.instance.base!.selectedAddress);
     });
     if (colorTemp0 == null) return;
     int colorTemp = colorTemp0;
@@ -46,8 +50,8 @@ class _ColorTemperatureControlWidgetState extends State<ColorTemperatureControlW
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 50), () {
       daliSafeToast<void>(() async {
-        await Dali.instance.dt8!
-            .setColorTemperature(Dali.instance.base!.selectedAddress, value.toInt());
+        await Dali.instance.dt8!.setColorTemperature(
+            Dali.instance.base!.selectedAddress, value.toInt());
       });
     });
   }
@@ -99,7 +103,8 @@ class _ColorTemperatureControlWidgetState extends State<ColorTemperatureControlW
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.orange.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
@@ -136,12 +141,17 @@ class _ColorTemperatureControlWidgetState extends State<ColorTemperatureControlW
                 trackHeight: 8.0,
                 activeTrackColor: Colors.transparent,
                 inactiveTrackColor: Colors.transparent,
-                trackShape: GradientTrackShape(
-                    colors: [Colors.yellow.shade300, Colors.white, Colors.lightBlue.shade300]),
+                trackShape: GradientTrackShape(colors: [
+                  Colors.yellow.shade300,
+                  Colors.white,
+                  Colors.lightBlue.shade300
+                ]),
                 thumbColor: Colors.orange,
                 overlayColor: Colors.orange.withAlpha(32),
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 14.0),
-                overlayShape: const RoundSliderOverlayShape(overlayRadius: 20.0),
+                thumbShape:
+                    const RoundSliderThumbShape(enabledThumbRadius: 14.0),
+                overlayShape:
+                    const RoundSliderOverlayShape(overlayRadius: 20.0),
                 valueIndicatorShape: const PaddleSliderValueIndicatorShape(),
                 valueIndicatorColor: Colors.orange,
                 valueIndicatorTextStyle: const TextStyle(
@@ -164,14 +174,16 @@ class _ColorTemperatureControlWidgetState extends State<ColorTemperatureControlW
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
+              _buildPresetButton(context, 'colortemp.preset.warm'.tr(), 2700,
+                  Colors.yellow.shade600),
+              _buildPresetButton(context, 'colortemp.preset.soft'.tr(), 3500,
+                  Colors.orange.shade300),
               _buildPresetButton(
-                  context, 'colortemp.preset.warm'.tr(), 2700, Colors.yellow.shade600),
-              _buildPresetButton(
-                  context, 'colortemp.preset.soft'.tr(), 3500, Colors.orange.shade300),
-              _buildPresetButton(context, 'colortemp.preset.natural'.tr(), 4500, Colors.white),
-              _buildPresetButton(context, 'colortemp.preset.cool'.tr(), 5500, Colors.blue.shade200),
-              _buildPresetButton(
-                  context, 'colortemp.preset.daylight'.tr(), 6500, Colors.lightBlue.shade300),
+                  context, 'colortemp.preset.natural'.tr(), 4500, Colors.white),
+              _buildPresetButton(context, 'colortemp.preset.cool'.tr(), 5500,
+                  Colors.blue.shade200),
+              _buildPresetButton(context, 'colortemp.preset.daylight'.tr(),
+                  6500, Colors.lightBlue.shade300),
             ],
           ),
         ],
@@ -190,7 +202,10 @@ class _ColorTemperatureControlWidgetState extends State<ColorTemperatureControlW
         decoration: BoxDecoration(
           color: isSelected
               ? Colors.orange.withValues(alpha: 0.15)
-              : Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              : Theme.of(context)
+                  .colorScheme
+                  .surfaceContainerHighest
+                  .withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected
@@ -217,7 +232,8 @@ class _ColorTemperatureControlWidgetState extends State<ColorTemperatureControlW
                     color: isSelected
                         ? Colors.orange.shade700
                         : Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                     fontSize: 10,
                   ),
             ),

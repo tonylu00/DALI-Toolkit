@@ -128,7 +128,9 @@ class AuthProvider extends ChangeNotifier {
     final String? lEmail = (normalized['email'] is String) ? normalized['email'] as String : null;
     final String? lAvatar =
         (normalized['avatar'] is String) ? normalized['avatar'] as String : null;
-    if (lName != null && lName.isNotEmpty) await prefsForAll.setString('auth_cached_name', lName);
+    if (lName != null && lName.isNotEmpty) {
+      await prefsForAll.setString('auth_cached_name', lName);
+    }
     if (lEmail != null && lEmail.isNotEmpty) {
       await prefsForAll.setString('auth_cached_email', lEmail);
     }

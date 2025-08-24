@@ -8,7 +8,8 @@ import '/dali/errors.dart';
 class DeviceControlButtonsWidget extends StatelessWidget {
   const DeviceControlButtonsWidget({super.key});
 
-  bool _checkDeviceConnection() => ConnectionManager.instance.ensureReadyForOperation();
+  bool _checkDeviceConnection() =>
+      ConnectionManager.instance.ensureReadyForOperation();
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +26,8 @@ class DeviceControlButtonsWidget extends StatelessWidget {
               onPressed: () {
                 if (!_checkDeviceConnection()) return;
                 daliSafeToast(() async {
-                  await Dali.instance.base?.recallMaxLevel(Dali.instance.base!.selectedAddress);
+                  await Dali.instance.base
+                      ?.recallMaxLevel(Dali.instance.base!.selectedAddress);
                 });
               },
               label: 'common.on',
@@ -37,7 +39,8 @@ class DeviceControlButtonsWidget extends StatelessWidget {
               onPressed: () {
                 if (!_checkDeviceConnection()) return;
                 daliSafeToast(() async {
-                  await Dali.instance.base?.off(Dali.instance.base!.selectedAddress);
+                  await Dali.instance.base
+                      ?.off(Dali.instance.base!.selectedAddress);
                 });
               },
               label: 'common.off',
@@ -71,7 +74,8 @@ class DeviceControlButtonsWidget extends StatelessWidget {
               onPressed: () {
                 if (!_checkDeviceConnection()) return;
                 daliSafeToast(() async {
-                  await Dali.instance.base?.reset(Dali.instance.base!.selectedAddress);
+                  await Dali.instance.base
+                      ?.reset(Dali.instance.base!.selectedAddress);
                 });
               },
               label: 'common.reset',

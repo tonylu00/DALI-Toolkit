@@ -1,8 +1,9 @@
 package store
 
 import (
+	"server/internal/domain/models"
+
 	"github.com/google/uuid"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/models"
 	"gorm.io/gorm"
 )
 

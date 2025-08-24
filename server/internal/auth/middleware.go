@@ -4,25 +4,26 @@ import (
 	"net/http"
 	"strings"
 
+	"server/internal/casbinx"
+	"server/internal/casdoor"
+	"server/internal/domain/services"
+	"server/pkg/errors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/casdoor"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/casbinx"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/services"
-	"github.com/tonylu00/DALI-Toolkit/server/pkg/errors"
 	"go.uber.org/zap"
 )
 
 // UserContext represents the current user context
 type UserContext struct {
-	UserID       string   `json:"user_id"`
-	Username     string   `json:"username"`
-	Email        string   `json:"email"`
-	Organization string   `json:"organization"`
+	UserID       string    `json:"user_id"`
+	Username     string    `json:"username"`
+	Email        string    `json:"email"`
+	Organization string    `json:"organization"`
 	OrgID        uuid.UUID `json:"org_id"`
-	Roles        []string `json:"roles"`
-	Groups       []string `json:"groups"`
-	IsSuperUser  bool     `json:"is_super_user"`
+	Roles        []string  `json:"roles"`
+	Groups       []string  `json:"groups"`
+	IsSuperUser  bool      `json:"is_super_user"`
 }
 
 // Middleware provides authentication and authorization middleware

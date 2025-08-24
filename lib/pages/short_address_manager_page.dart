@@ -6,7 +6,8 @@ import '../widgets/short_address_manager.dart';
 class ShortAddressManagerPage extends StatelessWidget {
   final DaliAddr daliAddr;
   final bool embedded;
-  const ShortAddressManagerPage({super.key, required this.daliAddr, this.embedded = false});
+  const ShortAddressManagerPage(
+      {super.key, required this.daliAddr, this.embedded = false});
 
   @override
   Widget build(BuildContext context) {

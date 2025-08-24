@@ -3,11 +3,12 @@ package api
 import (
 	"net/http"
 
+	"server/internal/auth"
+	"server/internal/casbinx"
+	"server/internal/domain/services"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/auth"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/casbinx"
-	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/services"
 	"go.uber.org/zap"
 )
 

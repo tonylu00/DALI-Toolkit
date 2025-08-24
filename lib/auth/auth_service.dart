@@ -28,7 +28,9 @@ class AuthTokens {
         accessToken: json['accessToken'],
         refreshToken: json['refreshToken'],
         idToken: json['idToken'],
-        expiresAt: json['expiresAt'] != null ? DateTime.parse(json['expiresAt']) : null,
+        expiresAt: json['expiresAt'] != null
+            ? DateTime.parse(json['expiresAt'])
+            : null,
       );
 }
 
@@ -66,7 +68,8 @@ class AuthService {
 
     final response = await _casdoor.requestOauthAccessToken(code);
     if (response.statusCode != 200) {
-      throw Exception('Token exchange failed: ${response.statusCode} ${response.body}');
+      throw Exception(
+          'Token exchange failed: ${response.statusCode} ${response.body}');
     }
     final dynamic bodyRaw = jsonDecode(response.body);
     if (bodyRaw is! Map<String, dynamic>) {
@@ -89,12 +92,14 @@ class AuthService {
     } else if (expiresInRaw is String) {
       expiresIn = int.tryParse(expiresInRaw);
     }
-    final DateTime? expiresAt =
-        expiresIn != null ? DateTime.now().add(Duration(seconds: expiresIn)) : null;
+    final DateTime? expiresAt = expiresIn != null
+        ? DateTime.now().add(Duration(seconds: expiresIn))
+        : null;
 
     final userInfoResp = await _casdoor.getUserInfo(accessToken);
     if (userInfoResp.statusCode != 200) {
-      throw Exception('Get user info failed: ${userInfoResp.statusCode} ${userInfoResp.body}');
+      throw Exception(
+          'Get user info failed: ${userInfoResp.statusCode} ${userInfoResp.body}');
     }
     final dynamic userInfoRaw = jsonDecode(userInfoResp.body);
     if (userInfoRaw is! Map<String, dynamic>) {
@@ -141,7 +146,8 @@ class AuthService {
       final body = raw;
       final accessToken = body['access_token'] as String?;
       if (accessToken == null) return null; // 刷新失败
-      final refreshToken = (body['refresh_token'] as String?) ?? current.refreshToken;
+      final refreshToken =
+          (body['refresh_token'] as String?) ?? current.refreshToken;
       int? expiresIn;
       final expiresInRaw = body['expires_in'];
       if (expiresInRaw is int) {
@@ -149,7 +155,9 @@ class AuthService {
       } else if (expiresInRaw is String) {
         expiresIn = int.tryParse(expiresInRaw);
       }
-      final expiresAt = expiresIn != null ? DateTime.now().add(Duration(seconds: expiresIn)) : null;
+      final expiresAt = expiresIn != null
+          ? DateTime.now().add(Duration(seconds: expiresIn))
+          : null;
       final updated = AuthTokens(
         accessToken: accessToken,
         refreshToken: refreshToken,

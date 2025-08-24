@@ -104,8 +104,10 @@ class _ColorPickerTestPageState extends State<ColorPickerTestPage> {
   }
 
   Color _getContrastColor(Color color) {
-    double luminance =
-        (0.299 * color.r * 255.0 + 0.587 * color.g * 255.0 + 0.114 * color.b * 255.0) / 255;
+    double luminance = (0.299 * color.r * 255.0 +
+            0.587 * color.g * 255.0 +
+            0.114 * color.b * 255.0) /
+        255;
     return luminance > 0.5 ? Colors.black : Colors.white;
   }
 }
