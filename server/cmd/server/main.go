@@ -11,6 +11,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/tonylu00/DALI-Toolkit/server/internal/auth"
+	"github.com/tonylu00/DALI-Toolkit/server/internal/casbinx"
+	"github.com/tonylu00/DALI-Toolkit/server/internal/casdoor"
 	"github.com/tonylu00/DALI-Toolkit/server/internal/config"
 	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/services"
 	"github.com/tonylu00/DALI-Toolkit/server/internal/logger"
@@ -56,6 +59,23 @@ func main() {
 	orgService := services.NewOrganizationService(store.DB())
 	deviceService := services.NewDeviceService(store.DB())
 
+	// Initialize Casdoor client
+	casdoorClient, err := casdoor.New(cfg)
+	if err != nil {
+		logger.Fatal("Failed to initialize Casdoor client", zap.Error(err))
+	}
+	logger.Info("Casdoor client initialized")
+
+	// Initialize Casbin enforcer
+	enforcer, err := casbinx.New(store.DB())
+	if err != nil {
+		logger.Fatal("Failed to initialize Casbin enforcer", zap.Error(err))
+	}
+	logger.Info("Casbin enforcer initialized")
+
+	// Initialize auth middleware
+	authMiddleware := auth.New(casdoorClient, enforcer, orgService, logger)
+
 	// Set gin mode
 	if cfg.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -94,7 +114,16 @@ func main() {
 	// Test endpoints for M1 verification
 	v1 := router.Group("/api/v1")
 	{
-		// Organizations
+		// Public endpoints
+		v1.GET("/auth/info", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{
+				"casdoor_server": cfg.CasdoorServerURL,
+				"organization":   cfg.CasdoorOrg,
+				"app":           cfg.CasdoorApp,
+			})
+		})
+
+		// Organizations (public for testing)
 		v1.GET("/organizations", func(c *gin.Context) {
 			orgs, err := orgService.ListOrganizations()
 			if err != nil {
@@ -122,32 +151,60 @@ func main() {
 			c.JSON(http.StatusCreated, org)
 		})
 
-		// Devices
-		v1.GET("/devices", func(c *gin.Context) {
-			orgID := c.Query("org_id")
-			if orgID == "" {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "org_id is required"})
-				return
-			}
+		// Protected endpoints requiring authentication
+		protected := v1.Group("/protected")
+		protected.Use(authMiddleware.AuthRequired())
+		{
+			protected.GET("/user", func(c *gin.Context) {
+				user := auth.GetUserContext(c)
+				c.JSON(http.StatusOK, user)
+			})
 
-			orgUUID, err := uuid.Parse(orgID)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid org_id"})
-				return
-			}
+			// Devices endpoint with organization filtering
+			protected.GET("/devices", func(c *gin.Context) {
+				user := auth.GetUserContext(c)
+				orgID := c.Query("org_id")
+				
+				// If no org_id specified, use user's organization
+				if orgID == "" {
+					orgID = user.OrgID.String()
+				}
 
-			filters := make(map[string]interface{})
-			if status := c.Query("status"); status != "" {
-				filters["status"] = status
-			}
+				// Check if user can access the specified organization
+				if !user.IsSuperUser && orgID != user.OrgID.String() {
+					c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to organization"})
+					return
+				}
 
-			devices, err := deviceService.ListDevicesByOrganization(orgUUID, filters)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-			c.JSON(http.StatusOK, devices)
-		})
+				orgUUID, err := uuid.Parse(orgID)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "invalid org_id"})
+					return
+				}
+
+				filters := make(map[string]interface{})
+				if status := c.Query("status"); status != "" {
+					filters["status"] = status
+				}
+
+				devices, err := deviceService.ListDevicesByOrganization(orgUUID, filters)
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+					return
+				}
+				c.JSON(http.StatusOK, devices)
+			})
+		}
+
+		// Admin endpoints requiring specific permissions
+		admin := v1.Group("/admin")
+		admin.Use(authMiddleware.AuthRequired())
+		admin.Use(authMiddleware.RequirePermission("admin", "manage"))
+		{
+			admin.GET("/users", func(c *gin.Context) {
+				c.JSON(http.StatusOK, gin.H{"message": "Admin users endpoint"})
+			})
+		}
 	}
 
 	// Create HTTP server
