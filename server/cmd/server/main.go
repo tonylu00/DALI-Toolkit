@@ -19,7 +19,9 @@ import (
 	"github.com/tonylu00/DALI-Toolkit/server/internal/config"
 	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/services"
 	"github.com/tonylu00/DALI-Toolkit/server/internal/logger"
+	"github.com/tonylu00/DALI-Toolkit/server/internal/middleware"
 	"github.com/tonylu00/DALI-Toolkit/server/internal/store"
+	"github.com/tonylu00/DALI-Toolkit/server/internal/web"
 	"github.com/tonylu00/DALI-Toolkit/server/internal/websocket"
 	"go.uber.org/zap"
 )
@@ -79,6 +81,14 @@ func main() {
 	// Initialize auth middleware
 	authMiddleware := auth.New(casdoorClient, enforcer, orgService, logger)
 
+	// Initialize web handler for Flutter web app integration
+	webConfig := &web.Config{
+		AppEmbedEnabled: cfg.AppEmbedEnabled,
+		AppStaticPath:   cfg.AppStaticPath,
+		AppBasePath:     "/app",
+	}
+	webHandler := web.NewHandler(webConfig)
+
 	// Initialize API handlers
 	deviceHandler := api.NewDeviceHandler(deviceService, orgService, enforcer, logger)
 	projectHandler := api.NewProjectHandler(orgService, enforcer, logger) // ProjectService not implemented yet
@@ -123,6 +133,29 @@ func main() {
 	// Create router
 	router := gin.New()
 	router.Use(gin.Recovery())
+	
+	// Add security middleware (M7)
+	router.Use(middleware.SecurityHeadersMiddleware())
+	router.Use(middleware.RateLimitMiddleware())
+	router.Use(middleware.RequestSizeMiddleware(10*1024*1024)) // 10MB max request size
+	router.Use(middleware.AuditLogMiddleware())
+	
+	// Add web app middleware (CORS, CSP, logging)
+	router.Use(web.CORSMiddleware())
+	router.Use(web.CSPMiddleware())
+	router.Use(web.RequestLoggingMiddleware())
+
+	// Register web app routes with authentication
+	webGroup := router.Group("")
+	webGroup.Use(web.WebAuthMiddleware(authMiddleware))
+	webGroup.Use(web.AutoLoginMiddleware())
+	if err := webHandler.RegisterRoutes(webGroup); err != nil {
+		logger.Error("Failed to register web routes", zap.Error(err))
+	} else {
+		logger.Info("Web app routes registered", 
+			zap.Bool("embed_enabled", cfg.AppEmbedEnabled),
+			zap.String("static_path", cfg.AppStaticPath))
+	}
 
 	// Basic health check endpoint
 	router.GET("/health", func(c *gin.Context) {

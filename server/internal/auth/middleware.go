@@ -33,6 +33,9 @@ type Middleware struct {
 	logger        *zap.Logger
 }
 
+// Service provides authentication services (alias for Middleware for compatibility)
+type Service = Middleware
+
 // New creates a new auth middleware
 func New(
 	casdoorClient *casdoor.Client,
@@ -261,4 +264,37 @@ func (m *Middleware) RequireOrganization(orgID string) gin.HandlerFunc {
 
 		c.Next()
 	}
+}
+
+// ValidateToken validates a token and returns user context
+func (m *Middleware) ValidateToken(token string) (*UserContext, error) {
+	// Verify token with Casdoor
+	userInfo, err := m.casdoorClient.VerifyToken(token)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get organization info
+	org, err := m.orgService.GetOrganizationByCasdoor(userInfo.Organization)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if user is super user
+	isSuperUser := m.casdoorClient.IsSuperOrganization(userInfo.Organization) ||
+		m.enforcer.IsSuperUser(userInfo.ID)
+
+	// Build user context
+	userCtx := &UserContext{
+		UserID:       userInfo.ID,
+		Username:     userInfo.Username,
+		Email:        userInfo.Email,
+		Organization: userInfo.Organization,
+		OrgID:        org.ID,
+		Roles:        userInfo.Roles,
+		Groups:       userInfo.Groups,
+		IsSuperUser:  isSuperUser,
+	}
+
+	return userCtx, nil
 }
