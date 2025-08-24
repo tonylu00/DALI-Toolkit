@@ -317,6 +317,8 @@
   ,"settings.log_level.error":"Error"
   ,"settings.crashlytics.report_all.title":"Report All Errors"
   ,"settings.crashlytics.report_all.subtitle":"When on, all errors are recorded"
+  ,"settings.invalidFrameTolerance.title":"Invalid Frame Tolerance"
+  ,"settings.invalidFrameTolerance.subtitle":"Number of invalid frames tolerated before failing"
   ,"about.anonymous_id.title":"Anonymous Identifier"
   ,"about.copied":"Copied to clipboard"
   ,"settings.anonymous_id.reset.title":"Reset Anonymous Identifier"

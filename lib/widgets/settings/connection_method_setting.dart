@@ -29,6 +29,8 @@ class ConnectionMethodSettingState extends State<ConnectionMethodSetting> {
     if (!kIsWeb) {
       methods.add('IP');
     }
+    // 教学用途：所有平台可见
+    methods.add('MOCK');
     return methods;
   }
 
@@ -66,12 +68,11 @@ class ConnectionMethodSettingState extends State<ConnectionMethodSetting> {
               height: 1,
               color: Theme.of(context).dividerColor,
             ),
-            items: _availableConnectionMethods
-                .map<DropdownMenuItem<String>>((String method) {
+            items: _availableConnectionMethods.map<DropdownMenuItem<String>>((String method) {
               return DropdownMenuItem<String>(
                 value: method,
                 child: Text(
-                  method,
+                  _labelForMethod(method),
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               );
@@ -96,5 +97,14 @@ class ConnectionMethodSettingState extends State<ConnectionMethodSetting> {
     if (method == 'TCP' || method == 'UDP') stored = 'IP';
     _saveSelectedConnectionMethod(stored);
     ConnectionManager.instance.init();
+  }
+
+  String _labelForMethod(String method) {
+    switch (method) {
+      case 'MOCK':
+        return '模拟'; // 教学用途
+      default:
+        return method;
+    }
   }
 }

@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
 
 env:
-  GO_VERSION: '1.24'
+  GO_VERSION: '1.25'
   FLUTTER_VERSION: '3.27.1'
-  JAVA_VERSION: '24'
+  JAVA_VERSION: '21'
   NODE_VERSION: '24'
 
 jobs:
@@ -152,40 +152,40 @@ jobs:
           # Web platform
           - platform: web
             os: ubuntu-latest
-            build-args: '--release --no-tree-shake-icons'
+            build-args: '--release --no-tree-shake-icons --suppress-analytics'
             artifact-path: 'build/web'
             
           # Android platforms  
           - platform: android-apk
             os: ubuntu-latest
-            build-args: 'apk --release'
-            artifact-path: 'build/app/outputs/flutter-apk'
-            
+            build-args: '--release --obfuscate --split-debug-info build/app/outputs/symbols --suppress-analytics'
+            artifact-path: 'build/app/outputs/flutter-apk/app-release.apk'
+
           - platform: android-aab
-            os: ubuntu-latest  
-            build-args: 'appbundle --release'
+            os: ubuntu-latest
+            build-args: '--release --obfuscate --split-debug-info build/app/outputs/symbols --suppress-analytics'
             artifact-path: 'build/app/outputs/bundle/release'
             
           # iOS platform
           - platform: ios
             os: macos-latest
-            build-args: '--release --no-codesign'
-            artifact-path: 'build/ios/ipa'
-            
+            build-args: '--release --no-codesign --obfuscate --split-debug-info build/ios/outputs/symbols --suppress-analytics'
+            artifact-path: 'build/ios/iphoneos/dalitoolkit.ipa'
+
           # Desktop platforms
           - platform: windows
             os: windows-latest
-            build-args: '--release'
+            build-args: '--release --obfuscate --split-debug-info build/windows/outputs/symbols --suppress-analytics'
             artifact-path: 'build/windows/x64/runner/Release'
             
           - platform: macos
             os: macos-latest
-            build-args: '--release'
+            build-args: '--release --obfuscate --split-debug-info build/macos/outputs/symbols --suppress-analytics'
             artifact-path: 'build/macos/Build/Products/Release'
             
           - platform: linux
             os: ubuntu-latest
-            build-args: '--release'
+            build-args: '--release --obfuscate --split-debug-info build/linux/outputs/symbols --suppress-analytics'
             artifact-path: 'build/linux/x64/release/bundle'
     
     steps:
@@ -215,12 +215,20 @@ jobs:
       with:
         xcode-version: latest-stable
     
+    - name: Install MacOS dependencies (MacOS/iOS)
+      if: matrix.platform == 'macos' || matrix.platform == 'ios'
+      run: |
+        brew install automake libtool
+        npm install -g firebase-tools
+        dart pub global activate flutterfire_cli
+
     - name: Install Linux dependencies (Linux)
       if: matrix.platform == 'linux'
       run: |
         sudo apt-get update
         sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
-    
+        sudo apt-get install -y webkit2gtk-4.1 libsecret-1-dev
+
     - name: Install Windows dependencies (Windows)
       if: matrix.platform == 'windows'
       run: |
@@ -243,6 +251,7 @@ jobs:
       run: flutter pub get
     
     - name: Enable platform support
+      if: matrix.platform != 'windows'
       run: |
         case "${{ matrix.platform }}" in
           web) flutter config --enable-web ;;
@@ -254,11 +263,24 @@ jobs:
         esac
     
     - name: Build Flutter app
+      if: matrix.platform != 'android-apk' && matrix.platform != 'android-aab'
       run: flutter build ${{ matrix.platform }} ${{ matrix.build-args }}
-    
-    - name: Build Flutter app ipa
+
+    - name: Generate Flutter app ipa
       if: matrix.platform == 'ios'
-      run: flutter build ipa ${{ matrix.build-args }}
+      run: |
+        (cd build/ios/iphoneos && \
+        mkdir Payload && \
+        mv Runner.app/ Payload && \
+        zip -qq -r -9 dalitoolkit.ipa Payload)
+
+    - name: Build Flutter app apk
+      if: matrix.platform == 'android-apk'
+      run: flutter build apk ${{ matrix.build-args }}
+    
+    - name: Build Flutter app aab
+      if: matrix.platform == 'android-aab'
+      run: flutter build appbundle ${{ matrix.build-args }}
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
@@ -347,6 +369,7 @@ jobs:
           -ldflags="-w -s -X main.Version=${{ github.ref_name || 'dev' }} -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
           -o bin/dali-toolkit-server-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.extension }} \
           ./cmd/server
+      shell: bash
       env:
         CGO_ENABLED: 0
     
@@ -428,6 +451,7 @@ jobs:
           -tags="embed_web" \
           -o bin/dali-toolkit-server-web-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.extension }} \
           ./cmd/server
+      shell: bash
       env:
         CGO_ENABLED: 0
     
@@ -443,6 +467,9 @@ jobs:
     name: Docker Build - ${{ matrix.variant }}
     runs-on: ubuntu-latest
     needs: [server-build, server-with-web]
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         variant: [standalone, with-web]
@@ -451,6 +478,8 @@ jobs:
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
+      with:
+        driver: docker-container
     
     - name: Cache Docker layers
       uses: actions/cache@v4
@@ -460,6 +489,13 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-buildx-${{ matrix.variant }}-
           ${{ runner.os }}-buildx-
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Download server binary (standalone)
       if: matrix.variant == 'standalone'
@@ -488,7 +524,8 @@ jobs:
     - name: Build Docker image
       run: |
         cd server
-        docker build \
+        docker buildx build \
+          --load \
           --tag dali-toolkit-server:${{ matrix.variant }} \
           --tag dali-toolkit-server:${{ matrix.variant }}-${{ github.sha }} \
           --cache-from type=local,src=/tmp/.buildx-cache \
@@ -520,12 +557,41 @@ jobs:
         rm -rf /tmp/.buildx-cache
         mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
+    - name: Tag and push to GHCR
+      if: github.event_name != 'pull_request' && github.repository != ''
+      run: |
+        set -euo pipefail
+        OWNER="${{ github.repository_owner }}"
+        IMAGE="ghcr.io/${OWNER}/${{ github.repository }}"
+        VARIANT="${{ matrix.variant }}"
+        SHA_TAG="${VARIANT}-${GITHUB_SHA}"
+
+        # Base tags
+        docker tag "${{ github.repository }}:${VARIANT}" "${IMAGE}:${VARIANT}"
+        docker tag "${{ github.repository }}:${VARIANT}" "${IMAGE}:${SHA_TAG}"
+
+        # Optional version tag on release (v*)
+        VERSION_TAG=""
+        if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+          VERSION_TAG="${VARIANT}-${GITHUB_REF_NAME}"
+          docker tag "${{ github.repository }}:${VARIANT}" "${IMAGE}:${VERSION_TAG}"
+        fi
+
+        # Push tags
+        docker push "${IMAGE}:${VARIANT}"
+        docker push "${IMAGE}:${SHA_TAG}"
+        if [[ -n "${VERSION_TAG}" ]]; then
+          docker push "${IMAGE}:${VERSION_TAG}"
+        fi
+
   # Create releases with all artifacts
   release:
     name: Create Release
     runs-on: ubuntu-latest
+    continue-on-error: true
     needs: [flutter-build, server-build, server-with-web, docker]
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Run on tag even if some dependencies failed; we'll detect artifacts before publishing
+    if: ${{ always() && startsWith(github.ref, 'refs/tags/v') }}
     permissions:
       contents: write
     steps:
@@ -537,6 +603,7 @@ jobs:
       with:
         pattern: flutter-*-build
         path: artifacts/flutter/
+        merge-multiple: true
     
     # Download all server artifacts
     - name: Download server artifacts
@@ -544,6 +611,7 @@ jobs:
       with:
         pattern: server-*
         path: artifacts/server/
+        merge-multiple: true
     
     # Download Docker images
     - name: Download Docker artifacts
@@ -551,12 +619,14 @@ jobs:
       with:
         pattern: docker-image-*
         path: artifacts/docker/
+        merge-multiple: true
     
     # Prepare release archives
     - name: Prepare release archives
+      id: prepare
       run: |
         mkdir -p release
-        
+
         # Flutter apps
         for platform in web android-apk android-aab ios windows macos linux; do
           if [ -d "artifacts/flutter/flutter-${platform}-build" ]; then
@@ -565,15 +635,16 @@ jobs:
             cd ../../..
           fi
         done
-        
+
         # Server binaries (standalone)
+        shopt -s nullglob || true
         for file in artifacts/server/server-*/dali-toolkit-server-*; do
           if [ -f "$file" ]; then
             filename=$(basename "$file")
             cp "$file" "release/${filename}-${GITHUB_REF_NAME}"
           fi
         done
-        
+
         # Server binaries (with web)
         for file in artifacts/server/server-web-*/dali-toolkit-server-web-*; do
           if [ -f "$file" ]; then
@@ -581,15 +652,23 @@ jobs:
             cp "$file" "release/${filename}-${GITHUB_REF_NAME}"
           fi
         done
-        
+
         # Docker images
-        cp artifacts/docker/docker-image-*/*.tar.gz release/ || true
-        
-        # Create checksums
-        cd release
-        sha256sum * > checksums.txt
+        if ls artifacts/docker/docker-image-*/ 1> /dev/null 2>&1; then
+          cp artifacts/docker/docker-image-*/*.tar.gz release/ || true
+        fi
+
+        # Create checksums only if we have files
+        if [ -n "$(ls -A release 2>/dev/null)" ]; then
+          (cd release && sha256sum * > checksums.txt)
+          echo "has_artifacts=true" >> $GITHUB_OUTPUT
+        else
+          echo "No artifacts found to release. Skipping GH release creation."
+          echo "has_artifacts=false" >> $GITHUB_OUTPUT
+        fi
     
     - name: Create Release
+      if: ${{ steps.prepare.outputs.has_artifacts == 'true' }}
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ github.ref_name }}

@@ -11,6 +11,7 @@ import 'connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '/toast.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'mock.dart';
 
 class ConnectionManager extends ChangeNotifier {
   static ConnectionManager? _instance;
@@ -32,6 +33,7 @@ class ConnectionManager extends ChangeNotifier {
     try {
       if (c is BleManager) return 'BLE';
       if (c is TcpClient || c is UdpClient) return 'IP';
+      if (c is MockConnection) return 'MOCK';
       // 通过 type 文案粗略判断串口
       final t = c.type;
       if (t.startsWith('Serial')) return 'USB';
@@ -64,7 +66,11 @@ class ConnectionManager extends ChangeNotifier {
       } catch (_) {}
       notifyListeners();
     }
-    if (connectionMethod == 'BLE') {
+    if (connectionMethod == 'MOCK') {
+      replaceConnection(MockConnection());
+      DaliLog.instance.debugLog('Initializing Mock connection');
+      return;
+    } else if (connectionMethod == 'BLE') {
       if (_connection is BleManager) {
         DaliLog.instance.debugLog('BLE connection already initialized');
         return;
@@ -261,6 +267,17 @@ class ConnectionManager extends ChangeNotifier {
     gatewayType = -1;
     resetBusStatus();
     notifyListeners();
+  }
+
+  /// Force using the mock connection and persist preference.
+  Future<void> useMock() async {
+    // Avoid calling disconnect on existing BLE plugin in test environment
+    _connection = MockConnection();
+    gatewayType = -1;
+    resetBusStatus();
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('connectionMethod', 'MOCK');
   }
 
   // -------------------- IP 弹窗 & 历史 --------------------

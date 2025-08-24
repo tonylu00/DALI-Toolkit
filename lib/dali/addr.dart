@@ -12,11 +12,9 @@ class DaliAddr {
   final DaliBase base;
   final StreamController<List<int>> _onlineDevicesController =
       StreamController<List<int>>.broadcast();
-  final StreamController<int> _selectedDeviceController =
-      StreamController<int>.broadcast();
+  final StreamController<int> _selectedDeviceController = StreamController<int>.broadcast();
   // 新增: 搜索状态流，便于外部监听搜索开始/结束，从而在无结果时刷新按钮状态
-  final StreamController<bool> _searchStateController =
-      StreamController<bool>.broadcast();
+  final StreamController<bool> _searchStateController = StreamController<bool>.broadcast();
   List<int> onlineDevices = [];
   bool isSearching = false;
   // 扫描范围记忆（应用生命周期内）
@@ -110,8 +108,7 @@ class DaliAddr {
         }
       }
     }
-    DaliLog.instance
-        .debugLog('INFO [searchAddr]: done. online devices: $onlineDevices');
+    DaliLog.instance.debugLog('INFO [searchAddr]: done. online devices: $onlineDevices');
     isSearching = false; // Reset the flag when the search is done
     _searchStateController.add(false);
     // 确保即便无设备也触发一次构建, 让弹窗由"正在扫描"切换到"暂无设备"
@@ -123,8 +120,7 @@ class DaliAddr {
     if (start < 0) start = 0;
     if (end > 63) end = 63; // 物理限制
     if (start > end) {
-      DaliLog.instance
-          .debugLog('WARN [searchAddrRange]: invalid range start>$end');
+      DaliLog.instance.debugLog('WARN [searchAddrRange]: invalid range start>$end');
       return;
     }
     isSearching = true;
@@ -149,8 +145,8 @@ class DaliAddr {
         }
       }
     }
-    DaliLog.instance.debugLog(
-        'INFO [searchAddrRange]: done range [$start,$end] devices: $onlineDevices');
+    DaliLog.instance
+        .debugLog('INFO [searchAddrRange]: done range [$start,$end] devices: $onlineDevices');
     isSearching = false;
     _searchStateController.add(false);
     // 同样在结束时再推送一次, 解决空结果不刷新的问题
@@ -174,23 +170,15 @@ class DaliAddr {
       } else if (typ == 3) {
         await base.queryAddressL(addr);
       } else {
-        DaliLog.instance
-            .debugLog('ERROR [compareSingleAddress]: invalid typ=$typ');
+        DaliLog.instance.debugLog('ERROR [compareSingleAddress]: invalid typ=$typ');
       }
-      int ret = await base.queryCmd(0xa9, 0x00);
-      if (ret >= 0) return true;
-      DaliLog.instance
-          .debugLog('ERROR [compareSingleAddress]: unexpected ret=$ret');
-      return false;
+      //int ret = await base.queryCmd(0xa9, 0x00);
+      if (await base.compareAddress()) return true;
     } on DaliDeviceNoResponseException {
       return false; // 设备无响应 => 不匹配
-    } on DaliGatewayTimeoutException catch (e) {
-      _logDaliError(e, 'compareSingleAddress timeout typ=$typ addr=$addr');
-      return false;
-    } on DaliQueryException catch (e) {
-      _logDaliError(e, 'compareSingleAddress typ=$typ addr=$addr');
-      return false;
     }
+    DaliLog.instance.debugLog('ERROR [compareSingleAddress]: unexpected exception');
+    return false;
   }
 
   /// Narrow down the range of search address
@@ -249,15 +237,14 @@ class DaliAddr {
           min = v + 1;
         }
       } else {
-        DaliLog.instance
-            .debugLog('ERROR [compareAddress]: failed to compare address');
+        DaliLog.instance.debugLog('ERROR [compareAddress]: failed to compare address');
         break;
       }
     }
     return vAct;
   }
 
-  /// Another approach to compare address
+  /// 二分法 to compare address, not working
   Future<int> compareAddressNew(int typ, [int? m]) async {
     int minVal = m ?? 0;
     int maxVal = 255;
@@ -288,8 +275,7 @@ class DaliAddr {
   }
 
   /// Compare address and allocating from short addr 'ad'
-  Future<List<dynamic>> compareAddr(
-      int ad, int? minH, int? minM, int? minL) async {
+  Future<List<dynamic>> compareAddr(int ad, int? minH, int? minM, int? minL) async {
     int? retH, retM, retL;
     if (ad > 63) {
       return [retH, retM, retL, 63];
@@ -316,8 +302,7 @@ class DaliAddr {
         await base.withdraw();
         await base.setBright(ad, 254);
       } else {
-        DaliLog.instance
-            .debugLog('ERROR [compareAddr]: program short addr failed');
+        DaliLog.instance.debugLog('ERROR [compareAddr]: program short addr failed');
       }
     } else {
       DaliLog.instance.debugLog('ERROR [compareAddr]: search device failed');
@@ -348,8 +333,7 @@ class DaliAddr {
           // place for memory writes, not implemented
           addr++;
         } else {
-          DaliLog.instance
-              .debugLog('ERROR [compareMulti]: E [DALI]: program addr err');
+          DaliLog.instance.debugLog('ERROR [compareMulti]: E [DALI]: program addr err');
         }
       } else {
         addr--;
@@ -443,7 +427,7 @@ class DaliAddr {
       lastAllocAddr = ad;
       ad++;
       if (ad > 63) {
-        log.errorLog('compare process failed, address out of range');
+        log.errorLog('compare process aborted, address out of range');
         isAllocAddr = false;
         break;
       }
@@ -453,11 +437,9 @@ class DaliAddr {
         break;
       }
     }
-    if (!isAllocAddr) return;
     isAllocAddr = false;
     if (ad <= 0) {
       lastAllocAddr = 255;
-      // placeholder for sys.publish
     } else {
       log.infoLog('allocate all address done, last addr: ${ad - 1}');
       lastAllocAddr = ad - 1;

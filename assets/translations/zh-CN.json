@@ -390,6 +390,8 @@
   ,"settings.log_level.error":"错误"
   ,"settings.crashlytics.report_all.title":"上报所有错误"
   ,"settings.crashlytics.report_all.subtitle":"开启后，所有错误都将被记录"
+  ,"settings.invalidFrameTolerance.title":"无效帧容忍度"
+  ,"settings.invalidFrameTolerance.subtitle":"在判定失败前可容忍的无效帧次数"
   ,"about.anonymous_id.title":"匿名标识符"
   ,"about.copied":"已复制到剪贴板"
   ,"settings.anonymous_id.reset.title":"重置匿名标识符"

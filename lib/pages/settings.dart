@@ -8,6 +8,7 @@ import '../widgets/widgets.dart';
 import '../widgets/settings/gateway_type_card.dart';
 import '../widgets/settings/auto_reconnect_setting.dart';
 import '../widgets/settings/allow_broadcast_read_setting.dart';
+import '../widgets/settings/invalid_frame_tolerance_setting.dart';
 import '/utils/internal_page_prefs.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -61,6 +62,7 @@ class SettingsPageState extends State<SettingsPage> {
           ),
           const LanguageSetting(),
           const DelaysSetting(),
+          const InvalidFrameToleranceSetting(),
           const AddressingSettings(),
           const AllowBroadcastReadSetting(),
           const CrashlyticsReportAllErrorsSetting(),
@@ -80,12 +82,10 @@ class SettingsPageState extends State<SettingsPage> {
 class RememberInternalPageSetting extends StatefulWidget {
   const RememberInternalPageSetting({super.key});
   @override
-  State<RememberInternalPageSetting> createState() =>
-      _RememberInternalPageSettingState();
+  State<RememberInternalPageSetting> createState() => _RememberInternalPageSettingState();
 }
 
-class _RememberInternalPageSettingState
-    extends State<RememberInternalPageSetting> {
+class _RememberInternalPageSettingState extends State<RememberInternalPageSetting> {
   final prefs = InternalPagePrefs.instance;
 
   @override
@@ -145,8 +145,7 @@ class ResetAnonymousIdSetting extends StatelessWidget {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                    content: Text('settings.anonymous_id.reset.done'
-                        .replaceFirst('{id}', newId))),
+                    content: Text('settings.anonymous_id.reset.done'.replaceFirst('{id}', newId))),
               );
             }
           },
@@ -157,8 +156,7 @@ class ResetAnonymousIdSetting extends StatelessWidget {
   }
 }
 
-class _CrashlyticsReportAllErrorsSettingState
-    extends State<CrashlyticsReportAllErrorsSetting> {
+class _CrashlyticsReportAllErrorsSettingState extends State<CrashlyticsReportAllErrorsSetting> {
   bool _value = reportAllErrors;
 
   @override
@@ -211,11 +209,9 @@ class CrashlyticsTestCrashSetting extends StatelessWidget {
         subtitle: 'settings.crashlytics.test_crash.subtitle',
         icon: Icons.bug_report_outlined,
         control: FilledButton(
-          style: FilledButton.styleFrom(
-              backgroundColor: Colors.red, foregroundColor: Colors.white),
+          style: FilledButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
           onPressed: () async {
-            await FirebaseCrashlytics.instance
-                .log('Debug test crash triggered from Settings');
+            await FirebaseCrashlytics.instance.log('Debug test crash triggered from Settings');
             // 触发原生崩溃（Android/iOS），用于验证 Crashlytics 集成
             FirebaseCrashlytics.instance.crash();
           },

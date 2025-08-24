@@ -8,36 +8,28 @@ class DaliStatus {
   DaliStatus(this._status);
 
   bool get controlGearPresent => (_status & 0x01) == 0x01;
-  set controlGearPresent(bool value) =>
-      _status = value ? (_status | 0x01) : (_status & ~0x01);
+  set controlGearPresent(bool value) => _status = value ? (_status | 0x01) : (_status & ~0x01);
 
   bool get lampFailure => (_status & 0x02) == 0x02;
-  set lampFailure(bool value) =>
-      _status = value ? (_status | 0x02) : (_status & ~0x02);
+  set lampFailure(bool value) => _status = value ? (_status | 0x02) : (_status & ~0x02);
 
   bool get lampPowerOn => (_status & 0x04) == 0x04;
-  set lampPowerOn(bool value) =>
-      _status = value ? (_status | 0x04) : (_status & ~0x04);
+  set lampPowerOn(bool value) => _status = value ? (_status | 0x04) : (_status & ~0x04);
 
   bool get limitError => (_status & 0x08) == 0x08;
-  set limitError(bool value) =>
-      _status = value ? (_status | 0x08) : (_status & ~0x08);
+  set limitError(bool value) => _status = value ? (_status | 0x08) : (_status & ~0x08);
 
   bool get fadingCompleted => (_status & 0x10) == 0x10;
-  set fadingCompleted(bool value) =>
-      _status = value ? (_status | 0x10) : (_status & ~0x10);
+  set fadingCompleted(bool value) => _status = value ? (_status | 0x10) : (_status & ~0x10);
 
   bool get resetState => (_status & 0x20) == 0x20;
-  set resetState(bool value) =>
-      _status = value ? (_status | 0x20) : (_status & ~0x20);
+  set resetState(bool value) => _status = value ? (_status | 0x20) : (_status & ~0x20);
 
   bool get missingShortAddress => (_status & 0x40) == 0x40;
-  set missingShortAddress(bool value) =>
-      _status = value ? (_status | 0x40) : (_status & ~0x40);
+  set missingShortAddress(bool value) => _status = value ? (_status | 0x40) : (_status & ~0x40);
 
   bool get psFault => (_status & 0x80) == 0x80;
-  set psFault(bool value) =>
-      _status = value ? (_status | 0x80) : (_status & ~0x80);
+  set psFault(bool value) => _status = value ? (_status | 0x80) : (_status & ~0x80);
 }
 
 class DaliFadeTime {}
@@ -63,9 +55,9 @@ class DaliBase extends DaliComm {
   }
 
   Future<void> toScene(int a, int s, {int? t, int? d, int? g}) async {
-    int addr = a * 2 + 1;
+    // Use DEC address with send(); send() will encode to odd (command) address internally.
     int scene = 16 + s;
-    await send(addr, scene, t: t, d: d, g: g);
+    await send(a, scene, t: t, d: d, g: g);
   }
 
   Future<void> reset(int a, {int t = 2, int? d, int? g}) async {
@@ -397,8 +389,7 @@ class DaliBase extends DaliComm {
       return;
     }
     for (int i = 0; i < 16; i++) {
-      if (currentGroup != -1 &&
-          (currentGroup & (1 << i)) == (value & (1 << i))) {
+      if (currentGroup != -1 && (currentGroup & (1 << i)) == (value & (1 << i))) {
         continue; // 不需要变更
       }
       if ((value & (1 << i)) != 0) {
@@ -525,18 +516,23 @@ class DaliBase extends DaliComm {
     }
   }
 
+  Future<bool> compareAddress() async {
+    int ret = await queryCmd(0xa9, 0x00);
+    return (ret >= 0);
+  }
+
   Future<bool> compare(int h, int m, int l) async {
     await queryAddressL(l);
     await queryAddressM(m);
     await queryAddressH(h);
     try {
-      await queryCmd(0xa9, 0x00);
-      return true; // 有回应
+      if (await compareAddress()) return true;
     } on DaliDeviceNoResponseException {
       return false; // 设备未响应 => 不匹配
     } on DaliGatewayTimeoutException {
       return false; // 超时 => 不匹配
     }
+    return false;
   }
 
   Future<int> getRandomAddrH(int addr) async {
