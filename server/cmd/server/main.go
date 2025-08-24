@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/tonylu00/DALI-Toolkit/server/internal/auth"
+	"github.com/tonylu00/DALI-Toolkit/server/internal/broker"
 	"github.com/tonylu00/DALI-Toolkit/server/internal/casbinx"
 	"github.com/tonylu00/DALI-Toolkit/server/internal/casdoor"
 	"github.com/tonylu00/DALI-Toolkit/server/internal/config"
@@ -77,12 +78,26 @@ func main() {
 	// Initialize auth middleware
 	authMiddleware := auth.New(casdoorClient, enforcer, orgService, logger)
 
+	// Initialize MQTT broker (simplified implementation for M3)
+	mqttBroker := broker.NewMQTTBroker(cfg, deviceService, logger)
+	
+	// Start MQTT broker in background
+	mqttCtx, mqttCancel := context.WithCancel(context.Background())
+	defer mqttCancel()
+	go func() {
+		if err := mqttBroker.Start(mqttCtx); err != nil {
+			logger.Error("MQTT broker failed", zap.Error(err))
+		}
+	}()
+	
+	logger.Info("MQTT broker initialized", zap.String("addr", cfg.MQTTListenAddr))
+
 	// Initialize WebSocket hub
 	var wsHub *websocket.Hub
 	var wsHandler *websocket.Handler
 	if cfg.WSEnable {
 		wsHub = websocket.NewHub(cfg.WSMaxConnPerUser, logger)
-		wsHandler = websocket.NewHandler(wsHub, deviceService, enforcer, logger)
+		wsHandler = websocket.NewHandler(wsHub, deviceService, enforcer, mqttBroker, logger)
 		
 		// Start WebSocket hub in background
 		ctx, cancel := context.WithCancel(context.Background())
@@ -231,6 +246,17 @@ func main() {
 			// WebSocket stats endpoint
 			admin.GET("/ws/stats", wsHandler.HandleStats)
 		}
+		
+		// MQTT endpoints
+		v1.GET("/mqtt/status", func(c *gin.Context) {
+			stats := mqttBroker.GetStats()
+			c.JSON(http.StatusOK, stats)
+		})
+		
+		admin.POST("/mqtt/kick", authMiddleware.AuthRequired(), func(c *gin.Context) {
+			// TODO: Implement client kick functionality
+			c.JSON(http.StatusOK, gin.H{"message": "MQTT kick endpoint - to be implemented"})
+		})
 	}
 
 	// Create HTTP server

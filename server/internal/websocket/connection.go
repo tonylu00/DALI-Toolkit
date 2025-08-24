@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -46,6 +47,9 @@ type Connection struct {
 	// Hub reference for unregistering
 	hub *Hub
 
+	// MQTT broker reference for publishing
+	mqttBroker MQTTBrokerInterface
+
 	// Context for cancellation
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -56,6 +60,12 @@ type Connection struct {
 
 	// Logger
 	logger *zap.Logger
+}
+
+// MQTTBrokerInterface interface for MQTT operations
+type MQTTBrokerInterface interface {
+	PublishToDevice(deviceID, deviceBy string, payload []byte) error
+	SubscribeToDevice(deviceID, deviceBy string, handler func(topic string, payload []byte)) error
 }
 
 // Message represents a WebSocket message
@@ -84,7 +94,7 @@ var upgrader = websocket.Upgrader{
 }
 
 // NewConnection creates a new WebSocket connection
-func NewConnection(conn *websocket.Conn, userID, deviceID, deviceBy string, hub *Hub, logger *zap.Logger) *Connection {
+func NewConnection(conn *websocket.Conn, userID, deviceID, deviceBy string, hub *Hub, mqttBroker MQTTBrokerInterface, logger *zap.Logger) *Connection {
 	ctx, cancel := context.WithCancel(context.Background())
 	
 	return &Connection{
@@ -95,6 +105,7 @@ func NewConnection(conn *websocket.Conn, userID, deviceID, deviceBy string, hub 
 		DeviceBy:     deviceBy,
 		send:         make(chan []byte, 256),
 		hub:          hub,
+		mqttBroker:   mqttBroker,
 		ctx:          ctx,
 		cancel:       cancel,
 		lastActivity: time.Now(),
@@ -267,17 +278,73 @@ func (c *Connection) handleDeviceCommand(msg Message) {
 		return
 	}
 
-	// TODO: Forward command to MQTT broker when M3 is implemented
-	// For now, just log the command
-	c.logger.Info("Device command received",
+	// Convert message data to bytes for MQTT
+	var payload []byte
+	var err error
+	
+	if data, ok := msg.Data.(string); ok {
+		payload = []byte(data)
+	} else {
+		payload, err = json.Marshal(msg.Data)
+		if err != nil {
+			c.SendError("Invalid message data", "INVALID_DATA", err.Error())
+			return
+		}
+	}
+
+	// Forward command to MQTT broker
+	if c.mqttBroker != nil {
+		if err := c.mqttBroker.PublishToDevice(c.DeviceID, c.DeviceBy, payload); err != nil {
+			c.logger.Error("Failed to publish to MQTT",
+				zap.String("device_id", c.DeviceID),
+				zap.Error(err))
+			c.SendError("Failed to send command to device", "MQTT_ERROR", err.Error())
+			return
+		}
+	}
+
+	c.logger.Info("Device command forwarded to MQTT",
 		zap.String("device_id", msg.DeviceID),
-		zap.Any("data", msg.Data))
+		zap.Int("payload_size", len(payload)))
 
 	// Send acknowledgment
 	c.Send("command_ack", map[string]interface{}{
-		"status": "received",
+		"status":    "forwarded",
 		"timestamp": time.Now(),
 	})
+}
+
+// HandleMQTTMessage handles incoming MQTT messages for this device
+func (c *Connection) HandleMQTTMessage(topic string, payload []byte) {
+	// Determine message type based on topic suffix
+	var messageType string
+	if strings.HasSuffix(topic, "/up") {
+		messageType = "device_data"
+	} else if strings.HasSuffix(topic, "/status") {
+		messageType = "device_status"
+	} else if strings.HasSuffix(topic, "/register") {
+		messageType = "device_register"
+	} else {
+		messageType = "device_message"
+	}
+
+	// Try to parse payload as JSON, fallback to string
+	var data interface{}
+	if err := json.Unmarshal(payload, &data); err != nil {
+		data = string(payload)
+	}
+
+	// Send to WebSocket client
+	if err := c.Send(messageType, data); err != nil {
+		c.logger.Error("Failed to send MQTT message to WebSocket client",
+			zap.String("topic", topic),
+			zap.Error(err))
+	} else {
+		c.logger.Debug("MQTT message forwarded to WebSocket",
+			zap.String("topic", topic),
+			zap.String("message_type", messageType),
+			zap.Int("payload_size", len(payload)))
+	}
 }
 
 // handlePing processes ping messages

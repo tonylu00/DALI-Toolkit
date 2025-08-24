@@ -27,15 +27,17 @@ type Handler struct {
 	hub           *Hub
 	deviceService *services.DeviceService
 	enforcer      *casbinx.Enforcer
+	mqttBroker    MQTTBrokerInterface
 	logger        *zap.Logger
 }
 
 // NewHandler creates a new WebSocket handler
-func NewHandler(hub *Hub, deviceService *services.DeviceService, enforcer *casbinx.Enforcer, logger *zap.Logger) *Handler {
+func NewHandler(hub *Hub, deviceService *services.DeviceService, enforcer *casbinx.Enforcer, mqttBroker MQTTBrokerInterface, logger *zap.Logger) *Handler {
 	return &Handler{
 		hub:           hub,
 		deviceService: deviceService,
 		enforcer:      enforcer,
+		mqttBroker:    mqttBroker,
 		logger:        logger.With(zap.String("component", "websocket_handler")),
 	}
 }
@@ -107,7 +109,7 @@ func (h *Handler) HandleWebSocket(c *gin.Context) {
 	}
 
 	// Create new connection
-	wsConn := NewConnection(conn, user.UserID, normalizedDeviceID, deviceBy, h.hub, h.logger)
+	wsConn := NewConnection(conn, user.UserID, normalizedDeviceID, deviceBy, h.hub, h.mqttBroker, h.logger)
 
 	// Register connection with hub
 	if err := h.hub.Register(wsConn); err != nil {
@@ -115,6 +117,14 @@ func (h *Handler) HandleWebSocket(c *gin.Context) {
 		wsConn.SendError("Connection registration failed", "REGISTRATION_FAILED", err.Error())
 		wsConn.Close()
 		return
+	}
+
+	// Subscribe to MQTT topics for this device
+	if h.mqttBroker != nil {
+		if err := h.mqttBroker.SubscribeToDevice(normalizedDeviceID, deviceBy, wsConn.HandleMQTTMessage); err != nil {
+			h.logger.Error("Failed to subscribe to MQTT topics", zap.Error(err))
+			// Don't fail the connection, just log the error
+		}
 	}
 
 	// Send welcome message
