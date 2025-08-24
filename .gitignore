@@ -52,3 +52,15 @@ server/server
 *.dll
 *.so
 *.dylib
+
+# Build output directories
+dist/
+server/internal/web/flutter_web/
+!server/internal/web/flutter_web/.gitkeep
+
+# CI/CD artifacts
+.coverage/
+coverage/
+*.tar.gz
+*.zip
+checksums.txt
