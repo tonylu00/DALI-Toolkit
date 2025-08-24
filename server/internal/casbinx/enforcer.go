@@ -88,13 +88,13 @@ func (e *Enforcer) DeleteRoleForUser(user, role, domain string) (bool, error) {
 }
 
 // GetRolesForUser gets roles for user in domain
-func (e *Enforcer) GetRolesForUser(user, domain string) ([]string, error) {
-	return e.enforcer.GetRolesForUserInDomain(user, domain), nil
+func (e *Enforcer) GetRolesForUser(user, domain string) []string {
+	return e.enforcer.GetRolesForUserInDomain(user, domain)
 }
 
 // GetUsersForRole gets users for role in domain
-func (e *Enforcer) GetUsersForRole(role, domain string) ([]string, error) {
-	return e.enforcer.GetUsersForRoleInDomain(role, domain), nil
+func (e *Enforcer) GetUsersForRole(role, domain string) []string {
+	return e.enforcer.GetUsersForRoleInDomain(role, domain)
 }
 
 // GetPermissionsForUser gets permissions for user in domain
@@ -173,4 +173,23 @@ func (e *Enforcer) GrantSuperAdmin(userID string) error {
 		return err
 	}
 	return e.SavePolicy()
+}
+
+// AddGroupingPolicy adds a grouping policy (user -> role in domain)
+func (e *Enforcer) AddGroupingPolicy(subject, role, domain string) (bool, error) {
+	return e.enforcer.AddGroupingPolicy(subject, role, domain)
+}
+
+// RemoveGroupingPolicy removes a grouping policy
+func (e *Enforcer) RemoveGroupingPolicy(subject, role, domain string) (bool, error) {
+	return e.enforcer.RemoveGroupingPolicy(subject, role, domain)
+}
+
+// GetFilteredGroupingPolicy gets filtered grouping policies
+func (e *Enforcer) GetFilteredGroupingPolicy(fieldIndex int, fieldValue string) [][]string {
+	policies, err := e.enforcer.GetFilteredGroupingPolicy(fieldIndex, fieldValue)
+	if err != nil {
+		return [][]string{}
+	}
+	return policies
 }

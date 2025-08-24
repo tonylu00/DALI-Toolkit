@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/tonylu00/DALI-Toolkit/server/internal/api"
 	"github.com/tonylu00/DALI-Toolkit/server/internal/auth"
 	"github.com/tonylu00/DALI-Toolkit/server/internal/broker"
 	"github.com/tonylu00/DALI-Toolkit/server/internal/casbinx"
@@ -77,6 +78,11 @@ func main() {
 
 	// Initialize auth middleware
 	authMiddleware := auth.New(casdoorClient, enforcer, orgService, logger)
+
+	// Initialize API handlers
+	deviceHandler := api.NewDeviceHandler(deviceService, orgService, enforcer, logger)
+	projectHandler := api.NewProjectHandler(orgService, enforcer, logger) // ProjectService not implemented yet
+	permissionHandler := api.NewPermissionHandler(orgService, enforcer, logger)
 
 	// Initialize MQTT broker (simplified implementation for M3)
 	mqttBroker := broker.NewMQTTBroker(cfg, deviceService, logger)
@@ -257,6 +263,39 @@ func main() {
 			// TODO: Implement client kick functionality
 			c.JSON(http.StatusOK, gin.H{"message": "MQTT kick endpoint - to be implemented"})
 		})
+		
+		// Device API endpoints (M4)
+		devices := v1.Group("/devices")
+		devices.Use(authMiddleware.AuthRequired())
+		{
+			devices.GET("", deviceHandler.ListDevices)
+			devices.POST("", deviceHandler.CreateDevice)
+			devices.GET("/:id", deviceHandler.GetDevice)
+			devices.PATCH("/:id", deviceHandler.UpdateDevice)
+			devices.DELETE("/:id", deviceHandler.DeleteDevice)
+		}
+		
+		// Project API endpoints (M4) 
+		projects := v1.Group("/projects")
+		projects.Use(authMiddleware.AuthRequired())
+		{
+			projects.GET("", projectHandler.ListProjects)
+			projects.POST("", projectHandler.CreateProject)
+			projects.GET("/:id", projectHandler.GetProject)
+			projects.PATCH("/:id", projectHandler.UpdateProject)
+			projects.DELETE("/:id", projectHandler.DeleteProject)
+		}
+		
+		// Permission API endpoints (M5)
+		permissions := v1.Group("/permissions")
+		permissions.Use(authMiddleware.AuthRequired())
+		{
+			permissions.GET("/roles", permissionHandler.ListRoles)
+			permissions.GET("/subjects", permissionHandler.ListSubjects)
+			permissions.POST("/grant", permissionHandler.GrantPermission)
+			permissions.POST("/revoke", permissionHandler.RevokePermission)
+			permissions.GET("/check", permissionHandler.CheckPermission)
+		}
 	}
 
 	// Create HTTP server
