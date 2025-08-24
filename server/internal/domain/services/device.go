@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -16,6 +17,11 @@ type DeviceService struct {
 	deviceRepo *store.DeviceRepository
 }
 
+// Service errors
+var (
+	ErrDeviceNotFound = errors.NewNotFoundError("Device not found")
+)
+
 // NewDeviceService creates a new device service
 func NewDeviceService(db *gorm.DB) *DeviceService {
 	return &DeviceService{
@@ -24,7 +30,7 @@ func NewDeviceService(db *gorm.DB) *DeviceService {
 }
 
 // NormalizeMAC normalizes MAC address to uppercase 12-character hex string
-func NormalizeMAC(mac string) string {
+func NormalizeMAC(mac string) (string, error) {
 	// Remove common separators
 	mac = strings.ReplaceAll(mac, ":", "")
 	mac = strings.ReplaceAll(mac, "-", "")
@@ -32,57 +38,72 @@ func NormalizeMAC(mac string) string {
 	mac = strings.ReplaceAll(mac, " ", "")
 	
 	// Convert to uppercase
-	return strings.ToUpper(mac)
+	mac = strings.ToUpper(mac)
+	
+	// Validate length
+	if len(mac) != 12 {
+		return "", fmt.Errorf("MAC address must be 12 characters, got %d", len(mac))
+	}
+	
+	// Validate hex characters
+	for _, char := range mac {
+		if !((char >= '0' && char <= '9') || (char >= 'A' && char <= 'F')) {
+			return "", fmt.Errorf("MAC address contains invalid character: %c", char)
+		}
+	}
+	
+	return mac, nil
+}
+
+// NormalizeIMEI normalizes IMEI (14-16 digits)
+func NormalizeIMEI(imei string) (string, error) {
+	// IMEI should only contain digits, validate first
+	for _, char := range imei {
+		if char < '0' || char > '9' {
+			return "", fmt.Errorf("IMEI contains invalid character: %c", char)
+		}
+	}
+	
+	// Validate length
+	if len(imei) < 14 || len(imei) > 16 {
+		return "", fmt.Errorf("IMEI must be 14-16 digits, got %d", len(imei))
+	}
+	
+	return imei, nil
 }
 
 // ValidateIMEI validates IMEI (14-16 digits)
 func ValidateIMEI(imei string) bool {
-	if len(imei) < 14 || len(imei) > 16 {
-		return false
-	}
-	
-	for _, char := range imei {
-		if char < '0' || char > '9' {
-			return false
-		}
-	}
-	
-	return true
+	_, err := NormalizeIMEI(imei)
+	return err == nil
 }
 
 // ValidateMAC validates MAC address (12 hex characters)
 func ValidateMAC(mac string) bool {
-	normalized := NormalizeMAC(mac)
-	if len(normalized) != 12 {
-		return false
-	}
-	
-	for _, char := range normalized {
-		if !((char >= '0' && char <= '9') || (char >= 'A' && char <= 'F')) {
-			return false
-		}
-	}
-	
-	return true
+	_, err := NormalizeMAC(mac)
+	return err == nil
 }
 
 // CreateDevice creates a new device
 func (s *DeviceService) CreateDevice(mac string, imei *string, deviceType models.DeviceType, projectID uuid.UUID, partitionID *uuid.UUID, displayName string) (*models.Device, error) {
 	// Validate and normalize MAC
-	if !ValidateMAC(mac) {
+	normalizedMAC, err := NormalizeMAC(mac)
+	if err != nil {
 		return nil, errors.NewValidationError("Invalid MAC address", map[string]interface{}{
-			"mac": "Must be 12 hexadecimal characters",
+			"mac": err.Error(),
 		})
 	}
-	normalizedMAC := NormalizeMAC(mac)
 	
 	// Validate IMEI if provided
+	var normalizedIMEI *string
 	if imei != nil {
-		if !ValidateIMEI(*imei) {
+		normalized, err := NormalizeIMEI(*imei)
+		if err != nil {
 			return nil, errors.NewValidationError("Invalid IMEI", map[string]interface{}{
-				"imei": "Must be 14-16 digits",
+				"imei": err.Error(),
 			})
 		}
+		normalizedIMEI = &normalized
 	}
 	
 	// Check if device already exists
@@ -91,8 +112,8 @@ func (s *DeviceService) CreateDevice(mac string, imei *string, deviceType models
 		return nil, errors.NewConflictError("Device with this MAC already exists")
 	}
 	
-	if imei != nil {
-		existing, err = s.deviceRepo.GetByIMEI(*imei)
+	if normalizedIMEI != nil {
+		existing, err = s.deviceRepo.GetByIMEI(*normalizedIMEI)
 		if err == nil && existing != nil {
 			return nil, errors.NewConflictError("Device with this IMEI already exists")
 		}
@@ -101,7 +122,7 @@ func (s *DeviceService) CreateDevice(mac string, imei *string, deviceType models
 	device := &models.Device{
 		BaseModel:   models.BaseModel{ID: uuid.New()},
 		MAC:         normalizedMAC,
-		IMEI:        imei,
+		IMEI:        normalizedIMEI,
 		DeviceType:  deviceType,
 		ProjectID:   projectID,
 		PartitionID: partitionID,
@@ -135,27 +156,38 @@ func (s *DeviceService) GetDeviceByIdentifier(identifier string, idType string) 
 	
 	switch idType {
 	case "mac":
-		if !ValidateMAC(identifier) {
-			return nil, errors.NewValidationError("Invalid MAC address", nil)
+		normalizedMAC, normErr := NormalizeMAC(identifier)
+		if normErr != nil {
+			return nil, errors.NewValidationError("Invalid MAC address", map[string]interface{}{
+				"mac": normErr.Error(),
+			})
 		}
-		device, err = s.deviceRepo.GetByMAC(NormalizeMAC(identifier))
+		device, err = s.deviceRepo.GetByMAC(normalizedMAC)
 	case "imei":
-		if !ValidateIMEI(identifier) {
-			return nil, errors.NewValidationError("Invalid IMEI", nil)
+		normalizedIMEI, normErr := NormalizeIMEI(identifier)
+		if normErr != nil {
+			return nil, errors.NewValidationError("Invalid IMEI", map[string]interface{}{
+				"imei": normErr.Error(),
+			})
 		}
-		device, err = s.deviceRepo.GetByIMEI(identifier)
+		device, err = s.deviceRepo.GetByIMEI(normalizedIMEI)
 	default:
 		return nil, errors.NewBadRequestError("Invalid identifier type. Must be 'mac' or 'imei'")
 	}
 	
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, errors.NewNotFoundError("Device not found")
+			return nil, ErrDeviceNotFound
 		}
 		return nil, errors.NewInternalError("Failed to get device")
 	}
 	
 	return device, nil
+}
+
+// GetDeviceByID gets a device by MAC or IMEI with proper error handling
+func (s *DeviceService) GetDeviceByID(identifier string, idType string) (*models.Device, error) {
+	return s.GetDeviceByIdentifier(identifier, idType)
 }
 
 // UpdateDeviceStatus updates device status and last seen time

@@ -18,6 +18,7 @@ import (
 	"github.com/tonylu00/DALI-Toolkit/server/internal/domain/services"
 	"github.com/tonylu00/DALI-Toolkit/server/internal/logger"
 	"github.com/tonylu00/DALI-Toolkit/server/internal/store"
+	"github.com/tonylu00/DALI-Toolkit/server/internal/websocket"
 	"go.uber.org/zap"
 )
 
@@ -75,6 +76,23 @@ func main() {
 
 	// Initialize auth middleware
 	authMiddleware := auth.New(casdoorClient, enforcer, orgService, logger)
+
+	// Initialize WebSocket hub
+	var wsHub *websocket.Hub
+	var wsHandler *websocket.Handler
+	if cfg.WSEnable {
+		wsHub = websocket.NewHub(cfg.WSMaxConnPerUser, logger)
+		wsHandler = websocket.NewHandler(wsHub, deviceService, enforcer, logger)
+		
+		// Start WebSocket hub in background
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		go wsHub.Run(ctx)
+		
+		logger.Info("WebSocket hub initialized", 
+			zap.String("path", cfg.WSPath),
+			zap.Int("max_conn_per_user", cfg.WSMaxConnPerUser))
+	}
 
 	// Set gin mode
 	if cfg.Env == "production" {
@@ -204,6 +222,14 @@ func main() {
 			admin.GET("/users", func(c *gin.Context) {
 				c.JSON(http.StatusOK, gin.H{"message": "Admin users endpoint"})
 			})
+		}
+		
+		// WebSocket endpoint (if enabled)
+		if cfg.WSEnable && wsHandler != nil {
+			v1.GET("/ws", authMiddleware.AuthRequired(), wsHandler.HandleWebSocket)
+			
+			// WebSocket stats endpoint
+			admin.GET("/ws/stats", wsHandler.HandleStats)
 		}
 	}
 

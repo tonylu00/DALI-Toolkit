@@ -86,9 +86,12 @@ func TestDeviceService_Validation(t *testing.T) {
 	assert.False(t, ValidateMAC("A1B2C3D4E5"))
 	
 	// Test MAC normalization
-	assert.Equal(t, "A1B2C3D4E5F6", NormalizeMAC("a1:b2:c3:d4:e5:f6"))
-	assert.Equal(t, "A1B2C3D4E5F6", NormalizeMAC("a1-b2-c3-d4-e5-f6"))
-	assert.Equal(t, "A1B2C3D4E5F6", NormalizeMAC("a1b2c3d4e5f6"))
+	normalized1, _ := NormalizeMAC("a1:b2:c3:d4:e5:f6")
+	assert.Equal(t, "A1B2C3D4E5F6", normalized1)
+	normalized2, _ := NormalizeMAC("a1-b2-c3-d4-e5-f6")
+	assert.Equal(t, "A1B2C3D4E5F6", normalized2)
+	normalized3, _ := NormalizeMAC("a1b2c3d4e5f6")
+	assert.Equal(t, "A1B2C3D4E5F6", normalized3)
 	
 	// Test IMEI validation
 	assert.True(t, ValidateIMEI("123456789012345"))
