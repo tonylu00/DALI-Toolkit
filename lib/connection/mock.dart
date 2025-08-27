@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:typed_data';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:flutter/foundation.dart' show listEquals;
 
 import '../dali/log.dart';
 import 'connection.dart';
+import 'manager.dart';
 import 'mock_bus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -37,7 +39,7 @@ class MockConnection implements Connection {
   // Strict selection mode: only allow program/withdraw when selH/M/L equals DUT long address
   // If [strictAutoAdjust] is true, the mock will auto-adjust selH/M/L to the chosen DUT and proceed,
   // otherwise it will no-op and log.
-  bool strictSelectionMode = true;
+  bool strictSelectionMode = false;
   bool strictAutoAdjust = true;
 
   @override
@@ -48,11 +50,15 @@ class MockConnection implements Connection {
     // Load optional strict flags from preferences
     try {
       final prefs = await SharedPreferences.getInstance();
-      strictSelectionMode = prefs.getBool('mockStrictMode') ?? true;
+      strictSelectionMode = prefs.getBool('mockStrictMode') ?? false;
       strictAutoAdjust = prefs.getBool('mockStrictAutoAdjust') ?? true;
+      autoSimulateQueries = prefs.getBool('mockAutoSimulateQueries') ?? true;
     } catch (_) {
       // ignore prefs errors in tests
     }
+    ConnectionManager.instance.ensureGatewayType().then((_) {
+      ConnectionManager.instance.updateConnectionStatus(true);
+    });
   }
 
   @override
@@ -60,6 +66,9 @@ class MockConnection implements Connection {
     DaliLog.instance.debugLog('MockConnection.disconnect');
     _connected = false;
     _rxQueue.clear();
+    try {
+      ConnectionManager.instance.updateConnectionStatus(false);
+    } catch (_) {}
   }
 
   @override
@@ -74,20 +83,28 @@ class MockConnection implements Connection {
 
   @override
   Future<Uint8List?> read(int length, {int timeout = 100}) async {
-    if (readDelayMs > 0) {
-      await Future.delayed(Duration(milliseconds: readDelayMs));
-    }
-    if (_rxQueue.isEmpty) return null;
-    final v = _rxQueue.removeFirst();
-    readBuffer = v;
-    if (v != null) {
-      // If consumer registered onData handler, deliver a copy (non-blocking)
-      final cb = _onData;
-      if (cb != null) {
-        scheduleMicrotask(() => cb(Uint8List.fromList(v)));
+    final int start = DateTime.now().millisecondsSinceEpoch;
+    while (true) {
+      if (readDelayMs > 0) {
+        await Future.delayed(Duration(milliseconds: readDelayMs));
       }
+      if (_rxQueue.isNotEmpty) {
+        final v = _rxQueue.removeFirst();
+        readBuffer = v;
+        if (v != null) {
+          // If consumer registered onData handler, deliver a copy (non-blocking)
+          final cb = _onData;
+          if (cb != null) {
+            scheduleMicrotask(() => cb(Uint8List.fromList(v)));
+          }
+        }
+        return v;
+      }
+      final elapsed = DateTime.now().millisecondsSinceEpoch - start;
+      if (elapsed >= timeout) return null;
+      final wait = timeout - elapsed;
+      await Future.delayed(Duration(milliseconds: wait > 10 ? 10 : (wait > 0 ? wait : 1)));
     }
-    return v;
   }
 
   @override
@@ -110,9 +127,19 @@ class MockConnection implements Connection {
 
   @override
   void openDeviceSelection(BuildContext context) {
-    // No real UI; simulate a selected device
-    DaliLog.instance.debugLog('MockConnection.openDeviceSelection (noop)');
-    _connected = true;
+    // No real UI; directly connect with default mock device id
+    DaliLog.instance.debugLog('MockConnection.openDeviceSelection -> connect(mock:0)');
+    // Kick off the same flow as connect() to keep behavior consistent
+    // Ignore the returned future intentionally
+    // Use default deviceId 'mock:0'
+    // Note: connect() will set prefs-based strict flags and notify manager
+    // (ensureGatewayType + updateConnectionStatus)
+    // This keeps the UI state in sync with other connection types.
+    //
+    // Intentionally not awaiting to keep the call site sync-compatible.
+    // Any errors are logged inside connect().
+    // ignore: discarded_futures
+    connect('mock:0');
   }
 
   @override
@@ -381,12 +408,13 @@ class MockConnection implements Connection {
 
     // Odd addr (2n+1): broadcast=0xFF, group=0x81..0xBF, individual otherwise
     int? targetSa; // null=broadcast, -1=group, >=0 individual SA
-    if (addr == 0xFF)
+    if (addr == 0xFF) {
       targetSa = null;
-    else if (addr >= 0x81 && addr <= 0xBF)
+    } else if (addr >= 0x81 && addr <= 0xBF) {
       targetSa = -1;
-    else
+    } else {
       targetSa = (addr - 1) ~/ 2;
+    }
 
     void applyToTargets(void Function(MockDaliDevice d) fn) {
       if (targetSa == null) {
@@ -445,48 +473,77 @@ class MockConnection implements Connection {
 
     // store DTR as addr/scene/levels when targeted
     if ((addr & 0x01) == 1 && addr != 0xA7 && addr != 0xA5) {
-      final sa = (addr - 1) ~/ 2;
-      final d = bus.deviceByShortAddr(sa);
-      if (d == null) return;
+      // Determine targets: broadcast (0xFF), group (0x81..0xBF), or individual (2*sa+1)
+      Iterable<MockDaliDevice> targets = const [];
+      if (addr == 0xFF) {
+        // Broadcast to all addressed devices
+        targets = bus.devices.where((d) => d.shortAddress != null);
+      } else if (addr >= 0x81 && addr <= 0xBF) {
+        final g = (addr - 0x81) ~/ 2;
+        targets = bus.devices.where((d) => d.shortAddress != null && (d.groupBits & (1 << g)) != 0);
+      } else {
+        final sa = (addr - 1) ~/ 2;
+        final d = bus.deviceByShortAddr(sa);
+        if (d == null) return;
+        targets = [d];
+      }
+
+      void forEachTarget(void Function(MockDaliDevice d) fn) {
+        for (final t in targets) {
+          fn(t);
+        }
+      }
+
       if (cmd == 0x80) {
         // store DTR as short address; DTR=0xFF means remove short address
         final newAddr = bus.dtr & 0xFF;
-        if (newAddr == 0xFF) {
-          d.shortAddress = null;
-          d.isolated = false; // removing addr also removes isolation
-        } else {
-          d.shortAddress = (newAddr - 1) ~/ 2;
-        }
+        forEachTarget((d) {
+          if (newAddr == 0xFF) {
+            d.shortAddress = null;
+            d.isolated = false; // removing addr also removes isolation
+          } else {
+            d.shortAddress = (newAddr - 1) ~/ 2;
+          }
+        });
         return;
       }
       if (cmd >= 0x40 && cmd <= 0x4F) {
         // store scene brightness: cmd - 0x40 => scene index
         final scene = cmd - 0x40;
-        if (scene >= 0 && scene < 16) d.scenes[scene] = bus.dtr & 0xFF;
+        if (scene >= 0 && scene < 16) {
+          final v = bus.dtr & 0xFF;
+          forEachTarget((d) => d.scenes[scene] = v);
+        }
         return;
       }
       if (cmd == 0x2E) {
-        d.fadeTime = bus.dtr & 0xFF;
+        final v = bus.dtr & 0xFF;
+        forEachTarget((d) => d.fadeTime = v);
         return;
       }
       if (cmd == 0x2F) {
-        d.fadeRate = bus.dtr & 0xFF;
+        final v = bus.dtr & 0xFF;
+        forEachTarget((d) => d.fadeRate = v);
         return;
       }
       if (cmd == 0x2D) {
-        d.powerOnLevel = bus.dtr & 0xFF;
+        final v = bus.dtr & 0xFF;
+        forEachTarget((d) => d.powerOnLevel = v);
         return;
       }
       if (cmd == 0x2C) {
-        d.systemFailureLevel = bus.dtr & 0xFF;
+        final v = bus.dtr & 0xFF;
+        forEachTarget((d) => d.systemFailureLevel = v);
         return;
       }
       if (cmd == 0x2B) {
-        d.minLevel = bus.dtr & 0xFF;
+        final v = bus.dtr & 0xFF;
+        forEachTarget((d) => d.minLevel = v);
         return;
       }
       if (cmd == 0x2A) {
-        d.maxLevel = bus.dtr & 0xFF;
+        final v = bus.dtr & 0xFF;
+        forEachTarget((d) => d.maxLevel = v);
         return;
       }
       if (cmd == 0xF2) {
@@ -495,45 +552,57 @@ class MockConnection implements Connection {
       }
       if (cmd == 0xE7) {
         // set DTR/DTR1 as mirek
-        d.mirek = (bus.dtr1 & 0xFF) * 256 + (bus.dtr & 0xFF);
-        d.activeColorMode = 'ct';
-        d.colorType = 0x20; // color temp
+        final mirek = (bus.dtr1 & 0xFF) * 256 + (bus.dtr & 0xFF);
+        forEachTarget((d) {
+          d.mirek = mirek;
+          d.activeColorMode = 'ct';
+          d.colorType = 0x20; // color temp
+        });
         return;
       }
       if (cmd == 0xE0) {
         final x = (bus.dtr1 & 0xFF) * 256 + (bus.dtr & 0xFF);
-        d.xyX = x;
-        d.activeColorMode = 'xy';
-        d.colorType = 0x10; // xy
+        forEachTarget((d) {
+          d.xyX = x;
+          d.activeColorMode = 'xy';
+          d.colorType = 0x10; // xy
+        });
         return;
       }
       if (cmd == 0xE1) {
         final y = (bus.dtr1 & 0xFF) * 256 + (bus.dtr & 0xFF);
-        d.xyY = y;
-        d.activeColorMode = 'xy';
-        d.colorType = 0x10;
+        forEachTarget((d) {
+          d.xyY = y;
+          d.activeColorMode = 'xy';
+          d.colorType = 0x10;
+        });
         return;
       }
       if (cmd == 0xE2) {
         // RGB raw -> 留给上层做 rgb->xy；这里也存储原始 RGBWAF 通道（DTR=r, DTR1=g, DTR2=b）
         // 额外通道 W/A/F 暂保留为 0，可扩展自定义指令映射。
-        d.rgbwafChannels[0] = bus.dtr & 0xFF;
-        d.rgbwafChannels[1] = bus.dtr1 & 0xFF;
-        d.rgbwafChannels[2] = bus.dtr2 & 0xFF;
-        d.activeColorMode = 'xy';
-        d.colorType = 0x10;
+        final r = bus.dtr & 0xFF;
+        final g = bus.dtr1 & 0xFF;
+        final b = bus.dtr2 & 0xFF;
+        forEachTarget((d) {
+          d.rgbwafChannels[0] = r;
+          d.rgbwafChannels[1] = g;
+          d.rgbwafChannels[2] = b;
+          d.activeColorMode = 'xy';
+          d.colorType = 0x10;
+        });
         return;
       }
       if (cmd >= 0x60 && cmd <= 0x6F) {
         // add to group i
         final g = cmd - 0x60;
-        d.groupBits |= (1 << g);
+        forEachTarget((d) => d.groupBits |= (1 << g));
         return;
       }
       if (cmd >= 0x70 && cmd <= 0x7F) {
         // remove from group i
         final g = cmd - 0x70;
-        d.groupBits &= ~(1 << g);
+        forEachTarget((d) => d.groupBits &= ~(1 << g));
         return;
       }
     }
@@ -715,6 +784,21 @@ class MockConnection implements Connection {
       'connection': 'Mock',
     };
     return bus.exportJson(pretty: pretty, meta: meta);
+  }
+
+  /// Load a previously exported project JSON string back into the mock bus.
+  /// Returns true on success.
+  bool importProjectJson(String json) {
+    try {
+      final obj = jsonDecode(json);
+      if (obj is Map<String, dynamic>) {
+        bus.applyJson(obj);
+        return true;
+      }
+    } catch (e) {
+      DaliLog.instance.debugLog('Mock import failed: $e');
+    }
+    return false;
   }
 
   // Configure DT8 gamut for all devices (teaching purpose)

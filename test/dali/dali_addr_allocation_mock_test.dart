@@ -2,7 +2,6 @@ import 'package:dalimaster/connection/manager.dart';
 import 'package:dalimaster/connection/mock.dart';
 import 'package:dalimaster/dali/addr.dart';
 import 'package:dalimaster/dali/base.dart';
-import 'package:dalimaster/dali/log.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -35,7 +34,7 @@ void main() {
     addr = DaliAddr(base);
   });
 
-  void _isolateAllExceptFirstN(int n) {
+  void isolateAllExceptFirstN(int n) {
     for (var i = n; i < conn.bus.devices.length; i++) {
       conn.bus.devices[i].isolated = true;
     }
@@ -77,10 +76,9 @@ void main() {
         d.randL = 100 + i;
       }
       // 其余设备隔离，避免干扰
-      _isolateAllExceptFirstN(16);
+      isolateAllExceptFirstN(16);
 
       addr.isAllocAddr = true;
-      int ad = 0;
 
       await addr.resetAndAllocAddr();
 

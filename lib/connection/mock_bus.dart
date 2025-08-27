@@ -266,4 +266,108 @@ class MockDaliBus {
     final encoder = pretty ? const JsonEncoder.withIndent('  ') : const JsonEncoder();
     return encoder.convert(toJson(meta: meta));
   }
+
+  // Apply a previously exported JSON structure back onto the bus/devices.
+  // Robust against missing fields; clamps values into valid ranges.
+  void applyJson(Map<String, dynamic> obj) {
+    final devs = obj['devices'];
+    if (devs is! List) return;
+
+    int clamp(int v, int min, int max) => v < min ? min : (v > max ? max : v);
+    int asInt(dynamic v, [int def = 0]) {
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      return def;
+    }
+
+    void applyTo(MockDaliDevice d, Map<String, dynamic> m) {
+      // short address
+      final sa = m['shortAddress'];
+      d.shortAddress = (sa is int) ? clamp(sa, 0, 63) : null;
+      // long address
+      final la = m['longAddress'];
+      if (la is Map) {
+        d.randH = clamp(asInt(la['H'], d.randH), 0, 255);
+        d.randM = clamp(asInt(la['M'], d.randM), 0, 255);
+        d.randL = clamp(asInt(la['L'], d.randL), 0, 255);
+      }
+      d.isolated = m['isolated'] == true;
+      d.brightness = clamp(asInt(m['brightness'], d.brightness), 0, 254);
+      d.groupBits = clamp(asInt(m['groupBits'], d.groupBits), 0, 0xFFFF);
+      // scenes
+      if (m['scenes'] is List) {
+        final src = (m['scenes'] as List).cast<dynamic>();
+        for (var i = 0; i < d.scenes.length && i < src.length; i++) {
+          d.scenes[i] = clamp(asInt(src[i], d.scenes[i]), 0, 254);
+        }
+      }
+      d.fadeTime = clamp(asInt(m['fadeTime'], d.fadeTime), 0, 255);
+      d.fadeRate = clamp(asInt(m['fadeRate'], d.fadeRate), 0, 255);
+      d.powerOnLevel = clamp(asInt(m['powerOnLevel'], d.powerOnLevel), 0, 254);
+      d.systemFailureLevel = clamp(asInt(m['systemFailureLevel'], d.systemFailureLevel), 0, 254);
+      d.minLevel = clamp(asInt(m['minLevel'], d.minLevel), 0, 254);
+      d.maxLevel = clamp(asInt(m['maxLevel'], d.maxLevel), 0, 254);
+      d.physicalMinLevel = clamp(asInt(m['physicalMinLevel'], d.physicalMinLevel), 0, 254);
+      d.deviceType = clamp(asInt(m['deviceType'], d.deviceType), 0, 255);
+      d.extType = clamp(asInt(m['extType'], d.extType), 0, 255);
+      d.version = clamp(asInt(m['version'], d.version), 0, 255);
+      // dt8
+      final dt8 = m['dt8'];
+      if (dt8 is Map) {
+        d.colorType = clamp(asInt(dt8['colorType'], d.colorType), 0, 255);
+        final am = dt8['activeMode'];
+        if (am is String && am.isNotEmpty) d.activeColorMode = am;
+        final xy = dt8['xy'];
+        if (xy is Map) {
+          d.xyX = clamp(asInt(xy['x'], d.xyX), 0, 65535);
+          d.xyY = clamp(asInt(xy['y'], d.xyY), 0, 65535);
+        }
+        final gamut = dt8['gamut'];
+        if (gamut is Map) {
+          d.xyMinX = clamp(asInt(gamut['xMin'], d.xyMinX), 0, 65535);
+          d.xyMaxX = clamp(asInt(gamut['xMax'], d.xyMaxX), 0, 65535);
+          d.xyMinY = clamp(asInt(gamut['yMin'], d.xyMinY), 0, 65535);
+          d.xyMaxY = clamp(asInt(gamut['yMax'], d.xyMaxY), 0, 65535);
+        }
+        d.mirek = clamp(asInt(dt8['mirek'], d.mirek), 0, 65535);
+        d.mirekMin = clamp(asInt(dt8['mirekMin'], d.mirekMin), 0, 65535);
+        d.mirekMax = clamp(asInt(dt8['mirekMax'], d.mirekMax), 0, 65535);
+        if (dt8['rgbwaf'] is List) {
+          final src = (dt8['rgbwaf'] as List).cast<dynamic>();
+          for (var i = 0; i < d.rgbwafChannels.length && i < src.length; i++) {
+            d.rgbwafChannels[i] = clamp(asInt(src[i], d.rgbwafChannels[i]), 0, 255);
+          }
+        }
+        if (dt8['primaryN'] is List) {
+          final src = (dt8['primaryN'] as List).cast<dynamic>();
+          for (var i = 0; i < d.primaryN.length && i < src.length; i++) {
+            d.primaryN[i] = clamp(asInt(src[i], d.primaryN[i]), 0, 255);
+          }
+        }
+      }
+      final flags = m['statusFlags'];
+      if (flags is Map) {
+        d.lampFailureFlag = flags['lampFailure'] == true;
+        d.limitErrorFlag = flags['limitError'] == true;
+        d.fadingCompletedFlag = flags['fadingCompleted'] != false;
+        d.resetStateFlag = flags['resetState'] == true;
+        d.psFaultFlag = flags['psFault'] == true;
+      }
+    }
+
+    // Grow the list if needed to fit incoming devices
+    if (devices.length < devs.length) {
+      final start = devices.length;
+      for (var i = start; i < devs.length; i++) {
+        devices.add(MockDaliDevice.random(i));
+      }
+    }
+
+    for (var i = 0; i < devs.length; i++) {
+      final m = devs[i];
+      if (m is Map<String, dynamic>) {
+        applyTo(devices[i], m);
+      }
+    }
+  }
 }

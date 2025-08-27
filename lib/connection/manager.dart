@@ -113,7 +113,8 @@ class ConnectionManager extends ChangeNotifier {
       return;
     }
     if ((connectionMethod == 'BLE' && _connection is BleManager) ||
-        (connectionMethod == 'USB' && (_connection.type.startsWith('Serial')))) {
+        (connectionMethod == 'USB' && (_connection.type.startsWith('Serial'))) ||
+        (connectionMethod == 'MOCK' && _connection is MockConnection)) {
       _connection.openDeviceSelection(context);
     }
   }

@@ -13,6 +13,7 @@ class DaliComm {
   late int queryDelays;
   late int extDelays;
   late int invalidFrameTolerance;
+  String? _currentMethod;
 
   DaliComm(this.manager) {
     // Set defaults immediately; then load from preferences asynchronously.
@@ -21,14 +22,77 @@ class DaliComm {
     extDelays = 100;
     invalidFrameTolerance = 1;
     _loadDelays();
+    // 监听连接方式变化，自动刷新对应的 delays
+    manager.addListener(_onManagerChanged);
+  }
+
+  void _onManagerChanged() {
+    // 连接对象/方式改变时，刷新延时参数
+    _loadDelays();
   }
 
   Future<void> _loadDelays() async {
     final prefs = await SharedPreferences.getInstance();
-    sendDelays = prefs.getInt('sendDelays') ?? 50;
-    queryDelays = prefs.getInt('queryDelays') ?? 50;
-    extDelays = prefs.getInt('extDelays') ?? 100;
-    invalidFrameTolerance = prefs.getInt('invalidFrameTolerance') ?? 1;
+    // 读取当前连接方式（以 ConnectionManager 的持久化为准）
+    String method = prefs.getString('connectionMethod') ?? _inferMethodFromConnection();
+    if (method != _currentMethod) {
+      _currentMethod = method;
+    }
+
+    // 方法专属键
+    final kSend = 'delays.$method.send';
+    final kQuery = 'delays.$method.query';
+    final kExt = 'delays.$method.ext';
+    final kTol = 'delays.$method.invalidFrameTolerance';
+
+    // 回退到旧全局键（兼容历史设置）
+    final legacySend = prefs.getInt('sendDelays');
+    final legacyQuery = prefs.getInt('queryDelays');
+    final legacyExt = prefs.getInt('extDelays');
+    final legacyTol = prefs.getInt('invalidFrameTolerance');
+
+    // 读取方法级配置
+    int? send = prefs.getInt(kSend);
+    int? query = prefs.getInt(kQuery);
+    int? ext = prefs.getInt(kExt);
+    int? tol = prefs.getInt(kTol);
+
+    // Mock 模式默认使用最小延时（如未显式设置）
+    if (method == 'MOCK') {
+      send ??= 1;
+      query ??= 1;
+      ext ??= 1;
+      tol ??= legacyTol ?? 1;
+      // 将默认值写回，形成独立存储
+      await prefs.setInt(kSend, send);
+      await prefs.setInt(kQuery, query);
+      await prefs.setInt(kExt, ext);
+      await prefs.setInt(kTol, tol);
+    } else {
+      // 非 Mock：优先方法级，没有则回退到旧全局或默认
+      send ??= legacySend ?? 50;
+      query ??= legacyQuery ?? 50;
+      ext ??= legacyExt ?? 100;
+      tol ??= legacyTol ?? 1;
+    }
+
+    sendDelays = send;
+    queryDelays = query;
+    extDelays = ext;
+    invalidFrameTolerance = tol;
+  }
+
+  String _inferMethodFromConnection() {
+    try {
+      final t = manager.connection.type;
+      if (t.toUpperCase().contains('MOCK')) return 'MOCK';
+      if (t.toUpperCase().contains('SERIAL')) return 'USB';
+      if (t.toUpperCase().contains('BLE')) return 'BLE';
+      // 对于 IP，type 可能是 "TCP"/"UDP"/"IP"，优先读持久化；这里兜底为 IP
+      return 'IP';
+    } catch (_) {
+      return 'BLE';
+    }
   }
 
   int gw = 0;

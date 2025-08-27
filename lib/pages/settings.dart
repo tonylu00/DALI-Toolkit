@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -149,7 +150,7 @@ class ResetAnonymousIdSetting extends StatelessWidget {
               );
             }
           },
-          child: const Text('common.reset'),
+          child: const Text('common.reset').tr(),
         ),
       ),
     );

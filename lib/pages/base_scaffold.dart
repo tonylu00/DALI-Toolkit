@@ -1,3 +1,5 @@
+import 'package:dalimaster/toast.dart';
+
 import '/connection/manager.dart';
 import '/connection/connection.dart';
 import '/utils/navigation.dart';
@@ -127,8 +129,9 @@ class BaseScaffoldState extends State<BaseScaffold> {
         // Use a minimal JS interop through Clipboard as fallback
         await Clipboard.setData(ClipboardData(text: json));
         if (context.mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text('已复制到剪贴板（Web），请手动保存为 .daliproj')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('project.export.web_clipboard'.tr())),
+          );
         }
       } catch (_) {}
       return;
@@ -140,12 +143,15 @@ class BaseScaffoldState extends State<BaseScaffold> {
       final f = File('${dir.path}/$filename');
       await f.writeAsString(json);
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('已保存到临时目录: ${f.path} (请手动移动到目标位置)')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('project.export.saved_tmp'.tr(namedArgs: {'path': f.path}))),
+        );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('保存失败: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${'project.export.failed'.tr()}: $e')),
+        );
       }
     }
   }
@@ -156,53 +162,68 @@ class BaseScaffoldState extends State<BaseScaffold> {
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('导入项目 JSON (.daliproj)'),
+        title: Text('project.import.dialog_title'.tr()),
         content: SizedBox(
           width: 480,
           child: TextField(
             controller: controller,
             maxLines: 12,
-            decoration: const InputDecoration(
-              hintText: '粘贴 .daliproj JSON 内容...',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              hintText: 'project.import.paste_hint'.tr(),
+              border: const OutlineInputBorder(),
             ),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('取消')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text('common.cancel'.tr())),
           ElevatedButton(
               onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
-              child: const Text('导入')),
+              child: Text('project.import.button'.tr())),
         ],
       ),
     );
     if (result == null || result.isEmpty) return;
-    // TODO: Apply to app state (e.g., load into repository or mock bus). For now just validate JSON.
     try {
       // Basic JSON parse
       // ignore: unused_local_variable
       final parsed = jsonDecode(result);
+      if (!context.mounted) return;
       await _handleImportedJson(context, result);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('导入成功（已解析 JSON）')));
-      }
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('导入失败: $e')));
-      }
+      DaliLog.instance.debugLog('Import failed: $e');
     }
   }
 
   Future<void> _handleImportedJson(BuildContext context, String json) async {
-    // TODO: Apply to app state. For now, just log and maybe switch to Mock.
     try {
+      // Basic validation first
       jsonDecode(json);
-      // If not in Mock mode, suggest switching silently for preview-only.
+      // Ensure Mock connection is active
       if (ConnectionManager.instance.connection.type != 'Mock') {
         ConnectionManager.instance.useMock();
       }
-      // In the future, pass parsed to Mock bus to load state.
-    } catch (_) {}
+      final conn = ConnectionManager.instance.connection;
+      try {
+        final mock = conn as dynamic;
+        if (mock.importProjectJson is Future<void> Function(String)) {
+          await mock.importProjectJson(json);
+        }
+        if (context.mounted) {
+          ToastManager().showDoneToast('project.import.success'.tr());
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ToastManager().showErrorToast('${'project.import.failed'.tr()}: $e');
+        }
+      }
+    } catch (e) {
+      DaliLog.instance.debugLog('Import failed: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${'project.import.failed'.tr()}: $e')),
+        );
+      }
+    }
   }
 
   Future<Directory> getTemporaryDirectorySafe() async {
@@ -309,7 +330,11 @@ class BaseScaffoldState extends State<BaseScaffold> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  isConnected ? 'connection.connected'.tr() : 'connection.disconnected'.tr(),
+                  isConnected
+                      ? (connection.type == 'Mock'
+                          ? 'mock.connected'.tr()
+                          : 'connection.connected'.tr())
+                      : 'connection.disconnected'.tr(),
                   style: const TextStyle(fontSize: 12),
                 ),
                 const SizedBox(height: 1),
@@ -317,7 +342,9 @@ class BaseScaffoldState extends State<BaseScaffold> {
                 Text(connection.connectedDeviceId, style: const TextStyle(fontSize: 8)),
                 if (isConnected && ConnectionManager.instance.gatewayType == 0)
                   Text(
-                    ConnectionManager.instance.busStatus == 'abnormal' ? '总线异常' : '总线正常',
+                    ConnectionManager.instance.busStatus == 'abnormal'
+                        ? 'bus.abnormal'.tr()
+                        : 'bus.normal'.tr(),
                     style: TextStyle(
                       fontSize: 10,
                       color: ConnectionManager.instance.busStatus == 'abnormal'
@@ -366,12 +393,10 @@ class BaseScaffoldState extends State<BaseScaffold> {
                     json =
                         '{"meta": {"generatedAt": "${DateTime.now().toIso8601String()}"}, "devices": []}';
                   }
+                  if (!context.mounted) return;
                   await _saveProjectFile(context, json);
                 } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(SnackBar(content: Text('Export failed: $e')));
-                  }
+                  DaliLog.instance.debugLog('Export failed: $e');
                 }
               } else if (result == 'Option ImportProject') {
                 await _importProjectFile(context);
@@ -401,7 +426,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
                   children: [
                     const Icon(Icons.file_upload_outlined, size: 18),
                     const SizedBox(width: 8),
-                    const Text('导出项目 (.daliproj)'),
+                    Text('menu.export_project'.tr()),
                   ],
                 ),
               ),
@@ -411,7 +436,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
                   children: [
                     const Icon(Icons.file_download_outlined, size: 18),
                     const SizedBox(width: 8),
-                    const Text('导入项目 (.daliproj)'),
+                    Text('menu.import_project'.tr()),
                   ],
                 ),
               ),

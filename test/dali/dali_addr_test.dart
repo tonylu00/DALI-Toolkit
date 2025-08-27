@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:dalimaster/dali/addr.dart';
 import 'package:dalimaster/dali/base.dart';
 import 'package:dalimaster/connection/manager.dart';
