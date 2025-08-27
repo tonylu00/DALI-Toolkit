@@ -1,3 +1,4 @@
+import 'package:dalimaster/toast.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
@@ -143,12 +144,8 @@ class ResetAnonymousIdSetting extends StatelessWidget {
         control: FilledButton.tonal(
           onPressed: () async {
             final newId = await resetAnonymousId();
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content: Text('settings.anonymous_id.reset.done'.replaceFirst('{id}', newId))),
-              );
-            }
+            ToastManager()
+                .showInfoToast('settings.anonymous_id.reset.done'.replaceFirst('{id}', newId));
           },
           child: const Text('common.reset').tr(),
         ),

@@ -264,7 +264,8 @@ class MockConnection implements Connection {
         _enqueue([254, 0x00]);
       }
       return;
-    } // Special case: queryShortAddr (0xA1)
+    }
+    // Special case: queryShortAddr (0xA1)
     if (addr == 0xA1) {
       final d = bus.getSelectedDevice();
       if (d != null && d.shortAddress != null) {
@@ -274,6 +275,12 @@ class MockConnection implements Connection {
       } else {
         _enqueue([255, 0xFF]);
       }
+    }
+    // Broadcast and group addressed queries cause bus collision => respond 253,0
+    // Exclude pseudo addresses used by addressing procedure (e.g., 0xB9, 0xBB)
+    if (addr == 0xFF || (addr >= 0x81 && addr <= 0xBF && addr != 0xB9 && addr != 0xBB)) {
+      _enqueue([253, 0x00]);
+      return;
     }
     final value = _evaluateQuery(addr, cmd);
     _enqueue([255, value & 0xFF]);
@@ -388,13 +395,13 @@ class MockConnection implements Connection {
       if (addr == 0xFE) {
         // broadcast direct arc
         for (final d in bus.devices) {
-          if (d.shortAddress != null) d.brightness = cmd.clamp(0, 254);
+          d.brightness = cmd.clamp(0, 254);
         }
       } else if (addr >= 0x80 && addr <= 0xBE) {
         // group direct arc: 0x80 + 2*g
         final g = (addr - 0x80) ~/ 2;
         for (final d in bus.devices) {
-          if (d.shortAddress != null && (d.groupBits & (1 << g)) != 0) {
+          if ((d.groupBits & (1 << g)) != 0) {
             d.brightness = cmd.clamp(0, 254);
           }
         }
@@ -418,13 +425,14 @@ class MockConnection implements Connection {
 
     void applyToTargets(void Function(MockDaliDevice d) fn) {
       if (targetSa == null) {
+        // Broadcast to ALL devices, regardless of short address
         for (final d in bus.devices) {
-          if (d.shortAddress != null) fn(d);
+          fn(d);
         }
       } else if (targetSa == -1) {
         final g = (addr - 0x81) ~/ 2;
         for (final d in bus.devices) {
-          if (d.shortAddress != null && (d.groupBits & (1 << g)) != 0) fn(d);
+          if ((d.groupBits & (1 << g)) != 0) fn(d);
         }
       } else {
         _forEachTarget(targetSa, fn);
@@ -476,11 +484,12 @@ class MockConnection implements Connection {
       // Determine targets: broadcast (0xFF), group (0x81..0xBF), or individual (2*sa+1)
       Iterable<MockDaliDevice> targets = const [];
       if (addr == 0xFF) {
-        // Broadcast to all addressed devices
-        targets = bus.devices.where((d) => d.shortAddress != null);
+        // Broadcast to ALL devices, regardless of short address
+        targets = bus.devices;
       } else if (addr >= 0x81 && addr <= 0xBF) {
         final g = (addr - 0x81) ~/ 2;
-        targets = bus.devices.where((d) => d.shortAddress != null && (d.groupBits & (1 << g)) != 0);
+        // Group addressing applies regardless of short address
+        targets = bus.devices.where((d) => (d.groupBits & (1 << g)) != 0);
       } else {
         final sa = (addr - 1) ~/ 2;
         final d = bus.deviceByShortAddr(sa);

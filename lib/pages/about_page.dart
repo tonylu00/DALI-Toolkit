@@ -1,3 +1,4 @@
+import 'package:dalimaster/toast.dart';
 import 'package:flutter/material.dart';
 import 'base_scaffold.dart';
 import 'package:flutter/services.dart';
@@ -14,27 +15,20 @@ class AboutPage extends StatelessWidget {
       padding: const EdgeInsets.all(16.0),
       child: ListView(
         children: [
-          Text('about.title'.tr(),
-              style: Theme.of(context).textTheme.headlineSmall),
+          Text('about.title'.tr(), style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 12),
           Text('about.version'.tr(namedArgs: {'version': '1.0.0'})),
           const SizedBox(height: 8),
           Text('about.description'.tr()),
           const SizedBox(height: 16),
-          Text('about.copyright'
-              .tr(namedArgs: {'year': DateTime.now().year.toString()})),
+          Text('about.copyright'.tr(namedArgs: {'year': DateTime.now().year.toString()})),
           const SizedBox(height: 24),
-          Text('about.anonymous_id.title'.tr(),
-              style: Theme.of(context).textTheme.titleMedium),
+          Text('about.anonymous_id.title'.tr(), style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           GestureDetector(
             onLongPress: () async {
               await Clipboard.setData(ClipboardData(text: anonymousId));
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('about.copied'.tr())),
-                );
-              }
+              ToastManager().showInfoToast('about.copied'.tr());
             },
             child: Container(
               padding: const EdgeInsets.all(12),

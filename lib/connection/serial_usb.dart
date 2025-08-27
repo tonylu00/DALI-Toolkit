@@ -476,7 +476,7 @@ class SerialUsbConnection implements Connection {
 
   @override
   void renameDeviceDialog(BuildContext context, String currentName) {
-    ToastManager().showInfoToast('Device renaming not supported'.tr());
+    ToastManager().showInfoToast('Device renaming not supported');
   }
 
   Future<void> connectToSavedDevice() async {

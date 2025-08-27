@@ -206,7 +206,7 @@ class ConnectionManager extends ChangeNotifier {
     if (!connected) {
       if (showToast) {
         DaliLog.instance.debugLog('connection.disconnected');
-        _showToastSafe('connection.disconnected'.tr());
+        _showToastSafe('connection.disconnected');
       }
       return false;
     }

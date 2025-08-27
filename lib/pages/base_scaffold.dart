@@ -128,11 +128,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
         // ignore: undefined_prefixed_name
         // Use a minimal JS interop through Clipboard as fallback
         await Clipboard.setData(ClipboardData(text: json));
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('project.export.web_clipboard'.tr())),
-          );
-        }
+        ToastManager().showInfoToast('project.export.web_clipboard'.tr());
       } catch (_) {}
       return;
     }
@@ -142,17 +138,9 @@ class BaseScaffoldState extends State<BaseScaffold> {
       final dir = await getTemporaryDirectorySafe();
       final f = File('${dir.path}/$filename');
       await f.writeAsString(json);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('project.export.saved_tmp'.tr(namedArgs: {'path': f.path}))),
-        );
-      }
+      ToastManager().showInfoToast('project.export.saved_tmp'.tr(namedArgs: {'path': f.path}));
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${'project.export.failed'.tr()}: $e')),
-        );
-      }
+      ToastManager().showErrorToast('${'project.export.failed'.tr()}: $e');
     }
   }
 
@@ -218,11 +206,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
       }
     } catch (e) {
       DaliLog.instance.debugLog('Import failed: $e');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${'project.import.failed'.tr()}: $e')),
-        );
-      }
+      ToastManager().showErrorToast('${'project.import.failed'.tr()}: $e');
     }
   }
 
