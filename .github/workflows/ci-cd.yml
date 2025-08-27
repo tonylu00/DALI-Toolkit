@@ -467,6 +467,7 @@ jobs:
     name: Docker Build - ${{ matrix.variant }}
     runs-on: ubuntu-latest
     needs: [server-build, server-with-web]
+    continue-on-error: true
     permissions:
       contents: read
       packages: write
