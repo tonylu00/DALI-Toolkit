@@ -4,7 +4,29 @@
 #include <io.h>
 #include <stdio.h>
 #include <windows.h>
+#if defined(_WIN32)
+// Ensure Shell API constants like SHCNE_ASSOCCHANGED are available
+#ifndef _WIN32_IE
+#define _WIN32_IE 0x0500
+#endif
+#include <shellapi.h>
+#include <ShlObj.h>
 #include <shlwapi.h>
+#ifndef _INC_SHELLAPI
+// Fallback declaration if shellapi.h didn't expose it for this SDK/profile
+extern "C" void WINAPI SHChangeNotify(long wEventId, unsigned int uFlags, const void* dwItem1, const void* dwItem2);
+#endif
+#ifndef SHCNE_ASSOCCHANGED
+#define SHCNE_ASSOCCHANGED 0x08000000L
+#endif
+#ifndef SHCNF_IDLIST
+#define SHCNF_IDLIST 0x0000
+#endif
+#if defined(_MSC_VER)
+#pragma comment(lib, "Shell32.lib")
+#pragma comment(lib, "Shlwapi.lib")
+#endif
+#endif
 
 #include <iostream>
 
@@ -69,7 +91,6 @@ void RegisterFileAssociation() {
   // Best-effort, ignore failures. Requires shlwapi
   // ProgID
   const wchar_t* progId = L"Dalimaster.daliproj";
-  const wchar_t* ext = L".daliproj";
   wchar_t modulePath[MAX_PATH] = {0};
   if (!::GetModuleFileNameW(nullptr, modulePath, MAX_PATH)) {
     return;
@@ -77,26 +98,37 @@ void RegisterFileAssociation() {
   // HKCU\Software\Classes\Dalimaster.daliproj
   HKEY hKey;
   if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Classes\\Dalimaster.daliproj", 0, nullptr, 0, KEY_WRITE, nullptr, &hKey, nullptr) == ERROR_SUCCESS) {
-    RegSetValueExW(hKey, nullptr, 0, REG_SZ, reinterpret_cast<const BYTE*>(L"DALI Project"), sizeof(wchar_t) * (wcslen(L"DALI Project") + 1));
+    RegSetValueExW(hKey, nullptr, 0, REG_SZ, reinterpret_cast<const BYTE*>(L"DALI Project"), static_cast<DWORD>(sizeof(wchar_t) * (wcslen(L"DALI Project") + 1)));
     HKEY iconKey;
     if (RegCreateKeyExW(hKey, L"DefaultIcon", 0, nullptr, 0, KEY_WRITE, nullptr, &iconKey, nullptr) == ERROR_SUCCESS) {
-      RegSetValueExW(iconKey, nullptr, 0, REG_SZ, reinterpret_cast<const BYTE*>(modulePath), sizeof(wchar_t) * (wcslen(modulePath) + 1));
+      RegSetValueExW(iconKey, nullptr, 0, REG_SZ, reinterpret_cast<const BYTE*>(modulePath), static_cast<DWORD>(sizeof(wchar_t) * (wcslen(modulePath) + 1)));
       RegCloseKey(iconKey);
     }
     HKEY shellKey;
     if (RegCreateKeyExW(hKey, L"shell\\open\\command", 0, nullptr, 0, KEY_WRITE, nullptr, &shellKey, nullptr) == ERROR_SUCCESS) {
       wchar_t cmd[MAX_PATH * 2];
       wsprintfW(cmd, L"\"%s\" \"%%1\"", modulePath);
-      RegSetValueExW(shellKey, nullptr, 0, REG_SZ, reinterpret_cast<const BYTE*>(cmd), sizeof(wchar_t) * (wcslen(cmd) + 1));
+      RegSetValueExW(shellKey, nullptr, 0, REG_SZ, reinterpret_cast<const BYTE*>(cmd), static_cast<DWORD>(sizeof(wchar_t) * (wcslen(cmd) + 1)));
       RegCloseKey(shellKey);
     }
     RegCloseKey(hKey);
   }
   // HKCU\Software\Classes\.daliproj -> Dalimaster.daliproj
   if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Classes\\.daliproj", 0, nullptr, 0, KEY_WRITE, nullptr, &hKey, nullptr) == ERROR_SUCCESS) {
-    RegSetValueExW(hKey, nullptr, 0, REG_SZ, reinterpret_cast<const BYTE*>(progId), sizeof(wchar_t) * (wcslen(progId) + 1));
+    RegSetValueExW(hKey, nullptr, 0, REG_SZ, reinterpret_cast<const BYTE*>(progId), static_cast<DWORD>(sizeof(wchar_t) * (wcslen(progId) + 1)));
     RegCloseKey(hKey);
   }
-  // Notify shell
-  ::SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
+  // Notify shell about association changes (best-effort).
+  // Try dynamic load to avoid compile-time dependency issues.
+  HMODULE shell32 = ::GetModuleHandleW(L"Shell32.dll");
+  if (!shell32) {
+    shell32 = ::LoadLibraryW(L"Shell32.dll");
+  }
+  if (shell32) {
+    typedef void (WINAPI *PFNSHCHANGENOTIFY)(long, unsigned int, const void*, const void*);
+    auto fn = reinterpret_cast<PFNSHCHANGENOTIFY>(::GetProcAddress(shell32, "SHChangeNotify"));
+    if (fn) {
+      fn(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
+    }
+  }
 }

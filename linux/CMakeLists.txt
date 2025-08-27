@@ -140,7 +140,7 @@ endif()
 
 # Create a .desktop file and MIME association for .daliproj on install (best-effort)
 set(DESKTOP_FILE "${CMAKE_CURRENT_BINARY_DIR}/dalimaster.desktop")
-file(WRITE ${DESKTOP_FILE} \
+file(WRITE ${DESKTOP_FILE}
 "[Desktop Entry]\n"
 "Type=Application\n"
 "Name=DALI Master\n"
@@ -152,7 +152,7 @@ file(WRITE ${DESKTOP_FILE} \
 install(FILES ${DESKTOP_FILE} DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
 
 set(MIME_XML "${CMAKE_CURRENT_BINARY_DIR}/dalimaster-mime.xml")
-file(WRITE ${MIME_XML} \
+file(WRITE ${MIME_XML}
 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
 "<mime-info xmlns=\"http://www.freedesktop.org/standards/shared-mime-info\">\n"
 "  <mime-type type=\"application/x-daliproj\">\n"
