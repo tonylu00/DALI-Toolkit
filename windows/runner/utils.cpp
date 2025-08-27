@@ -4,6 +4,7 @@
 #include <io.h>
 #include <stdio.h>
 #include <windows.h>
+#include <shlwapi.h>
 
 #include <iostream>
 
@@ -62,4 +63,40 @@ std::string Utf8FromUtf16(const wchar_t* utf16_string) {
     return std::string();
   }
   return utf8_string;
+}
+
+void RegisterFileAssociation() {
+  // Best-effort, ignore failures. Requires shlwapi
+  // ProgID
+  const wchar_t* progId = L"Dalimaster.daliproj";
+  const wchar_t* ext = L".daliproj";
+  wchar_t modulePath[MAX_PATH] = {0};
+  if (!::GetModuleFileNameW(nullptr, modulePath, MAX_PATH)) {
+    return;
+  }
+  // HKCU\Software\Classes\Dalimaster.daliproj
+  HKEY hKey;
+  if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Classes\\Dalimaster.daliproj", 0, nullptr, 0, KEY_WRITE, nullptr, &hKey, nullptr) == ERROR_SUCCESS) {
+    RegSetValueExW(hKey, nullptr, 0, REG_SZ, reinterpret_cast<const BYTE*>(L"DALI Project"), sizeof(wchar_t) * (wcslen(L"DALI Project") + 1));
+    HKEY iconKey;
+    if (RegCreateKeyExW(hKey, L"DefaultIcon", 0, nullptr, 0, KEY_WRITE, nullptr, &iconKey, nullptr) == ERROR_SUCCESS) {
+      RegSetValueExW(iconKey, nullptr, 0, REG_SZ, reinterpret_cast<const BYTE*>(modulePath), sizeof(wchar_t) * (wcslen(modulePath) + 1));
+      RegCloseKey(iconKey);
+    }
+    HKEY shellKey;
+    if (RegCreateKeyExW(hKey, L"shell\\open\\command", 0, nullptr, 0, KEY_WRITE, nullptr, &shellKey, nullptr) == ERROR_SUCCESS) {
+      wchar_t cmd[MAX_PATH * 2];
+      wsprintfW(cmd, L"\"%s\" \"%%1\"", modulePath);
+      RegSetValueExW(shellKey, nullptr, 0, REG_SZ, reinterpret_cast<const BYTE*>(cmd), sizeof(wchar_t) * (wcslen(cmd) + 1));
+      RegCloseKey(shellKey);
+    }
+    RegCloseKey(hKey);
+  }
+  // HKCU\Software\Classes\.daliproj -> Dalimaster.daliproj
+  if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Classes\\.daliproj", 0, nullptr, 0, KEY_WRITE, nullptr, &hKey, nullptr) == ERROR_SUCCESS) {
+    RegSetValueExW(hKey, nullptr, 0, REG_SZ, reinterpret_cast<const BYTE*>(progId), sizeof(wchar_t) * (wcslen(progId) + 1));
+    RegCloseKey(hKey);
+  }
+  // Notify shell
+  ::SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
 }

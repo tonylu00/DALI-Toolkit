@@ -32,5 +32,41 @@
 	<string>$(PRODUCT_NAME) requires Bluetooth access to connect to the device.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>$(PRODUCT_NAME) requires Bluetooth access to connect to the device.</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>DALI Project</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>org.tonycloud.dali.project</string>
+			</array>
+		</dict>
+	</array>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>org.tonycloud.dali.project</string>
+			<key>UTTypeDescription</key>
+			<string>DALI Project</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>daliproj</string>
+				</array>
+				<key>public.mime-type</key>
+				<string>application/json</string>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>

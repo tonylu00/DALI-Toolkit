@@ -55,35 +55,50 @@ class ConnectionMethodSettingState extends State<ConnectionMethodSetting> {
   @override
   Widget build(BuildContext context) {
     return SettingsCard(
-      child: SettingsItem(
-        title: 'connection.method',
-        icon: Icons.settings_ethernet,
-        subtitle: 'settings.connection.subtitle',
-        control: SizedBox(
-          width: 120,
-          child: DropdownButton<String>(
-            value: _selectedConnectionMethod,
-            isExpanded: true,
-            underline: Container(
-              height: 1,
-              color: Theme.of(context).dividerColor,
-            ),
-            items: _availableConnectionMethods.map<DropdownMenuItem<String>>((String method) {
-              return DropdownMenuItem<String>(
-                value: method,
-                child: Text(
-                  _labelForMethod(method),
-                  style: Theme.of(context).textTheme.bodyMedium,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SettingsItem(
+            title: 'connection.method',
+            icon: Icons.settings_ethernet,
+            subtitle: 'settings.connection.subtitle',
+            control: SizedBox(
+              width: 120,
+              child: DropdownButton<String>(
+                value: _selectedConnectionMethod,
+                isExpanded: true,
+                underline: Container(
+                  height: 1,
+                  color: Theme.of(context).dividerColor,
                 ),
-              );
-            }).toList(),
-            onChanged: (String? newValue) {
-              if (newValue != null) {
-                _selectConnectionMethod(newValue);
-              }
-            },
+                items: _availableConnectionMethods.map<DropdownMenuItem<String>>((String method) {
+                  return DropdownMenuItem<String>(
+                    value: method,
+                    child: Text(
+                      _labelForMethod(method),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    _selectConnectionMethod(newValue);
+                  }
+                },
+              ),
+            ),
           ),
-        ),
+          if (_selectedConnectionMethod == 'MOCK') ...[
+            const SizedBox(height: 6),
+            Text(
+              '用于教学演示，不进行实际硬件通讯',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ],
       ),
     );
   }
