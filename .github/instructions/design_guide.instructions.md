@@ -1,5 +1,5 @@
 ---
-mode: agent
+applyTo: "**"
 ---
 # Design Guide for DaliMaster
 # Collaboration Notice
@@ -43,5 +43,4 @@ Conventions:
 - Keep platform-specific changes scoped to their platform folders.
 - Place new shared Dart utilities in `lib/utils/` and reusable UI in `lib/widgets/`.
 - Update `assets/translations/` for user-facing text and run localization tooling if applicable.
-- Backend changes live in the `server/` submodule; bump the submodule pointer in the parent repo when updating it.
 
