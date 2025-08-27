@@ -28,7 +28,7 @@ services:
 
   server:
     build: .
-    container_name: dali-server
+    container_name: dalitoolkit-server
     environment:
       - ENV=development
       - LOG_LEVEL=debug
