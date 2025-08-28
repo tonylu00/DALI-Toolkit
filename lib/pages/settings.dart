@@ -65,6 +65,7 @@ class SettingsPageState extends State<SettingsPage> {
           const LanguageSetting(),
           const DelaysSetting(),
           const InvalidFrameToleranceSetting(),
+          const ResponseWindowSetting(),
           const AddressingSettings(),
           const AllowBroadcastReadSetting(),
           const CrashlyticsReportAllErrorsSetting(),

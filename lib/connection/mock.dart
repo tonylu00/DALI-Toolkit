@@ -627,7 +627,7 @@ class MockConnection implements Connection {
       // queryShortAddr(): return (2*short+1)+1? In base, queryRawNew expects [255, value]
       // The base then maps ret1-1 => /2
       final sa = _lastVerifiedShortAddr ?? 0;
-      return (2 * sa + 1) + 1; // mimic base expectation
+      return 2 * sa + 1; // mimic base expectation
     }
     if (addr == 0xB9) {
       // verifyShortAddr: value ignored, respond OK

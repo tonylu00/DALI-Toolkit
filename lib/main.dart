@@ -15,6 +15,7 @@ import 'pages/sequence_editor_page.dart';
 import 'pages/about_page.dart';
 import 'pages/custom_keys_page.dart';
 import 'pages/profile_page.dart';
+import 'pages/bus_monitor_page.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dali/dali.dart';
@@ -203,6 +204,7 @@ class MyAppState extends State<MyApp> {
         '/home': (context) => const MyHomePage(
               title: '',
             ),
+        '/busMonitor': (context) => const BusMonitorPage(),
         '/settings': (context) => SettingsPage(
               onThemeModeChanged: _toggleThemeMode,
               onThemeColorChanged: _changeThemeColor,

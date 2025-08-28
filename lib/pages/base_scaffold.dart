@@ -11,6 +11,7 @@ import '/pages/short_address_manager_page.dart';
 import '/pages/sequence_editor_page.dart';
 import '/pages/about_page.dart';
 import '/pages/custom_keys_page.dart';
+import '/pages/bus_monitor_page.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -255,6 +256,12 @@ class BaseScaffoldState extends State<BaseScaffold> {
         label: 'nav.home'.tr(),
         icon: Icons.home_outlined,
         builder: (c) => const MyHomePage(title: '', embedded: true),
+      ),
+      _PageSpec(
+        key: 'BusMonitor',
+        label: 'Bus Monitor',
+        icon: Icons.monitor_heart_outlined,
+        builder: (c) => const BusMonitorPage(embedded: true),
       ),
       _PageSpec(
         key: 'ShortAddressManager',
@@ -743,6 +750,19 @@ class BaseScaffoldState extends State<BaseScaffold> {
               } else if (widget.currentPage != 'Home') {
                 Navigator.pop(context);
                 navigateToPage(context, '/home');
+              }
+            },
+          ),
+          ListTile(
+            title: const Text('Bus Monitor'),
+            selected: widget.currentPage == 'BusMonitor',
+            onTap: () {
+              if (isUltraLarge) {
+                _changeInternalPage('BusMonitor');
+                Navigator.pop(context);
+              } else if (widget.currentPage != 'BusMonitor') {
+                Navigator.pop(context);
+                navigateToPage(context, '/busMonitor');
               }
             },
           ),

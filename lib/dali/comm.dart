@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '/connection/manager.dart';
 import '/connection/connection.dart';
 import 'errors.dart';
+import 'bus_monitor.dart';
 
 class DaliComm {
   final ConnectionManager manager;
@@ -217,6 +218,10 @@ class DaliComm {
       DaliLog.instance.debugLog("dali:sendRawNew: address out of range");
       return;
     }
+    // Emit front frame (send)
+    try {
+      BusMonitor.I.emitFront(0x10, addr, cmd);
+    } catch (_) {}
     if (needVerify) {
       buffer[0] = 0x12;
       for (int i = 0; i < 3; i++) {
@@ -225,6 +230,9 @@ class DaliComm {
         await Future.delayed(Duration(milliseconds: delays));
         Uint8List? data = await read(2, timeout: queryDelays);
         if (data != null && data[0] >= 254) {
+          try {
+            if (data[0] == 255) BusMonitor.I.emitBack(data[1], prefix: 255);
+          } catch (_) {}
           DaliLog.instance.debugLog("dali:sendRawNew: verify success");
           return;
         } else {
@@ -264,6 +272,9 @@ class DaliComm {
     int cmd = b;
     // Note: original code did not do checksum here
     List<int> buffer = [0x11, addr, cmd];
+    try {
+      BusMonitor.I.emitFront(0x11, addr, cmd);
+    } catch (_) {}
     await write(buffer);
     await Future.delayed(Duration(milliseconds: delays));
   }
@@ -323,6 +334,9 @@ class DaliComm {
     int addr = a;
     int cmd = b;
     List<int> buffer = [0x12, addr, cmd];
+    try {
+      BusMonitor.I.emitFront(0x12, addr, cmd);
+    } catch (_) {}
     await write(buffer);
     Uint8List? data;
     int invalidFrameCount = 0;
@@ -334,6 +348,9 @@ class DaliComm {
       data = await read(2, timeout: delays);
       if (data != null && data.length == 2) {
         if (data[0] == 255) {
+          try {
+            BusMonitor.I.emitBack(data[1], prefix: 255);
+          } catch (_) {}
           return data[1];
         } else if (data[0] == 254) {
           throw DaliDeviceNoResponseException(addr: a, cmd: b);
