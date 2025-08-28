@@ -344,4 +344,11 @@
   ,"bus.normal":"Bus normal"
   ,"mock.connected":"Mock connected"
   ,"device.online_devices":"Online Devices"
+  ,"auth.opening_login":"Opening login…"
+  ,"auth.error.cancelled":"Login was cancelled"
+  ,"auth.error.token_exchange_failed":"Failed to exchange token"
+  ,"auth.error.unexpected_token_format":"Unexpected token response format"
+  ,"auth.error.userinfo_failed":"Failed to fetch user info"
+  ,"auth.error.unexpected_userinfo_format":"Unexpected user info format"
+  ,"auth.error.unknown":"Login error: {reason}"
 }

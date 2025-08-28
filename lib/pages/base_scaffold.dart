@@ -228,18 +228,15 @@ class BaseScaffoldState extends State<BaseScaffold> {
     final approxInches = diagonalLogical / 150.0; // 经验系数
     bool isUltraLarge = approxInches >= 10.0;
     final isDesktop = (!kIsWeb) && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
-    // 桌面窗口模式强制使用超大屏布局
     if (isDesktop) {
       isUltraLarge = true;
     }
     bool isLandscape = media.orientation == Orientation.landscape;
-    // 超大屏强制保持横屏（若当前不是横屏尝试锁定）
     if (isUltraLarge && !isLandscape && !isDesktop) {
       SystemChrome.setPreferredOrientations(
           [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
-      isLandscape = true; // 预期锁定后刷新
+      isLandscape = true;
     } else if (!isUltraLarge && !isDesktop) {
-      // 非超大屏解除锁定，允许正常旋转
       SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     }
     Connection connection = ConnectionManager.instance.connection;
@@ -298,7 +295,6 @@ class BaseScaffoldState extends State<BaseScaffold> {
       ),
     ];
 
-    // 若当前 internalPage 不在集合中，回退首页
     if (isUltraLarge && internalPages.indexWhere((e) => e.key == _internalPage) == -1) {
       _internalPage = 'Home';
     }
@@ -306,37 +302,127 @@ class BaseScaffoldState extends State<BaseScaffold> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        toolbarHeight: isUltraLarge ? 44.0 : null,
         title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('app.title', style: TextStyle(fontSize: 18)).tr(),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  isConnected
+            Text('app.title', style: TextStyle(fontSize: isUltraLarge ? 16 : 18)).tr(),
+            const SizedBox(width: 8),
+            // 登录信息（头像+昵称）在左，点击未登录直接进入登录
+            Builder(builder: (context) {
+              final auth = context.watch<AuthProvider>();
+              final loggedIn = auth.state.authenticated;
+              final displayName = loggedIn
+                  ? (auth.state.user?['preferred_username'] ?? auth.state.user?['name'] ?? 'User')
+                  : 'auth.not_logged_in'.tr();
+              ImageProvider<Object>? avatarImage;
+              try {
+                final prefsAvatarFile = auth.state.user?['avatar_file'];
+                final avatar = auth.state.user?['avatar'] ??
+                    auth.state.user?['avatarUrl'] ??
+                    auth.state.user?['picture'];
+                if (!kIsWeb && prefsAvatarFile is String && prefsAvatarFile.isNotEmpty) {
+                  final f = File(prefsAvatarFile);
+                  if (f.existsSync()) avatarImage = FileImage(f);
+                } else if (avatar is String && avatar.isNotEmpty) {
+                  avatarImage = NetworkImage(avatar);
+                }
+              } catch (_) {}
+
+              if (!loggedIn) {
+                return InkWell(
+                  onTap: () => Navigator.pushNamed(context, '/login'),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircleAvatar(radius: 14, child: Text('U')),
+                      const SizedBox(width: 8),
+                      Text('auth.login'.tr(), style: const TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                );
+              }
+
+              return PopupMenuButton<String>(
+                tooltip: displayName,
+                onSelected: (value) async {
+                  if (value == 'profile') {
+                    Navigator.pushNamed(context, '/profile');
+                  } else if (value == 'logout') {
+                    await auth.logout();
+                  }
+                },
+                itemBuilder: (context) => <PopupMenuEntry<String>>[
+                  PopupMenuItem<String>(
+                    value: 'profile',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.person_outline, size: 18),
+                        const SizedBox(width: 8),
+                        Text('user.profile'.tr()),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.logout, size: 18),
+                        const SizedBox(width: 8),
+                        Text('auth.logout'.tr()),
+                      ],
+                    ),
+                  ),
+                ],
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      radius: 14,
+                      backgroundImage: avatarImage,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      displayName,
+                      style: const TextStyle(fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(width: 12),
+            // 连接信息单行在最右侧，自动省略
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Builder(builder: (context) {
+                  final statusText = isConnected
                       ? (connection.type == 'Mock'
                           ? 'mock.connected'.tr()
                           : 'connection.connected'.tr())
-                      : 'connection.disconnected'.tr(),
-                  style: const TextStyle(fontSize: 12),
-                ),
-                const SizedBox(height: 1),
-                Text(connection.type, style: const TextStyle(fontSize: 12)),
-                Text(connection.connectedDeviceId, style: const TextStyle(fontSize: 8)),
-                if (isConnected && ConnectionManager.instance.gatewayType == 0)
-                  Text(
-                    ConnectionManager.instance.busStatus == 'abnormal'
-                        ? 'bus.abnormal'.tr()
-                        : 'bus.normal'.tr(),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: ConnectionManager.instance.busStatus == 'abnormal'
-                          ? Colors.red
-                          : Colors.green,
-                    ),
-                  ),
-              ],
+                      : 'connection.disconnected'.tr();
+                  final busText = (isConnected && ConnectionManager.instance.gatewayType == 0)
+                      ? (ConnectionManager.instance.busStatus == 'abnormal'
+                          ? 'bus.abnormal'.tr()
+                          : 'bus.normal'.tr())
+                      : '';
+                  final parts = <String>[
+                    statusText,
+                    connection.type,
+                    if (connection.connectedDeviceId.isNotEmpty) connection.connectedDeviceId,
+                    if (busText.isNotEmpty) busText,
+                  ];
+                  final infoLine = parts.join(' · ');
+                  return Text(
+                    infoLine,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(fontSize: isUltraLarge ? 11 : 12),
+                  );
+                }),
+              ),
             ),
           ],
         ),
@@ -531,41 +617,111 @@ class BaseScaffoldState extends State<BaseScaffold> {
       child: ListView(
         padding: EdgeInsets.zero,
         children: <Widget>[
-          UserAccountsDrawerHeader(
-            accountName: Text(displayName),
-            accountEmail: Text(displayEmail),
-            currentAccountPicture: GestureDetector(
-              onTap: () {
-                if (!loggedIn) {
-                  Navigator.pushNamed(context, '/login');
-                  return;
-                }
-                Navigator.pushNamed(context, '/profile');
-              },
-              child: CircleAvatar(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                backgroundImage: () {
-                  final prefsAvatarFile =
-                      auth.state.user == null ? null : auth.state.user?['avatar_file'];
-                  final avatar = auth.state.user?['avatar'] ??
-                      auth.state.user?['avatarUrl'] ??
-                      auth.state.user?['picture'];
-                  try {
-                    if (!kIsWeb && prefsAvatarFile is String && prefsAvatarFile.isNotEmpty) {
-                      final f = File(prefsAvatarFile);
-                      if (f.existsSync()) return FileImage(f);
+          DrawerHeader(
+            margin: EdgeInsets.zero,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 22,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  backgroundImage: () {
+                    final prefsAvatarFile = auth.state.user?['avatar_file'];
+                    final avatar = auth.state.user?['avatar'] ??
+                        auth.state.user?['avatarUrl'] ??
+                        auth.state.user?['picture'];
+                    try {
+                      if (!kIsWeb && prefsAvatarFile is String && prefsAvatarFile.isNotEmpty) {
+                        final f = File(prefsAvatarFile);
+                        if (f.existsSync()) return FileImage(f);
+                      }
+                      if (avatar is String && avatar.isNotEmpty) {
+                        return NetworkImage(avatar) as ImageProvider<Object>?;
+                      }
+                    } catch (_) {}
+                    return null;
+                  }(),
+                  child: auth.state.user == null
+                      ? const Text('U')
+                      : Text((displayName.isNotEmpty
+                          ? displayName.substring(0, 1).toUpperCase()
+                          : 'U')),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: InkWell(
+                    onTap: () {
+                      if (!loggedIn) {
+                        Navigator.pushNamed(context, '/login');
+                      } else {
+                        Navigator.pushNamed(context, '/profile');
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(6),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(displayName, style: const TextStyle(fontSize: 16)),
+                        if (displayEmail.isNotEmpty)
+                          Text(displayEmail, style: const TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  onSelected: (value) async {
+                    if (value == 'login') {
+                      if (!loggedIn) Navigator.pushNamed(context, '/login');
+                    } else if (value == 'profile') {
+                      Navigator.pushNamed(context, '/profile');
+                    } else if (value == 'logout') {
+                      await auth.logout();
+                      if (context.mounted) Navigator.pop(context); // close drawer after logout
                     }
-                    if (avatar is String && avatar.isNotEmpty) {
-                      return NetworkImage(avatar) as ImageProvider<Object>?;
+                  },
+                  itemBuilder: (context) {
+                    if (loggedIn) {
+                      return <PopupMenuEntry<String>>[
+                        PopupMenuItem<String>(
+                          value: 'profile',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.person_outline, size: 18),
+                              const SizedBox(width: 8),
+                              Text('user.profile'.tr()),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'logout',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.logout, size: 18),
+                              const SizedBox(width: 8),
+                              Text('auth.logout'.tr()),
+                            ],
+                          ),
+                        ),
+                      ];
+                    } else {
+                      return <PopupMenuEntry<String>>[
+                        PopupMenuItem<String>(
+                          value: 'login',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.login, size: 18),
+                              const SizedBox(width: 8),
+                              Text('auth.login'.tr()),
+                            ],
+                          ),
+                        ),
+                      ];
                     }
-                  } catch (_) {}
-                  return null;
-                }(),
-                child: auth.state.user == null
-                    ? const Text('U')
-                    : Text(
-                        (displayName.isNotEmpty ? displayName.substring(0, 1).toUpperCase() : 'U')),
-              ),
+                  },
+                  icon: const Icon(Icons.more_vert),
+                ),
+              ],
             ),
           ),
           Row(

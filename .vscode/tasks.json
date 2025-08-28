@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Flutter tests",
+			"type": "shell",
+			"command": "flutter test",
+			"isBackground": false,
+			"group": "build"
+		}
+	]
+}

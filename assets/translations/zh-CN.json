@@ -416,4 +416,11 @@
   ,"project.import.button":"导入"
   ,"bus.normal":"总线正常"
   ,"mock.connected":"已连接模拟设备"
+  ,"auth.opening_login":"正在打开登录…"
+  ,"auth.error.cancelled":"已取消登录"
+  ,"auth.error.token_exchange_failed":"交换令牌失败"
+  ,"auth.error.unexpected_token_format":"令牌响应格式异常"
+  ,"auth.error.userinfo_failed":"获取用户信息失败"
+  ,"auth.error.unexpected_userinfo_format":"用户信息格式异常"
+  ,"auth.error.unknown":"登录错误：{reason}"
 }
