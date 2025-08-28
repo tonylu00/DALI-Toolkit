@@ -20,8 +20,7 @@ class DaliLog {
 
   static const String _kLogLevelKey = 'logLevel';
   LogLevel _currentLevel = LogLevel.info; // default until init
-  final StreamController<LogLevel> _levelController =
-      StreamController<LogLevel>.broadcast();
+  final StreamController<LogLevel> _levelController = StreamController<LogLevel>.broadcast();
 
   // Initialize log level from SharedPreferences; set default on first launch
   Future<void> init() async {
@@ -89,8 +88,7 @@ class DaliLog {
       // 2) Flutter Web (dev compiler) format:
       //    'package:foo/bar.dart 10:2  Class.method' or 'packages/foo/bar.dart 10:2  function'
       if (symbol == null) {
-        final mDevc =
-            RegExp(r'^[^\s]+\.dart\s+\d+:\d+\s+(.+)$').firstMatch(line);
+        final mDevc = RegExp(r'^[^\s]+\.dart\s+\d+:\d+\s+(.+)$').firstMatch(line);
         if (mDevc != null) {
           symbol = mDevc.group(1);
         }
@@ -116,9 +114,7 @@ class DaliLog {
             .trim();
 
         // Skip uninformative Web symbols like <fn> or pure anonymous markers
-        if (symbol == '<fn>' ||
-            symbol == 'anon' ||
-            RegExp(r'^<[^>]+>$').hasMatch(symbol)) {
+        if (symbol == '<fn>' || symbol == 'anon' || RegExp(r'^<[^>]+>$').hasMatch(symbol)) {
           // keep scanning for a better frame; fallback will be file.dart:line
           continue;
         }
@@ -168,8 +164,7 @@ class DaliLog {
 
       // Prepare a lightweight fallback like 'file.dart:line' in case we never find a symbol
       fallback ??= () {
-        final mf =
-            RegExp(r'([A-Za-z0-9_\-/]+\.dart)\s+(\d+):\d+').firstMatch(line);
+        final mf = RegExp(r'([A-Za-z0-9_\-/]+\.dart)\s+(\d+):\d+').firstMatch(line);
         if (mf != null) {
           return '${mf.group(1)}:${mf.group(2)}';
         }
@@ -197,7 +192,25 @@ class DaliLog {
   }
 
   // Public helpers
-  void debugLog(String message) => _log(LogLevel.debug, message);
+  /// Debug-only log. In release/profile builds this is stripped by the compiler.
+  /// Note: the message is still evaluated at call-site. For expensive messages,
+  /// prefer [debugLogLazy].
+  void debugLog(String message) {
+    assert(() {
+      _log(LogLevel.debug, message);
+      return true;
+    }());
+  }
+
+  /// Debug-only log with lazy message builder. The builder is only executed
+  /// in debug mode; in release/profile the entire block is removed.
+  void debugLogLazy(Object Function() messageBuilder) {
+    assert(() {
+      _log(LogLevel.debug, messageBuilder().toString());
+      return true;
+    }());
+  }
+
   void infoLog(String message) => _log(LogLevel.info, message);
   void warningLog(String message) => _log(LogLevel.warning, message);
   void errorLog(String message) => _log(LogLevel.error, message);
@@ -211,53 +224,21 @@ class DaliLog {
 
   Stream<List<String>> get logStream => _logStreamController.stream;
 
-  ListView listBuilder(List<String> list) {
+  ListView listBuilder(List<String> list, {ScrollController? controller}) {
     return ListView.builder(
-      itemCount: _logMessages.length,
+      controller: controller,
+      itemCount: list.length,
       itemBuilder: (context, index) {
-        return Text(_logMessages[index], style: const TextStyle(fontSize: 10));
+        return Text(list[index], style: const TextStyle(fontSize: 10));
       },
     );
   }
 
-  void showLogDialog(BuildContext context, String title,
-      {bool clear = true, onCanceled}) {
+  void showLogDialog(BuildContext context, String title, {bool clear = true, onCanceled}) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: StreamBuilder<List<String>>(
-              stream: logStream,
-              builder: (context, snapshot) {
-                if (_logMessages.isNotEmpty) {
-                  return listBuilder(_logMessages);
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(child: Text('log.no_logs').tr());
-                }
-                return listBuilder(snapshot.data!);
-              },
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                clearLogs();
-                Navigator.of(context).pop();
-              },
-              child: const Text('common.clear').tr(),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('common.close').tr(),
-            ),
-          ],
-        );
+        return _LogDialogContent(title: title);
       },
     );
   }
@@ -265,5 +246,130 @@ class DaliLog {
   void dispose() {
     _logStreamController.close();
     _levelController.close();
+  }
+}
+
+class _LogDialogContent extends StatefulWidget {
+  final String title;
+  const _LogDialogContent({required this.title});
+
+  @override
+  State<_LogDialogContent> createState() => _LogDialogContentState();
+}
+
+class _LogDialogContentState extends State<_LogDialogContent> {
+  late final ScrollController _controller;
+  bool _autoScrollEnabled = true; // user toggle, default on
+  bool _atBottom = true; // tracking whether the list is at/near bottom
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = ScrollController();
+    _controller.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (!_controller.hasClients) return;
+    final pos = _controller.position;
+    // If user is near the bottom, enable auto-scroll; otherwise disable
+    final threshold = 16.0;
+    final atBottom = pos.pixels >= (pos.maxScrollExtent - threshold);
+    if (atBottom != _atBottom) {
+      setState(() {
+        _atBottom = atBottom;
+      });
+    }
+  }
+
+  void _maybeAutoScroll() {
+    if (!_autoScrollEnabled || !_controller.hasClients || !_atBottom) return;
+    // Schedule after the current frame so the list has correct extent
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_controller.hasClients) return;
+      final target = _controller.position.maxScrollExtent;
+      // Use jumpTo to guarantee keeping up with fast incoming logs
+      try {
+        _controller.jumpTo(target);
+      } catch (_) {
+        // In case of out-of-range during rapid rebuilds, clamp safely
+        final pos = _controller.position;
+        final clamped = target.clamp(pos.minScrollExtent, pos.maxScrollExtent);
+        _controller.jumpTo(clamped);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onScroll);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final log = DaliLog.instance;
+    return AlertDialog(
+      title: Text(widget.title),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('log.auto_scroll').tr(),
+                Switch(
+                  value: _autoScrollEnabled,
+                  onChanged: (v) {
+                    setState(() => _autoScrollEnabled = v);
+                    if (v) _maybeAutoScroll();
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 320,
+              child: StreamBuilder<List<String>>(
+                stream: log.logStream,
+                builder: (context, snapshot) {
+                  List<String> items;
+                  if (log._logMessages.isNotEmpty) {
+                    items = log._logMessages;
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(child: Text('log.no_logs').tr());
+                  } else {
+                    items = snapshot.data!;
+                  }
+
+                  // Try autoscroll when new data comes in
+                  _maybeAutoScroll();
+
+                  return log.listBuilder(items, controller: _controller);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () {
+            log.clearLogs();
+            Navigator.of(context).pop();
+          },
+          child: const Text('common.clear').tr(),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: const Text('common.close').tr(),
+        ),
+      ],
+    );
   }
 }

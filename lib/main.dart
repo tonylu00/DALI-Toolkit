@@ -22,6 +22,7 @@ import 'package:provider/provider.dart';
 import 'auth/auth_provider.dart';
 import 'auth/auth_required.dart';
 import 'dali/log.dart';
+import 'utils/import_channel.dart';
 
 FirebaseAnalytics analytics = FirebaseAnalytics.instance;
 // 自定义屏幕名提取：优先 RouteSettings.name；否则从 arguments 中读取；最后回退到路由类型名
@@ -60,8 +61,7 @@ void main() async {
   await EasyLocalization.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   // 如果还没有保存的主题色，使用 VS Code 蓝 #007ACC
-  int colorValue =
-      prefs.getInt('themeColor') ?? DaliColor.toInt(const Color(0xFF007ACC));
+  int colorValue = prefs.getInt('themeColor') ?? DaliColor.toInt(const Color(0xFF007ACC));
   themeColor = Color(colorValue);
   isDarkMode = prefs.getBool('isDarkMode') ?? false;
   // 读取 Crashlytics 上报策略
@@ -109,6 +109,8 @@ void main() async {
   }
   // Initialize log level (default depends on build mode) on first launch
   await DaliLog.instance.init();
+  // Initialize platform import channel (.daliproj opener)
+  ImportChannel.instance.init();
   runApp(EasyLocalization(
       supportedLocales: [Locale('en'), Locale('zh', 'CN')],
       path: 'assets/translations',
@@ -192,8 +194,7 @@ class MyAppState extends State<MyApp> {
         useMaterial3: true,
       ),
       darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-            seedColor: _themeColor, brightness: Brightness.dark),
+        colorScheme: ColorScheme.fromSeed(seedColor: _themeColor, brightness: Brightness.dark),
         useMaterial3: true,
       ),
       themeMode: _themeMode,
@@ -207,8 +208,7 @@ class MyAppState extends State<MyApp> {
               onThemeColorChanged: _changeThemeColor,
             ),
         '/login': (context) => const LoginPage(),
-        '/shortAddressManager': (context) =>
-            ShortAddressManagerPage(daliAddr: dali.addr!),
+        '/shortAddressManager': (context) => ShortAddressManagerPage(daliAddr: dali.addr!),
         '/sequenceEditor': (context) => const SequenceEditorPage(),
         '/customKeys': (context) => const CustomKeysPage(),
         '/about': (context) => const AuthRequired(child: AboutPage()),

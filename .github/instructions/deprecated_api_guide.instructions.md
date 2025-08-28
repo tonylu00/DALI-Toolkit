@@ -1,5 +1,5 @@
 ---
-mode: agent
+applyTo: "**"
 ---
 # Deprecated API Usage Guide
 

@@ -7,8 +7,8 @@ import (
 	"server/internal/config"
 	"server/internal/domain/models"
 
+	"github.com/glebarez/sqlite"
 	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -21,7 +21,7 @@ type Store struct {
 // New creates a new store instance
 // New creates a new store instance based on DSN:
 // - postgres://... -> use PostgreSQL driver
-// - sqlite://path or sqlite::memory: -> use SQLite driver (for dev/test)
+// - sqlite://path or sqlite::memory: -> use SQLite driver (pure Go, no CGO)
 func New(cfg *config.Config) (*Store, error) {
 	var (
 		db  *gorm.DB

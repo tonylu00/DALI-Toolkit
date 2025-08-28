@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:dalimaster/toast.dart';
 import 'package:flutter/material.dart';
 import 'package:dalimaster/dali/log.dart';
 import 'manager.dart';
@@ -99,8 +100,7 @@ class TcpClient implements Connection {
   @override
   Future<void> connect(String address, {int port = 12345}) async {
     disconnect();
-    final s = await Socket.connect(address, port,
-        timeout: const Duration(seconds: 5));
+    final s = await Socket.connect(address, port, timeout: const Duration(seconds: 5));
     _socket = s;
     _isConnected = true;
     connectedDeviceId = '${s.remoteAddress.address}:$port';
@@ -180,8 +180,7 @@ class TcpClient implements Connection {
   @override
   void renameDeviceDialog(BuildContext context, String currentName) {
     // 暂不支持命名 TCP 连接
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Rename not supported')));
+    ToastManager().showInfoToast('Rename not supported');
   }
 }
 
@@ -220,8 +219,8 @@ class UdpClient implements Connection {
         }
       }
     });
-    DaliLog.instance.debugLog(
-        'UDP ready to $connectedDeviceId (local ${s.address.address}:${s.port})');
+    DaliLog.instance
+        .debugLog('UDP ready to $connectedDeviceId (local ${s.address.address}:${s.port})');
     ConnectionManager.instance.updateConnectionStatus(true);
     unawaited(ConnectionManager.instance.ensureGatewayType());
   }
@@ -287,8 +286,7 @@ class UdpClient implements Connection {
 
   @override
   void renameDeviceDialog(BuildContext context, String currentName) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Rename not supported')));
+    ToastManager().showInfoToast('Rename not supported');
   }
 }
 

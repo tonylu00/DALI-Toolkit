@@ -63,7 +63,7 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
     final connection = ConnectionManager.instance.connection;
     if (!connection.isDeviceConnected()) {
       // 改为统一 toast 提示
-      ToastManager().showErrorToast('connection.disconnected'.tr());
+      _showErrorToast('connection.disconnected'.tr());
       return;
     }
     int? start = int.tryParse(_scanStartCtrl.text);
@@ -73,7 +73,7 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
     if (start < 0) start = 0;
     if (end > 63) end = 63;
     if (start > end) {
-      _showSnack('short_addr_manager.invalid_scan_range'.tr());
+      _showErrorToast('short_addr_manager.invalid_scan_range'.tr());
       return;
     }
     setState(() => _scanning = true);
@@ -142,29 +142,30 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
         _selected.clear();
         _selectionMode = false;
       });
-      _showSnack('short_addr_manager.batch_delete_success'.tr());
+      _showErrorToast('short_addr_manager.batch_delete_success'.tr());
     } catch (e) {
-      _showSnack('short_addr_manager.batch_delete_fail'.tr(namedArgs: {'error': e.toString()}));
+      _showErrorToast(
+          'short_addr_manager.batch_delete_fail'.tr(namedArgs: {'error': e.toString()}));
     }
   }
 
   Future<void> _renameAddress(int oldAddr, int newAddr) async {
     if (!ConnectionManager.instance.ensureReadyForOperation()) return;
     if (newAddr < 0 || newAddr > 63) {
-      _showSnack('short_addr_manager.invalid_range'.tr());
+      _showErrorToast('short_addr_manager.invalid_range'.tr());
       return;
     }
     if (_addresses.contains(newAddr) && newAddr != oldAddr) {
-      _showSnack('short_addr_manager.duplicate_addr'.tr());
+      _showErrorToast('short_addr_manager.duplicate_addr'.tr());
       return;
     }
     try {
       await widget.daliAddr.writeAddr(oldAddr, newAddr);
       await widget.daliAddr.base.getOnlineStatus(newAddr); // 刷新状态
       await _startScan();
-      _showSnack('short_addr_manager.modify_success'.tr());
+      _showErrorToast('short_addr_manager.modify_success'.tr());
     } catch (e) {
-      _showSnack('short_addr_manager.modify_fail'.tr(namedArgs: {'error': e.toString()}));
+      _showErrorToast('short_addr_manager.modify_fail'.tr(namedArgs: {'error': e.toString()}));
     }
   }
 
@@ -173,9 +174,9 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
     try {
       await widget.daliAddr.removeAddr(addr);
       await _startScan();
-      _showSnack('short_addr_manager.delete_success'.tr());
+      _showErrorToast('short_addr_manager.delete_success'.tr());
     } catch (e) {
-      _showSnack('short_addr_manager.delete_fail'.tr(namedArgs: {'error': e.toString()}));
+      _showErrorToast('short_addr_manager.delete_fail'.tr(namedArgs: {'error': e.toString()}));
     }
   }
 
@@ -196,7 +197,7 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
             onPressed: () {
               final value = int.tryParse(controller.text);
               if (value == null) {
-                _showSnack('short_addr_manager.invalid_number'.tr());
+                _showErrorToast('short_addr_manager.invalid_number'.tr());
                 return;
               }
               Navigator.pop(ctx, value);
@@ -238,12 +239,12 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
     if (startSlot < 0) startSlot = 0;
     if (endSlot > 63) endSlot = 63;
     if (startSlot > endSlot) {
-      _showSnack('short_addr_manager.invalid_reorder_range'.tr());
+      _showErrorToast('short_addr_manager.invalid_reorder_range'.tr());
       return;
     }
     final window = newOrder.where((a) => a >= startSlot! && a <= endSlot!).toList();
     if (window.isEmpty) {
-      _showSnack('short_addr_manager.no_change'.tr());
+      _showErrorToast('short_addr_manager.no_change'.tr());
       return;
     }
     _cancelApply = false;
@@ -261,7 +262,7 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
       setState(() {
         _applyingOrder = false;
       });
-      _showSnack('short_addr_manager.no_change'.tr());
+      _showErrorToast('short_addr_manager.no_change'.tr());
       return;
     }
 
@@ -277,7 +278,7 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
     }
     temp ??= Iterable<int>.generate(64).firstWhere((t) => !targets.contains(t), orElse: () => -1);
     if (temp == -1) {
-      _showSnack('short_addr_manager.temp_addr_fail'.tr());
+      _showErrorToast('short_addr_manager.temp_addr_fail'.tr());
       setState(() {
         _applyingOrder = false;
       });
@@ -340,12 +341,12 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
         await Future.delayed(const Duration(milliseconds: 30));
       }
       await _startScan();
-      _showSnack('short_addr_manager.reorder_success'.tr());
+      _showErrorToast('short_addr_manager.reorder_success'.tr());
     } catch (e) {
       if (e.toString().contains('cancelled')) {
-        _showSnack('short_addr_manager.reorder_cancelled'.tr());
+        _showErrorToast('short_addr_manager.reorder_cancelled'.tr());
       } else {
-        _showSnack('short_addr_manager.reorder_fail'.tr(namedArgs: {'error': e.toString()}));
+        _showErrorToast('short_addr_manager.reorder_fail'.tr(namedArgs: {'error': e.toString()}));
       }
     }
     if (mounted) {
@@ -545,7 +546,7 @@ class _ShortAddressManagerState extends State<ShortAddressManager> {
     );
   }
 
-  void _showSnack(String msg) {
+  void _showErrorToast(String msg) {
     // 统一迁移为 Toast；根据关键字简单判断类型
     final lower = msg.toLowerCase();
     final toast = ToastManager();

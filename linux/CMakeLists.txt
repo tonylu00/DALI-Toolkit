@@ -137,3 +137,28 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
   install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endif()
+
+# Create a .desktop file and MIME association for .daliproj on install (best-effort)
+set(DESKTOP_FILE "${CMAKE_CURRENT_BINARY_DIR}/dalimaster.desktop")
+file(WRITE ${DESKTOP_FILE}
+"[Desktop Entry]\n"
+"Type=Application\n"
+"Name=DALI Master\n"
+"Exec=${CMAKE_INSTALL_PREFIX}/dalimaster %f\n"
+"Icon=dalimaster\n"
+"MimeType=application/x-daliproj;\n"
+"Categories=Utility;\n")
+
+install(FILES ${DESKTOP_FILE} DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
+
+set(MIME_XML "${CMAKE_CURRENT_BINARY_DIR}/dalimaster-mime.xml")
+file(WRITE ${MIME_XML}
+"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+"<mime-info xmlns=\"http://www.freedesktop.org/standards/shared-mime-info\">\n"
+"  <mime-type type=\"application/x-daliproj\">\n"
+"    <comment>DALI Project</comment>\n"
+"    <glob pattern=\"*.daliproj\"/>\n"
+"  </mime-type>\n"
+"</mime-info>\n")
+
+install(FILES ${MIME_XML} DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)

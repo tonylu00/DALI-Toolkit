@@ -12,16 +12,87 @@ class DaliComm {
   late int sendDelays;
   late int queryDelays;
   late int extDelays;
+  late int invalidFrameTolerance;
+  String? _currentMethod;
 
   DaliComm(this.manager) {
+    // Set defaults immediately; then load from preferences asynchronously.
+    sendDelays = 50;
+    queryDelays = 50;
+    extDelays = 100;
+    invalidFrameTolerance = 1;
+    _loadDelays();
+    // 监听连接方式变化，自动刷新对应的 delays
+    manager.addListener(_onManagerChanged);
+  }
+
+  void _onManagerChanged() {
+    // 连接对象/方式改变时，刷新延时参数
     _loadDelays();
   }
 
   Future<void> _loadDelays() async {
     final prefs = await SharedPreferences.getInstance();
-    sendDelays = prefs.getInt('sendDelays') ?? 50;
-    queryDelays = prefs.getInt('queryDelays') ?? 50;
-    extDelays = prefs.getInt('extDelays') ?? 100;
+    // 读取当前连接方式（以 ConnectionManager 的持久化为准）
+    String method = prefs.getString('connectionMethod') ?? _inferMethodFromConnection();
+    if (method != _currentMethod) {
+      _currentMethod = method;
+    }
+
+    // 方法专属键
+    final kSend = 'delays.$method.send';
+    final kQuery = 'delays.$method.query';
+    final kExt = 'delays.$method.ext';
+    final kTol = 'delays.$method.invalidFrameTolerance';
+
+    // 回退到旧全局键（兼容历史设置）
+    final legacySend = prefs.getInt('sendDelays');
+    final legacyQuery = prefs.getInt('queryDelays');
+    final legacyExt = prefs.getInt('extDelays');
+    final legacyTol = prefs.getInt('invalidFrameTolerance');
+
+    // 读取方法级配置
+    int? send = prefs.getInt(kSend);
+    int? query = prefs.getInt(kQuery);
+    int? ext = prefs.getInt(kExt);
+    int? tol = prefs.getInt(kTol);
+
+    // Mock 模式默认使用最小延时（如未显式设置）
+    if (method == 'MOCK') {
+      send ??= 1;
+      query ??= 1;
+      ext ??= 1;
+      tol ??= legacyTol ?? 1;
+      // 将默认值写回，形成独立存储
+      await prefs.setInt(kSend, send);
+      await prefs.setInt(kQuery, query);
+      await prefs.setInt(kExt, ext);
+      await prefs.setInt(kTol, tol);
+    } else {
+      // 非 Mock：优先方法级，没有则回退到旧全局或默认
+      send ??= legacySend ?? 50;
+      query ??= legacyQuery ?? 50;
+      ext ??= legacyExt ?? 100;
+      tol ??= legacyTol ?? 1;
+    }
+
+    sendDelays = send;
+    queryDelays = query;
+    extDelays = ext;
+    invalidFrameTolerance = tol;
+  }
+
+  String _inferMethodFromConnection() {
+    try {
+      final t = manager.connection.type;
+      if (t.toUpperCase().contains('MOCK')) return 'MOCK';
+      if (t.toUpperCase().contains('SERIAL')) return 'USB';
+      if (t.toUpperCase().contains('BLE')) return 'BLE';
+      // 对于 IP，type 可能是 "TCP"/"UDP"/"IP"，优先读持久化；这里兜底为 IP
+      return 'IP';
+    } catch (_) {
+      return 'BLE';
+    }
   }
 
   int gw = 0;
@@ -45,13 +116,15 @@ class DaliComm {
 
   Future<void> write(List<int> data) async {
     Connection conn = manager.connection;
-    DaliLog.instance.debugLog("dali:write: $data");
+    // Normalize all values to 8-bit unsigned to avoid RangeError in Uint8List.
+    final normalized = data.map((e) => e & 0xFF).toList(growable: false);
+    DaliLog.instance.debugLog("dali:write: $normalized");
     // 总线异常时阻止发送
     if (!ConnectionManager.instance.canOperateBus()) {
       DaliLog.instance.debugLog('dali:write: blocked due to bus abnormal');
       return;
     }
-    await conn.send(Uint8List.fromList(data));
+    await conn.send(Uint8List.fromList(normalized));
   }
 
   Future<Uint8List?> read(int len, {int timeout = 100}) async {
@@ -64,26 +137,14 @@ class DaliComm {
     Connection conn = manager.connection;
     List<int> bytes1 = [0x01, 0x00, 0x00]; // USB
     List<int> bytes2 = [0x28, 0x01, gateway, 0x11, 0x00, 0x00, 0xff]; // Legacy
-    List<int> bytes3 = [
-      0x28,
-      0x01,
-      gateway,
-      0x11,
-      0x00,
-      0x00,
-      0x00,
-      0x00,
-      0x00,
-      0xff
-    ]; // New
+    List<int> bytes3 = [0x28, 0x01, gateway, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff]; // New
 
     await conn.send(Uint8List.fromList(bytes1));
     await Future.delayed(Duration(milliseconds: 100));
     Uint8List? data = await conn.read(2, timeout: 100);
     if (data != null && data.isNotEmpty) {
       if (data[0] > 0) {
-        DaliLog.instance
-            .debugLog("dali:checkGatewayType: USB interface detected");
+        DaliLog.instance.debugLog("dali:checkGatewayType: USB interface detected");
         return 1; // USB interface
       }
     }
@@ -92,8 +153,7 @@ class DaliComm {
     data = await conn.read(2, timeout: 100);
     if (data != null && data.length == 2) {
       if (data[0] == gateway && data[1] >= 0) {
-        DaliLog.instance
-            .debugLog("dali:checkGatewayType: Legacy 485 interface detected");
+        DaliLog.instance.debugLog("dali:checkGatewayType: Legacy 485 interface detected");
         return 2; // Legacy 485 interface
       }
     }
@@ -102,13 +162,11 @@ class DaliComm {
     data = await conn.read(2, timeout: 100);
     if (data != null && data.length == 2) {
       if (data[0] == gateway && data[1] >= 0) {
-        DaliLog.instance
-            .debugLog("dali:checkGatewayType: New 485 interface detected");
+        DaliLog.instance.debugLog("dali:checkGatewayType: New 485 interface detected");
         return 3; // New 485 interface
       }
     }
-    DaliLog.instance
-        .debugLog("dali:checkGatewayType: No valid gateway detected");
+    DaliLog.instance.debugLog("dali:checkGatewayType: No valid gateway detected");
     return 0;
   }
 
@@ -145,8 +203,7 @@ class DaliComm {
     await Future.delayed(Duration(milliseconds: delays));
   }
 
-  Future<void> sendRawNew(int a, int b,
-      {int? d, int? g, bool needVerify = false}) async {
+  Future<void> sendRawNew(int a, int b, {int? d, int? g, bool needVerify = false}) async {
     if (!ConnectionManager.instance.canOperateBus()) {
       DaliLog.instance.debugLog('dali:sendRawNew blocked (bus abnormal)');
       return;
@@ -237,13 +294,13 @@ class DaliComm {
             throw DaliDeviceNoResponseException(addr: a, cmd: b);
           } else {
             DaliLog.instance
-                .debugLog('dali:queryRaw: invalid response code: $data');
+                .debugLog('dali:queryRaw: invalid frame, check cable or duplicate address. $data');
             throw DaliInvalidFrameException(data, addr: a, cmd: b);
           }
         }
       } else {
-        DaliLog.instance.debugLog(
-            'dali:queryRaw: no data or invalid data, length: ${data?.length}');
+        DaliLog.instance
+            .debugLog('dali:queryRaw: no data or invalid data, length: ${data?.length}');
       }
       await write(buffer); // 重试
     }
@@ -269,7 +326,10 @@ class DaliComm {
     await write(buffer);
     Uint8List? data;
     int invalidFrameCount = 0;
-    for (int i = 0; i < 10; i++) {
+    int retryMax = 10;
+    int attempts = 0;
+    final int tolerance = invalidFrameTolerance;
+    while (attempts < retryMax) {
       await Future.delayed(Duration(milliseconds: delays));
       data = await read(2, timeout: delays);
       if (data != null && data.length == 2) {
@@ -278,21 +338,24 @@ class DaliComm {
         } else if (data[0] == 254) {
           throw DaliDeviceNoResponseException(addr: a, cmd: b);
         } else if (data[0] == 253) {
-          DaliLog.instance.debugLog(
-              'dali:queryRawNew: invalid frame, check cable or duplicate address. $data');
+          DaliLog.instance
+              .debugLog('dali:queryRawNew: invalid frame, check cable or duplicate address. $data');
           invalidFrameCount++;
-          if (invalidFrameCount > 1) {
+          if (invalidFrameCount > tolerance) {
             throw DaliInvalidFrameException(data, addr: a, cmd: b);
           }
+          // 收到 invalid frame 不计入重试次数，直接重发
+          await write(buffer);
+          continue;
         } else {
-          DaliLog.instance.debugLog(
-              'dali:queryRawNew: unknown response from gateway: $data');
+          DaliLog.instance.debugLog('dali:queryRawNew: unknown response from gateway: $data');
           throw DaliInvalidGatewayFrameException(addr: a, cmd: b);
         }
       } else {
         DaliLog.instance.debugLog('dali:queryRawNew: no data');
       }
       await write(buffer); // 重试
+      attempts++;
     }
     throw DaliGatewayTimeoutException(addr: a, cmd: b);
   }
@@ -356,15 +419,14 @@ class DaliComm {
       bright = brightnessToLog(b);
       //brightInt = (bright * 254).floor();
     }
-    if (b > 254) {
-      b = 254;
+    if (bright > 254) {
+      bright = 254;
     }
     await sendCmd(addr, bright, t: t, d: d, g: g);
   }
 
   /// Send brightness % with DEC address
-  Future<void> setBrightPercentage(int a, double b,
-      {int? t, int? d, int? g}) async {
+  Future<void> setBrightPercentage(int a, double b, {int? t, int? d, int? g}) async {
     int bright = (b * 254 / 100).floor();
     if (bright > 254) {
       bright = 254;

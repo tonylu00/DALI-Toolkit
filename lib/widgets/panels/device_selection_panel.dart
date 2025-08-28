@@ -9,8 +9,7 @@ import '../../connection/manager.dart';
 class DeviceSelectionPanel extends StatefulWidget {
   final DaliAddr daliAddr;
   final bool showTitle; // 控制是否在面板内部显示标题（页面中可由 AppBar 处理）
-  const DeviceSelectionPanel(
-      {super.key, required this.daliAddr, this.showTitle = false});
+  const DeviceSelectionPanel({super.key, required this.daliAddr, this.showTitle = false});
 
   @override
   State<DeviceSelectionPanel> createState() => _DeviceSelectionPanelState();
@@ -37,8 +36,8 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
       _addrInputCtrl = TextEditingController(text: (sel - 64).toString());
     } else {
       _groupAddr = false;
-      _addrInputCtrl = TextEditingController(
-          text: sel == addr.base.broadcast ? '0' : sel.toString());
+      _addrInputCtrl =
+          TextEditingController(text: sel == addr.base.broadcast ? '0' : sel.toString());
     }
     addr.searchStateStream.listen((_) {
       if (mounted) setState(() {});
@@ -115,20 +114,17 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
     final scanBtn = ElevatedButton.icon(
       onPressed: _toggleScan,
       icon: Icon(addr.isSearching ? Icons.stop : Icons.search),
-      label: Text(addr.isSearching
-          ? 'device_search.stop_scan'.tr()
-          : 'device_search.start_scan'.tr()),
+      label:
+          Text(addr.isSearching ? 'device_search.stop_scan'.tr() : 'device_search.start_scan'.tr()),
       style: addr.isSearching
-          ? ElevatedButton.styleFrom(
-              backgroundColor: Colors.red, foregroundColor: Colors.white)
+          ? ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white)
           : null,
     );
     final rangeInputs = Row(children: [
       Expanded(
           child: TextFormField(
         initialValue: rangeStart.toString(),
-        decoration:
-            InputDecoration(labelText: 'device_search.range_start'.tr()),
+        decoration: InputDecoration(labelText: 'device_search.range_start'.tr()),
         keyboardType: TextInputType.number,
         onChanged: (v) {
           final n = int.tryParse(v) ?? rangeStart;
@@ -155,9 +151,9 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
             child: Row(
               children: [
                 Expanded(
-                  child: Text('Online Devices',
-                          style: Theme.of(context).textTheme.titleMedium)
-                      .tr(),
+                  child:
+                      Text('device.online_devices', style: Theme.of(context).textTheme.titleMedium)
+                          .tr(),
                 ),
                 Row(mainAxisSize: MainAxisSize.min, children: [
                   SizedBox(
@@ -176,9 +172,7 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
                   ),
                   const SizedBox(width: 8),
                   Row(children: [
-                    Checkbox(
-                        value: _groupAddr,
-                        onChanged: broadcastMode ? null : _toggleGroupAddr),
+                    Checkbox(value: _groupAddr, onChanged: broadcastMode ? null : _toggleGroupAddr),
                     Text('device_search.group_addr'.tr()),
                   ]),
                   const SizedBox(width: 8),
@@ -197,8 +191,7 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
                   child: TextField(
                     controller: _addrInputCtrl,
                     enabled: !broadcastMode,
-                    decoration:
-                        const InputDecoration(labelText: 'Addr', isDense: true),
+                    decoration: const InputDecoration(labelText: 'Addr', isDense: true),
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     onChanged: _onAddrChanged,
@@ -206,9 +199,7 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
                 ),
                 const SizedBox(width: 8),
                 Row(children: [
-                  Checkbox(
-                      value: _groupAddr,
-                      onChanged: broadcastMode ? null : _toggleGroupAddr),
+                  Checkbox(value: _groupAddr, onChanged: broadcastMode ? null : _toggleGroupAddr),
                   Text('device_search.group_addr'.tr()),
                 ]),
                 const SizedBox(width: 8),
@@ -217,8 +208,7 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
               ])
             ],
           );
-    final column =
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    final column = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       titleRow,
       const SizedBox(height: 4),
       rangeInputs,
@@ -240,9 +230,7 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
     }
     final max = _groupAddr ? 15 : 63;
     if (v < 0 || v > max) {
-      _throttleToast(_groupAddr
-          ? 'address.input.invalid_group'
-          : 'address.input.invalid_single');
+      _throttleToast(_groupAddr ? 'address.input.invalid_group' : 'address.input.invalid_single');
       return;
     }
     // 合法，更新
@@ -270,8 +258,7 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
         if (addr.isSearching && devices.isEmpty) {
           return Center(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const SizedBox(
-                width: 36, height: 36, child: CircularProgressIndicator()),
+            const SizedBox(width: 36, height: 36, child: CircularProgressIndicator()),
             const SizedBox(height: 12),
             Text('short_addr_manager.scanning').tr(),
           ]));
@@ -287,13 +274,11 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
             return ListTile(
               selected: selected,
               selectedColor: Theme.of(context).colorScheme.primary,
-              selectedTileColor:
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              selectedTileColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
               title: Text('Device $a'),
               onTap: () {
                 if (broadcastMode) {
-                  ToastManager()
-                      .showInfoToast('device_search.broadcast_selected_toast');
+                  ToastManager().showInfoToast('device_search.broadcast_selected_toast');
                   return;
                 }
                 addr.base.selectedAddress = a;
@@ -319,19 +304,14 @@ class _DeviceSelectionPanelState extends State<DeviceSelectionPanel> {
           SizedBox(
               width: 320,
               child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: _buildControls(true))),
-          Expanded(
-              child: Padding(
-                  padding: const EdgeInsets.all(8), child: _buildDeviceList())),
+                  padding: const EdgeInsets.all(16), child: _buildControls(true))),
+          Expanded(child: Padding(padding: const EdgeInsets.all(8), child: _buildDeviceList())),
         ]);
       }
       return ListView(padding: const EdgeInsets.all(16), children: [
         _buildControls(false),
         const SizedBox(height: 16),
-        SizedBox(
-            height: MediaQuery.of(context).size.height * 0.55,
-            child: _buildDeviceList()),
+        SizedBox(height: MediaQuery.of(context).size.height * 0.55, child: _buildDeviceList()),
       ]);
     });
   }

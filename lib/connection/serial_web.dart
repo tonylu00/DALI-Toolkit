@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:html';
 import 'dart:js_util';
+import 'package:dalimaster/toast.dart';
 import 'package:flutter/material.dart';
 import 'package:dalimaster/dali/log.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,8 +38,7 @@ class SerialWebManager implements Connection {
     }
   }
 
-  Future<bool> _openPort(dynamic port, int baudRate,
-      {bool isRetry = false}) async {
+  Future<bool> _openPort(dynamic port, int baudRate, {bool isRetry = false}) async {
     try {
       await promiseToFuture(callMethod(port, 'open', [
         jsify({'baudRate': baudRate})
@@ -46,8 +46,7 @@ class SerialWebManager implements Connection {
       return true;
     } catch (e) {
       if (e is DomException && e.name == 'InvalidStateError') {
-        DaliLog.instance.debugLog(
-            'Serial port is already open, try using current instance');
+        DaliLog.instance.debugLog('Serial port is already open, try using current instance');
         await _closePort(port);
         if (!isRetry) {
           return _openPort(port, baudRate, isRetry: true);
@@ -123,8 +122,8 @@ class SerialWebManager implements Connection {
               if (buffer is ByteBuffer) {
                 data = Uint8List.view(buffer);
               } else {
-                DaliLog.instance.debugLog(
-                    'Serial Web recv: unknown value type: ${value.runtimeType}');
+                DaliLog.instance
+                    .debugLog('Serial Web recv: unknown value type: ${value.runtimeType}');
                 debugPrintStack();
                 continue;
               }
@@ -196,8 +195,7 @@ class SerialWebManager implements Connection {
       }
       final out = Uint8List.fromList(readBuffer!.sublist(0, length));
       final remain = readBuffer!.length - length;
-      readBuffer =
-          remain > 0 ? Uint8List.fromList(readBuffer!.sublist(length)) : null;
+      readBuffer = remain > 0 ? Uint8List.fromList(readBuffer!.sublist(length)) : null;
       return out;
     }
     return null;
@@ -233,8 +231,7 @@ class SerialWebManager implements Connection {
 
   @override
   void renameDeviceDialog(BuildContext context, String currentName) {
-    ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('serial.rename_not_supported_web')));
+    ToastManager().showInfoToast('serial.rename_not_supported_web');
   }
 
   Future<void> connectToSavedDevice() async {

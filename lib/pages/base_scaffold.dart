@@ -1,3 +1,5 @@
+import 'package:dalimaster/toast.dart';
+
 import '/connection/manager.dart';
 import '/connection/connection.dart';
 import '/utils/navigation.dart';
@@ -16,20 +18,22 @@ import 'package:provider/provider.dart';
 import '../auth/auth_provider.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
-import 'dart:io' show Platform, File; // 对桌面平台判断（Web 下将用 kIsWeb 保护）
+import 'dart:io' show Platform, File, Directory; // 对桌面平台判断（Web 下将用 kIsWeb 保护）
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:desktop_window/desktop_window.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'dart:convert';
+import 'package:path_provider/path_provider.dart';
 
 import '/dali/log.dart';
 import '/utils/internal_page_prefs.dart';
+import '/utils/import_channel.dart';
 
 class BaseScaffold extends StatefulWidget {
   final Widget body;
   final String currentPage;
 
-  const BaseScaffold(
-      {required this.body, required this.currentPage, super.key});
+  const BaseScaffold({required this.body, required this.currentPage, super.key});
 
   @override
   BaseScaffoldState createState() => BaseScaffoldState();
@@ -53,6 +57,11 @@ class BaseScaffoldState extends State<BaseScaffold> {
     _prefs = InternalPagePrefs.instance..addListener(_onPrefsChanged);
     _loadPrefs();
     _internalPage = widget.currentPage; // 初始内部页，偏好加载后可能覆盖
+    // 监听 .daliproj 导入事件
+    ImportChannel.instance.stream.listen((json) async {
+      if (!mounted) return;
+      await _handleImportedJson(context, json);
+    });
   }
 
   @override
@@ -91,25 +100,19 @@ class BaseScaffoldState extends State<BaseScaffold> {
 
   // 桌面窗口初始化：限定最小尺寸，确保双列布局不被压缩
   Future<void> _initDesktopWindow() async {
-    if (!kIsWeb &&
-        (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+    if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
       // 需要同时容纳：左侧设备面板 + 导航 Rail + 最小功能区宽度 + 余量
-      const minWidth = _kLeftPanelWidth +
-          _kNavRailWidth +
-          _kMinFunctionalWidth +
-          _kExtraMargin; // 1004 默认
+      const minWidth =
+          _kLeftPanelWidth + _kNavRailWidth + _kMinFunctionalWidth + _kExtraMargin; // 1004 默认
       const minHeight = 600.0; // 经验值
       try {
-        await DesktopWindow.setMinWindowSize(
-            Size(minWidth.toDouble(), minHeight));
+        await DesktopWindow.setMinWindowSize(Size(minWidth.toDouble(), minHeight));
         // 如果当前窗口比我们要求的小，主动放大到最小逻辑尺寸，避免首次显示压缩布局
         final current = await DesktopWindow.getWindowSize();
         if (current.width < minWidth - 1) {
           // 容差
-          final targetHeight =
-              current.height < minHeight ? minHeight : current.height;
-          await DesktopWindow.setWindowSize(
-              Size(minWidth.toDouble(), targetHeight));
+          final targetHeight = current.height < minHeight ? minHeight : current.height;
+          await DesktopWindow.setWindowSize(Size(minWidth.toDouble(), targetHeight));
         }
       } catch (_) {}
     }
@@ -117,16 +120,114 @@ class BaseScaffoldState extends State<BaseScaffold> {
 
   // 旧 _updateAccountInfo 已移除
 
+  Future<void> _saveProjectFile(BuildContext context, String json) async {
+    final filename = 'project_${DateTime.now().millisecondsSinceEpoch}.daliproj';
+    if (kIsWeb) {
+      // On Web, trigger download via AnchorElement (defer import to avoid web-only import issues)
+      try {
+        // ignore: undefined_prefixed_name
+        // Use a minimal JS interop through Clipboard as fallback
+        await Clipboard.setData(ClipboardData(text: json));
+        ToastManager().showInfoToast('project.export.web_clipboard'.tr());
+      } catch (_) {}
+      return;
+    }
+    // For desktop/mobile, try to write to a temp file and share/save via native pickers.
+    try {
+      // Use path_provider to get temp dir
+      final dir = await getTemporaryDirectorySafe();
+      final f = File('${dir.path}/$filename');
+      await f.writeAsString(json);
+      ToastManager().showInfoToast('project.export.saved_tmp'.tr(namedArgs: {'path': f.path}));
+    } catch (e) {
+      ToastManager().showErrorToast('${'project.export.failed'.tr()}: $e');
+    }
+  }
+
+  Future<void> _importProjectFile(BuildContext context) async {
+    // Minimal stub: prompt user to paste JSON; later can integrate file picker.
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('project.import.dialog_title'.tr()),
+        content: SizedBox(
+          width: 480,
+          child: TextField(
+            controller: controller,
+            maxLines: 12,
+            decoration: InputDecoration(
+              hintText: 'project.import.paste_hint'.tr(),
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text('common.cancel'.tr())),
+          ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+              child: Text('project.import.button'.tr())),
+        ],
+      ),
+    );
+    if (result == null || result.isEmpty) return;
+    try {
+      // Basic JSON parse
+      // ignore: unused_local_variable
+      final parsed = jsonDecode(result);
+      if (!context.mounted) return;
+      await _handleImportedJson(context, result);
+    } catch (e) {
+      DaliLog.instance.debugLog('Import failed: $e');
+    }
+  }
+
+  Future<void> _handleImportedJson(BuildContext context, String json) async {
+    try {
+      // Basic validation first
+      jsonDecode(json);
+      // Ensure Mock connection is active
+      if (ConnectionManager.instance.connection.type != 'Mock') {
+        ConnectionManager.instance.useMock();
+      }
+      final conn = ConnectionManager.instance.connection;
+      try {
+        final mock = conn as dynamic;
+        if (mock.importProjectJson is Future<void> Function(String)) {
+          await mock.importProjectJson(json);
+        }
+        if (context.mounted) {
+          ToastManager().showDoneToast('project.import.success'.tr());
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ToastManager().showErrorToast('${'project.import.failed'.tr()}: $e');
+        }
+      }
+    } catch (e) {
+      DaliLog.instance.debugLog('Import failed: $e');
+      ToastManager().showErrorToast('${'project.import.failed'.tr()}: $e');
+    }
+  }
+
+  Future<Directory> getTemporaryDirectorySafe() async {
+    try {
+      // Prefer path_provider if available
+      return await getTemporaryDirectory();
+    } catch (_) {
+      // Fallback to current directory
+      return Directory.systemTemp;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final size = media.size;
-    final diagonalLogical =
-        math.sqrt(size.width * size.width + size.height * size.height);
+    final diagonalLogical = math.sqrt(size.width * size.width + size.height * size.height);
     final approxInches = diagonalLogical / 150.0; // 经验系数
     bool isUltraLarge = approxInches >= 10.0;
-    final isDesktop = (!kIsWeb) &&
-        (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
+    final isDesktop = (!kIsWeb) && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
     // 桌面窗口模式强制使用超大屏布局
     if (isDesktop) {
       isUltraLarge = true;
@@ -198,8 +299,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
     ];
 
     // 若当前 internalPage 不在集合中，回退首页
-    if (isUltraLarge &&
-        internalPages.indexWhere((e) => e.key == _internalPage) == -1) {
+    if (isUltraLarge && internalPages.indexWhere((e) => e.key == _internalPage) == -1) {
       _internalPage = 'Home';
     }
 
@@ -215,19 +315,20 @@ class BaseScaffoldState extends State<BaseScaffold> {
               children: [
                 Text(
                   isConnected
-                      ? 'connection.connected'.tr()
+                      ? (connection.type == 'Mock'
+                          ? 'mock.connected'.tr()
+                          : 'connection.connected'.tr())
                       : 'connection.disconnected'.tr(),
                   style: const TextStyle(fontSize: 12),
                 ),
                 const SizedBox(height: 1),
                 Text(connection.type, style: const TextStyle(fontSize: 12)),
-                Text(connection.connectedDeviceId,
-                    style: const TextStyle(fontSize: 8)),
+                Text(connection.connectedDeviceId, style: const TextStyle(fontSize: 8)),
                 if (isConnected && ConnectionManager.instance.gatewayType == 0)
                   Text(
                     ConnectionManager.instance.busStatus == 'abnormal'
-                        ? '总线异常'
-                        : '总线正常',
+                        ? 'bus.abnormal'.tr()
+                        : 'bus.normal'.tr(),
                     style: TextStyle(
                       fontSize: 10,
                       color: ConnectionManager.instance.busStatus == 'abnormal'
@@ -257,10 +358,32 @@ class BaseScaffoldState extends State<BaseScaffold> {
               } else if (result == 'Option 3') {
                 final prefs = await SharedPreferences.getInstance();
                 if (!context.mounted) return;
-                connection.renameDeviceDialog(
-                    context, prefs.getString('deviceName') ?? '');
+                connection.renameDeviceDialog(context, prefs.getString('deviceName') ?? '');
               } else if (result == 'Option 4') {
                 log.showLogDialog(context, 'Log');
+              } else if (result == 'Option ExportProject') {
+                // Export current project (Mock bus state or sequences) as .daliproj JSON
+                try {
+                  String json = '';
+                  // Prefer Mock connection export when active
+                  if (connection.type == 'Mock') {
+                    final mock = connection as dynamic; // avoid import cycle
+                    if (mock.exportProjectJson is Future<String> Function({bool pretty})) {
+                      json = await mock.exportProjectJson(pretty: true);
+                    }
+                  }
+                  if (json.isEmpty) {
+                    // Fallback: export empty project
+                    json =
+                        '{"meta": {"generatedAt": "${DateTime.now().toIso8601String()}"}, "devices": []}';
+                  }
+                  if (!context.mounted) return;
+                  await _saveProjectFile(context, json);
+                } catch (e) {
+                  DaliLog.instance.debugLog('Export failed: $e');
+                }
+              } else if (result == 'Option ImportProject') {
+                await _importProjectFile(context);
               }
             },
             itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
@@ -279,6 +402,27 @@ class BaseScaffoldState extends State<BaseScaffold> {
               PopupMenuItem<String>(
                 value: 'Option 4',
                 child: Text('log.show').tr(),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem<String>(
+                value: 'Option ExportProject',
+                child: Row(
+                  children: [
+                    const Icon(Icons.file_upload_outlined, size: 18),
+                    const SizedBox(width: 8),
+                    Text('menu.export_project'.tr()),
+                  ],
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'Option ImportProject',
+                child: Row(
+                  children: [
+                    const Icon(Icons.file_download_outlined, size: 18),
+                    const SizedBox(width: 8),
+                    Text('menu.import_project'.tr()),
+                  ],
+                ),
               ),
             ],
             icon: const Icon(Icons.more_vert),
@@ -300,9 +444,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
                         .withValues(alpha: 0.5),
                     border: Border(
                         right: BorderSide(
-                            color: Theme.of(context)
-                                .dividerColor
-                                .withValues(alpha: 0.2))),
+                            color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
                   ),
                   child: SafeArea(
                     child: DeviceSelectionPanel(
@@ -315,30 +457,23 @@ class BaseScaffoldState extends State<BaseScaffold> {
                 Container(
                   width: _kNavRailWidth,
                   decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .surface
-                        .withValues(alpha: 0.6),
+                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.6),
                     border: Border(
-                      right: BorderSide(
-                          color: Theme.of(context)
-                              .dividerColor
-                              .withValues(alpha: 0.15)),
+                      right:
+                          BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.15)),
                     ),
                   ),
                   child: SafeArea(
                     child: NavigationRail(
-                      selectedIndex: internalPages
-                          .indexWhere((e) => e.key == _internalPage),
-                      onDestinationSelected: (i) =>
-                          _changeInternalPage(internalPages[i].key),
+                      selectedIndex: internalPages.indexWhere((e) => e.key == _internalPage),
+                      onDestinationSelected: (i) => _changeInternalPage(internalPages[i].key),
                       labelType: NavigationRailLabelType.all,
                       destinations: [
                         for (final p in internalPages)
                           NavigationRailDestination(
                             icon: Icon(p.icon),
-                            selectedIcon: Icon(p.icon,
-                                color: Theme.of(context).colorScheme.primary),
+                            selectedIcon:
+                                Icon(p.icon, color: Theme.of(context).colorScheme.primary),
                             label: Text(p.label, textAlign: TextAlign.center),
                           ),
                       ],
@@ -359,8 +494,7 @@ class BaseScaffoldState extends State<BaseScaffold> {
                         )
                       : Builder(
                           builder: (c) {
-                            final spec = internalPages.firstWhere(
-                                (e) => e.key == _internalPage,
+                            final spec = internalPages.firstWhere((e) => e.key == _internalPage,
                                 orElse: () => internalPages.first);
                             return spec.builder(c);
                           },
@@ -381,18 +515,15 @@ class BaseScaffoldState extends State<BaseScaffold> {
 
   Widget _buildDrawer(BuildContext context) {
     final media = MediaQuery.of(context);
-    final diagonalLogical = math.sqrt(media.size.width * media.size.width +
-        media.size.height * media.size.height);
+    final diagonalLogical =
+        math.sqrt(media.size.width * media.size.width + media.size.height * media.size.height);
     final approxInches = diagonalLogical / 150.0;
-    final isDesktop = (!kIsWeb) &&
-        (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
+    final isDesktop = (!kIsWeb) && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
     final isUltraLarge = isDesktop || approxInches >= 10.0;
     final auth = context.watch<AuthProvider>();
     final loggedIn = auth.state.authenticated;
     final displayName = loggedIn
-        ? (auth.state.user?['preferred_username'] ??
-            auth.state.user?['name'] ??
-            'User')
+        ? (auth.state.user?['preferred_username'] ?? auth.state.user?['name'] ?? 'User')
         : 'auth.not_logged_in'.tr();
     final displayEmail = loggedIn ? (auth.state.user?['email'] ?? '') : '';
 
@@ -414,16 +545,13 @@ class BaseScaffoldState extends State<BaseScaffold> {
               child: CircleAvatar(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 backgroundImage: () {
-                  final prefsAvatarFile = auth.state.user == null
-                      ? null
-                      : auth.state.user?['avatar_file'];
+                  final prefsAvatarFile =
+                      auth.state.user == null ? null : auth.state.user?['avatar_file'];
                   final avatar = auth.state.user?['avatar'] ??
                       auth.state.user?['avatarUrl'] ??
                       auth.state.user?['picture'];
                   try {
-                    if (!kIsWeb &&
-                        prefsAvatarFile is String &&
-                        prefsAvatarFile.isNotEmpty) {
+                    if (!kIsWeb && prefsAvatarFile is String && prefsAvatarFile.isNotEmpty) {
                       final f = File(prefsAvatarFile);
                       if (f.existsSync()) return FileImage(f);
                     }
@@ -435,9 +563,8 @@ class BaseScaffoldState extends State<BaseScaffold> {
                 }(),
                 child: auth.state.user == null
                     ? const Text('U')
-                    : Text((displayName.isNotEmpty
-                        ? displayName.substring(0, 1).toUpperCase()
-                        : 'U')),
+                    : Text(
+                        (displayName.isNotEmpty ? displayName.substring(0, 1).toUpperCase() : 'U')),
               ),
             ),
           ),
@@ -445,10 +572,8 @@ class BaseScaffoldState extends State<BaseScaffold> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text('common.free').tr(),
-              Icon(Icons.star_border,
-                  color: Theme.of(context).colorScheme.primary),
-              Text('${'common.expires'.tr()}: 2099-12-31',
-                  style: const TextStyle(fontSize: 10)),
+              Icon(Icons.star_border, color: Theme.of(context).colorScheme.primary),
+              Text('${'common.expires'.tr()}: 2099-12-31', style: const TextStyle(fontSize: 10)),
             ],
           ),
           const Divider(),
@@ -541,9 +666,5 @@ class _PageSpec {
   final String label;
   final IconData icon;
   final WidgetBuilder builder;
-  _PageSpec(
-      {required this.key,
-      required this.label,
-      required this.icon,
-      required this.builder});
+  _PageSpec({required this.key, required this.label, required this.icon, required this.builder});
 }

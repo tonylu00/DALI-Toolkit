@@ -1,5 +1,5 @@
 ---
-mode: agent
+applyTo: "**"
 ---
 # Design Guide for DaliMaster
 # Collaboration Notice
@@ -7,6 +7,10 @@ To facilitate collaboration, the prompt file must be written in English.
 
 # Issue check
 - Use `flutter analyze` to get the list of files with issues. Then, for each file, use the problems tool to check for specific problems.
+
+# Test
+- Use `flutter test` to run the test suite.
+- Aim for high test coverage, especially for critical components.
 
 # API Deprecation Guide
 File path: `.github/prompts/deprecated_api_guide.prompt.md`
@@ -39,5 +43,4 @@ Conventions:
 - Keep platform-specific changes scoped to their platform folders.
 - Place new shared Dart utilities in `lib/utils/` and reusable UI in `lib/widgets/`.
 - Update `assets/translations/` for user-facing text and run localization tooling if applicable.
-- Backend changes live in the `server/` submodule; bump the submodule pointer in the parent repo when updating it.
 
