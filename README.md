@@ -1,59 +1,85 @@
 # dalimaster
 
-DALI Inspector V2 (cross platform)
+DALI Inspector V2 (cross-platform)
 
-## Getting Started
+## Supported platforms and key features
 
-This project is a cross platform implementation of DALI Master.
-Supported platforms: Windows, Linux, MacOS, iOS, Android.
+- Platforms: Windows, Linux, macOS, Android, iOS, Web (optional/beta)
+- Key features:
+  - DALI bus inspector, short-address manager, sequence editor, custom keys page
+  - Type0 gateway bus-status monitor with in-UI status badge
+  - Gateways over BLE, USB serial, TCP/UDP (serial over IP), and Web BLE
+  - Built-in mock bus for offline demo and tests
+  - Casdoor SSO login with secure token storage and auto refresh
+  - Localization (English, Simplified Chinese), theming, analytics, crash reporting
 
-### 总线状态监测 (Type0 网关)
-当连接到被判定为 type0 的网关时，如果在空闲通知中接收到连续两个字节 0xFF 0xFD，界面标题处会显示“总线异常”；若 5 秒内未再次收到该序列，将自动恢复为“总线正常”。
-（假设 checkGatewayType 返回 0 即为 type0 网关，如实际判定规则不同请调整 ConnectionManager.gatewayType 逻辑。）
+## Getting started
 
-### Casdoor 登录集成说明
+Prerequisites:
+- Flutter stable (Dart >= 3.1.4), platform SDKs (Xcode for iOS/macOS, Android SDK/NDK for Android, build tools for desktop targets)
 
-已加入依赖: `casdoor_flutter_sdk`。
+Install dependencies:
+```bash
+flutter pub get
+```
 
-配置文件: `lib/auth/casdoor_config.dart` 含占位符，需要替换为 Casdoor 控制台真实值:
+Run on a device:
+```bash
+flutter devices
+flutter run -d <device_id>
+```
+
+## Bus status monitor (Type0 gateways)
+
+After a connection is established, `ConnectionManager.ensureGatewayType()` auto-detects the gateway type. When `gatewayType == 0` (Type0), bus monitoring is enabled:
+- Receiving two consecutive idle-notification bytes `0xFF 0xFD` marks the bus as abnormal.
+- If the sequence isn’t observed again within 5 seconds, the state automatically returns to normal.
+
+The status is displayed in the app bar. Wiring is implemented at the connection layer and UI shell; no extra handling is required by pages.
+
+## Casdoor SSO integration
+
+Dependency: `casdoor_flutter_sdk`.
+
+Configure `lib/auth/casdoor_config.dart` with your Casdoor values (example uses URL scheme `dalitoolkit`; any scheme is fine as long as it matches platform setup):
 
 ```
-const String kCasdoorClientId = '...';
+const String kCasdoorClientId = '<YOUR_CLIENT_ID>';
 const String kCasdoorServerUrl = 'https://door.casdoor.com';
-const String kCasdoorOrganization = 'YOUR_ORG';
-const String kCasdoorAppName = 'YOUR_APP';
-const String kCasdoorRedirectUri = 'yourapp://callback';
+const String kCasdoorOrganization = '<YOUR_ORG>';
+const String kCasdoorAppName = '<YOUR_APP>';
+const String kCasdoorRedirectUri = 'dalitoolkit://callback';
 ```
 
-`kCasdoorRedirectUri` 需与移动端 URL Scheme / Android Intent Filter 一致。
+`kCasdoorRedirectUri` must match the mobile URL scheme/Android intent filter.
 
-#### iOS 配置
-在 `ios/Runner/Info.plist` 增加 URL Types:
+### iOS
+Add a URL type in `ios/Runner/Info.plist`:
 ```
 <key>CFBundleURLTypes</key>
 <array>
   <dict>
     <key>CFBundleURLSchemes</key>
     <array>
-      <string>yourapp</string>
+      <string>dalitoolkit</string>
     </array>
   </dict>
-</array>
+  </array>
 ```
 
-#### Android 配置
-在 `android/app/src/main/AndroidManifest.xml` 的 `<activity android:name="io.flutter.embedding.android.FlutterActivity" ...>` 内添加 intent filter:
+### Android
+Add an intent filter under the main activity in `android/app/src/main/AndroidManifest.xml`:
 ```
 <intent-filter>
-    <action android:name="android.intent.action.VIEW" />
-    <category android:name="android.intent.category.DEFAULT" />
-    <category android:name="android.intent.category.BROWSABLE" />
-    <data android:scheme="yourapp" android:host="callback" />
+  <action android:name="android.intent.action.VIEW" />
+  <category android:name="android.intent.category.DEFAULT" />
+  <category android:name="android.intent.category.BROWSABLE" />
+  <data android:scheme="dalitoolkit" android:host="callback" />
 </intent-filter>
 ```
 
-#### Web (可选)
-如需 Web，在 `web/` 创建 `callback.html`:
+### Web (optional)
+Create `web/callback.html`:
 ```
 <!DOCTYPE html>
 <title>Authentication complete</title>
@@ -63,26 +89,28 @@ const String kCasdoorRedirectUri = 'yourapp://callback';
   window.close();
 </script>
 ```
-并将重定向地址设为运行域名 `/callback` (例: `http://localhost:8080/callback`).
+Set the redirect URI to your running domain path `/callback` (e.g., `http://localhost:8080/callback`).
 
-#### 登录流程
-`lib/pages/login.dart`:
-1. 点击按钮 -> `Casdoor(config)` 展示授权窗口 (show)
-2. 返回 code -> `requestOauthAccessToken` 获取 token 响应 -> `Navigator.pop` 返回
+### Login flow (via AuthProvider/AuthService)
 
-调用方可解析返回 JSON 获取 `access_token` / `id_token`，并可调用解码、用户信息接口。
+Use `AuthProvider` to drive the UI. It wraps the full Casdoor flow (authorization UI, code parsing, token exchange, user info, secure persistence). Example (from `lib/pages/login.dart`):
 
-### 认证服务扩展 (刷新 / 登出 / 安全存储)
+1) Press the login button -> call `context.read<AuthProvider>().login()`
+2) On success -> navigate to home via `Navigator.pushNamedAndRemoveUntil('/home', ...)`
 
-`lib/auth/auth_service.dart` 实现：
-- 登录：调用 Casdoor 授权，自动获取用户信息并安全存储 token（`flutter_secure_storage`）
-- 刷新：在读取缓存时检测过期自动刷新（若存在 refresh_token）
-- 登出：`logout(revoke: true)` 可请求 OIDC logout 并清除本地存储
-- 用户信息：`getCachedUser()` 若 token 有效直接返回，过期则尝试刷新
+No need to call `Casdoor.show()` or `requestOauthAccessToken` directly; those are handled by `AuthService`.
 
-存储格式：单一 key `auth_tokens` (JSON 序列化) 包含 accessToken / refreshToken / idToken / expiresAt。
+### Auth service (refresh/logout/secure storage)
 
-使用示例：
+`lib/auth/auth_service.dart` provides:
+- Login -> secure token storage with `flutter_secure_storage`
+- Refresh -> auto-refresh on read if expired and a refresh_token is present
+- Logout -> `logout(revoke: true)` can call OIDC logout and clears local storage
+- User profile -> `getCachedUser()` returns the profile when valid or attempts refresh
+
+Storage format: single key `auth_tokens` (JSON) with accessToken / refreshToken / idToken / expiresAt.
+
+Usage example:
 ```dart
 final auth = AuthService();
 final user = await auth.getCachedUser();
@@ -94,57 +122,99 @@ if (user == null) {
 }
 ```
 
-注意事项：
-1. iOS Keychain 与 Android EncryptedSharedPreferences 由 flutter_secure_storage 统一封装
-2. 若需要多实例环境/多账号，可为 key 增加租户或用户前缀
-3. 生产环境建议：
-   - 打开设备硬件加密 (Android API >=23 已默认)
-   - 如需后台静默刷新，可在应用启动时调用 `getCachedUser()` 触发刷新
-4. 若后端配置不返回 refresh_token，则需缩短 access token 失效前的 UI 交互或引导重新登录
+Notes:
+1) iOS Keychain and Android EncryptedSharedPreferences are abstracted by flutter_secure_storage
+2) For multi-tenant/multi-account, add a prefix to the key
+3) Production tips:
+   - Ensure device hardware encryption (Android API >= 23 is default)
+   - Call `getCachedUser()` early to trigger silent refresh when needed
+4) If your server doesn’t return a refresh_token, consider shorter sessions or re-login prompts
 
-## Server backend as a Git submodule
+## Localization and multi-platform build
 
-The backend service lives in the `server/` directory and is tracked as a Git submodule.
+Localization:
+- Languages: English (`en`), Simplified Chinese (`zh-CN`)
+- Files under `assets/translations/` (JSON). Add new keys in both languages.
+- The app is wired with `easy_localization` in `main.dart`.
 
-- Upstream repo: https://github.com/tonylu00/DALI-Toolkit-server
+Build and run:
+- Common
+  - Fetch deps: `flutter pub get`
+  - Analyze: `flutter analyze`
+  - Test (if tests present): `flutter test`
 
-Common workflows:
+- Android
+  - Run debug: `flutter run -d android`
+  - Build APK: `flutter build apk`
+  - Build AppBundle: `flutter build appbundle`
+  - Make sure the Casdoor URL scheme intent filter and BLE permissions (Android 12+) are configured
 
-1) Clone with submodules
+- iOS
+  - Run: `flutter run -d ios` (open Xcode for signing if needed)
+  - Build: `flutter build ios`
+  - Ensure URL scheme and any required Bluetooth privacy strings are in `Info.plist`
+
+- macOS
+  - Run: `flutter run -d macos`
+  - Build: `flutter build macos`
+
+- Windows
+  - Run: `flutter run -d windows`
+  - Build: `flutter build windows`
+
+- Linux
+  - Run: `flutter run -d linux`
+  - Build: `flutter build linux`
+
+- Web (optional/beta)
+  - Ensure `web/callback.html` exists if using Casdoor
+  - Run: `flutter run -d chrome`
+  - Build: `flutter build web`
+
+## Bring your own gateway/device
+
+To integrate a custom DALI gateway or transport, follow this checklist:
+
+1) Implement a connection/transport
+   - Add a file under `lib/connection/` (use `ble.dart`, `serial_usb.dart`, `serial_ip.dart`, or `ble_web.dart` as references)
+   - Provide: connect/disconnect, send (write), receive (stream) primitives
+   - After connecting, call `ConnectionManager.instance.ensureGatewayType()` once
+   - Feed idle-monitor bytes to `ConnectionManager` so Type0 bus status can be inferred (`markBusAbnormal()` when `0xFF 0xFD` is detected)
+
+2) Wire into the app
+   - Trigger your transport from settings or auto-discovery (see `widgets/settings/gateway_type_card.dart` and the existing connection entries)
+   - Update any selection UI and persist preferences if needed
+
+3) Platform setup
+   - Android: add permissions/intents (BLE: BLUETOOTH_SCAN/CONNECT on Android 12+, location on <=11; custom schemes for Casdoor)
+   - iOS/macOS: add URL schemes, Bluetooth privacy strings if applicable
+   - Web: ensure required features (WebBLE) and HTTPS origin, plus `web/callback.html` for Casdoor
+
+4) Validate
+   - Verify gateway type detection and that bus operations are blocked when status is abnormal
+   - Smoke test address allocation, queries, and sequences against your hardware
+
+Minimal runtime contract:
+- Inputs: raw frames to gateway; idle-monitor stream for Type0
+- Outputs: device responses (bytes); gateway type (0/1/2/3) determined by probe
+- Error modes: timeouts, bus abnormal (block operations), permission denied
+- Success: stable connect/disconnect, accurate gateway detection, correct read/write
+
+## Build instructions
+
+This project no longer depends on a bundled server submodule. To build locally:
 
 ```bash
-git clone --recurse-submodules https://github.com/tonylu00/DALI-Toolkit.git
-# or, if already cloned
-cd DALI-Toolkit
-git submodule update --init --recursive
+flutter pub get
+flutter analyze
+# optional
+flutter test
+
+# run on a connected device
+flutter run -d <device_id>
+
+# build for your target
+flutter build <apk|appbundle|ios|macos|linux|windows|web>
 ```
 
-2) Update the submodule to latest main and record the new pointer
-
-```bash
-# Option A: update inside submodule and commit pointer in parent
-cd server
-git fetch origin
-git checkout main
-git pull --ff-only
-cd ..
-git add server
-git commit -m "chore: bump server submodule"
-
-# Option B: from parent repo (updates remote-tracking for submodule)
-git submodule update --remote --merge server
-git add server
-git commit -m "chore: bump server submodule"
-```
-
-3) Sync submodule remotes (rare)
-
-```bash
-git submodule sync --recursive
-```
-
-4) CI setup snippet
-
-```bash
-git submodule update --init --recursive
-```
+If you maintain a separate backend, configure its URL/endpoints in your own code or environment; it is not required to compile and run the app.
