@@ -81,57 +81,35 @@ class DaliDT8 {
   }
 
   Future<int> getColTempRaw(int a, [int? t]) async {
-    // Map selector to DTR code per Table 11
+    // Map selector to DTR code per Table 11 and delegate to unified 0xFA path
     // t: 2 => current CT (2), 0 => coolest (128), 1 => warmest (130)
     // t: 3 => physical coolest (129), 4 => physical warmest (131)
-    int type = t ?? 2;
-    int dtrCode;
-    if (type == 2) {
-      dtrCode = 2;
-    } else if (type == 0) {
-      dtrCode = 128;
-    } else if (type == 1) {
-      dtrCode = 130;
-    } else if (type == 3) {
-      dtrCode = 129;
-    } else if (type == 4) {
-      dtrCode = 131;
-    } else {
-      dtrCode = 2;
+    final type = t ?? 2;
+    int selector;
+    switch (type) {
+      case 0:
+        selector = 128;
+        break;
+      case 1:
+        selector = 130;
+        break;
+      case 3:
+        selector = 129;
+        break;
+      case 4:
+        selector = 131;
+        break;
+      case 2:
+      default:
+        selector = 2;
+        break;
     }
-    await base.setDTR(dtrCode);
-    await base.dtSelect(8);
-
-    int featuresByte = await getColorType(a);
+    // Respect capability: only block pure CT selector (2/128..131)
+    final featuresByte = await getColorType(a);
     final features = ColorTypeFeature(featuresByte);
-    if (!features.ctCapable) {
-      DaliLog.instance.debugLog('Device not supporting colour temperature (CT)');
-      return 0;
-    }
-
-    // For current CT (DTR=2) the answer is active-type related. For CT limits and
-    // physical bounds (128/129/130/131), do not pre-block; let device answer MASK if needed.
-    if (dtrCode == 2) {
-      ColorStatus status = await getColorStatus(a);
-      if (status.ctOutOfRange) {
-        DaliLog.instance.debugLog('Color temperature out of range');
-        // continue; device may still respond per spec
-      }
-      if (!status.ctActive) {
-        DaliLog.instance.debugLog('Color temperature not active; attempting query');
-        // continue to allow possible recalculation/MASK
-      }
-    }
-
-    int dtr = await base.getDTR(a);
-    int dtr1 = await base.getDTR1(a);
-    int value = dtr;
-    while (dtr1 > 0) {
-      value += 256;
-      dtr1--;
-    }
-    DaliLog.instance.debugLog('Color temperature raw: $value');
-    return value;
+    if (!features.ctCapable) return 0;
+    final v = await getColourRaw(a, selector);
+    return v ?? 0;
   }
 
   Future<void> setColTempRaw(int a, int value) async {

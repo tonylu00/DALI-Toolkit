@@ -479,6 +479,12 @@ class MockConnection implements Connection {
       return;
     }
 
+    // dtSelect for DT8 (0xC1, t:1, value in DTR0)
+    if (addr == 0xC1) {
+      // For simplicity, we don't need to persist selected DT in mock
+      return;
+    }
+
     // store DTR as addr/scene/levels when targeted
     if ((addr & 0x01) == 1 && addr != 0xA7 && addr != 0xA5) {
       // Determine targets: broadcast (0xFF), group (0x81..0xBF), or individual (2*sa+1)
@@ -602,6 +608,234 @@ class MockConnection implements Connection {
         });
         return;
       }
+      if (cmd == 0xFA) {
+        // QUERY COLOUR VALUE as an extended command that writes back into DTR/DTR1
+        final sel = bus.dtr & 0xFF;
+        void set16(int value) {
+          bus.dtr = value & 0xFF;
+          bus.dtr1 = (value >> 8) & 0xFF;
+        }
+
+        forEachTarget((d) {
+          switch (sel) {
+            case 0:
+              set16(d.xyX);
+              break;
+            case 1:
+              set16(d.xyY);
+              break;
+            case 2:
+              set16(d.mirek);
+              break;
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+            case 8:
+              {
+                final n = sel - 3;
+                final v = (n >= 0 && n < d.primaryN.length) ? d.primaryN[n] : 255;
+                set16(v);
+                break;
+              }
+            case 9:
+              set16(d.rgbwafChannels[0]);
+              break;
+            case 10:
+              set16(d.rgbwafChannels[1]);
+              break;
+            case 11:
+              set16(d.rgbwafChannels[2]);
+              break;
+            case 12:
+              set16(d.rgbwafChannels[3]);
+              break;
+            case 13:
+              set16(d.rgbwafChannels[4]);
+              break;
+            case 14:
+              set16(d.rgbwafChannels[5]);
+              break;
+            case 15:
+              set16(0);
+              break;
+            case 64:
+            case 67:
+            case 70:
+            case 73:
+            case 76:
+            case 79:
+              {
+                final n = (sel - 64) ~/ 3;
+                final x = (10000 + n * 1000).clamp(0, 65535);
+                set16(x);
+                break;
+              }
+            case 65:
+            case 68:
+            case 71:
+            case 74:
+            case 77:
+            case 80:
+              {
+                final n = (sel - 65) ~/ 3;
+                final y = (12000 + n * 1000).clamp(0, 65535);
+                set16(y);
+                break;
+              }
+            case 66:
+            case 69:
+            case 72:
+            case 75:
+            case 78:
+            case 81:
+              {
+                final n = (sel - 66) ~/ 3;
+                final ty = (n + 1) & 0xFF;
+                set16(ty);
+                break;
+              }
+            case 82:
+              set16(3);
+              break;
+            case 128:
+              set16(d.mirekMin);
+              break;
+            case 129:
+              set16(d.mirekMin);
+              break;
+            case 130:
+              set16(d.mirekMax);
+              break;
+            case 131:
+              set16(d.mirekMax);
+              break;
+            case 192:
+              set16(d.tmpX);
+              break;
+            case 193:
+              set16(d.tmpY);
+              break;
+            case 194:
+              set16(d.tmpMirek);
+              break;
+            case 195:
+            case 196:
+            case 197:
+            case 198:
+            case 199:
+            case 200:
+              {
+                final n = sel - 195;
+                final v = (n >= 0 && n < d.tmpPrimary.length) ? d.tmpPrimary[n] : 255;
+                set16(v);
+                break;
+              }
+            case 201:
+              set16(d.tmpRGBWAF[0]);
+              break;
+            case 202:
+              set16(d.tmpRGBWAF[1]);
+              break;
+            case 203:
+              set16(d.tmpRGBWAF[2]);
+              break;
+            case 204:
+              set16(d.tmpRGBWAF[3]);
+              break;
+            case 205:
+              set16(d.tmpRGBWAF[4]);
+              break;
+            case 206:
+              set16(d.tmpRGBWAF[5]);
+              break;
+            case 207:
+              set16(0);
+              break;
+            case 208:
+              set16(d.tmpColourType);
+              break;
+            case 224:
+              set16(d.xyX);
+              break;
+            case 225:
+              set16(d.xyY);
+              break;
+            case 226:
+              set16(d.mirek);
+              break;
+            case 227:
+            case 228:
+            case 229:
+            case 230:
+            case 231:
+            case 232:
+              {
+                final n = sel - 227;
+                final v = (n >= 0 && n < d.primaryN.length) ? d.primaryN[n] : 255;
+                set16(v);
+                break;
+              }
+            case 233:
+              set16(d.rgbwafChannels[0]);
+              break;
+            case 234:
+              set16(d.rgbwafChannels[1]);
+              break;
+            case 235:
+              set16(d.rgbwafChannels[2]);
+              break;
+            case 236:
+              set16(d.rgbwafChannels[3]);
+              break;
+            case 237:
+              set16(d.rgbwafChannels[4]);
+              break;
+            case 238:
+              set16(d.rgbwafChannels[5]);
+              break;
+            case 239:
+              set16(0);
+              break;
+            case 240:
+              set16(d.colorType & 0xFF);
+              break;
+            default:
+              break;
+          }
+        });
+        return;
+      }
+      if (cmd == 0xEE) {
+        // copyReportColourToTemp: take a snapshot from current report values
+        forEachTarget((d) {
+          d.tmpX = d.xyX;
+          d.tmpY = d.xyY;
+          d.tmpMirek = d.mirek;
+          for (var i = 0; i < d.tmpRGBWAF.length && i < d.rgbwafChannels.length; i++) {
+            d.tmpRGBWAF[i] = d.rgbwafChannels[i];
+          }
+          for (var i = 0; i < d.tmpPrimary.length && i < d.primaryN.length; i++) {
+            d.tmpPrimary[i] = d.primaryN[i];
+          }
+          // Map active mode to colour type code
+          switch (d.activeColorMode) {
+            case 'xy':
+              d.tmpColourType = 0x10;
+              break;
+            case 'ct':
+              d.tmpColourType = 0x20;
+              break;
+            case 'rgb':
+              d.tmpColourType = 0x80;
+              break;
+            default:
+              d.tmpColourType = d.colorType & 0xFF;
+          }
+        });
+        return;
+      }
       if (cmd >= 0x60 && cmd <= 0x6F) {
         // add to group i
         final g = cmd - 0x60;
@@ -696,8 +930,19 @@ class MockConnection implements Connection {
         case 0xC0:
           return d.groupBits & 0xFF;
         case 0xF9:
-          // DALI DT8 getColorType
-          return d.colorType;
+          // DALI DT8 Colour Type Features (bit0 xy, bit1 ct, bit2..4 primaries count, bit5..7 rgbwaf channels)
+          int features = 0;
+          // For our mock device, enable xy+ct, 3 primaries, 3 rgb channels by default
+          features |= 0x01; // xy capable
+          features |= 0x02; // ct capable
+          // number of primaries (use non-zero if primaryN has any meaningful values)
+          final primaries = d.primaryN.any((v) => v != 0) ? 3 : 0;
+          features |= (primaries.clamp(0, 6) & 0x07) << 2;
+          // rgbwaf channels (infer from non-zero entries; default 3 for RGB)
+          int ch = d.rgbwafChannels.where((v) => v != 0).length;
+          if (ch == 0) ch = 3; // default RGB
+          features |= (ch.clamp(0, 6) & 0x07) << 5;
+          return features & 0xFF;
         case 0xF8:
           // DALI DT8 getColorStatus
           int status = 0;
@@ -712,54 +957,225 @@ class MockConnection implements Connection {
           if (d.activeColorMode == 'ct') status |= 0x20; // ctActive
           return status;
         case 0xFA:
-          // queryColourValue: depends on DTR selector (0: x, 1: y, 2: ct; 128/130 for min/max per dt8.dart)
-          final sel = bus.dtr & 0xFF;
-          if (sel == 0) {
-            // X low byte; but dt8.dart随后通过 getDTR/getDTR1 读取，我们返回触发后续读取
-            // 这里直接返回 0 即可，真正数据由后续 getDTR/1 提供
+          {
+            // QUERY COLOUR VALUE; Answer placed in DTR/DTR1 depending on selector
+            final sel = bus.dtr & 0xFF;
+            // Helper closures
+            void set16(int value) {
+              bus.dtr = value & 0xFF;
+              bus.dtr1 = (value >> 8) & 0xFF;
+            }
+
+            switch (sel) {
+              // Active-related 0..15
+              case 0:
+                set16(d.xyX);
+                break;
+              case 1:
+                set16(d.xyY);
+                break;
+              case 2:
+                set16(d.mirek);
+                break;
+              case 3:
+              case 4:
+              case 5:
+              case 6:
+              case 7:
+              case 8:
+                {
+                  final n = sel - 3;
+                  final v = (n >= 0 && n < d.primaryN.length) ? d.primaryN[n] : 255; // MASK
+                  set16(v);
+                  break;
+                }
+              case 9:
+                set16(d.rgbwafChannels[0]);
+                break;
+              case 10:
+                set16(d.rgbwafChannels[1]);
+                break;
+              case 11:
+                set16(d.rgbwafChannels[2]);
+                break;
+              case 12:
+                set16(d.rgbwafChannels[3]);
+                break;
+              case 13:
+                set16(d.rgbwafChannels[4]);
+                break;
+              case 14:
+                set16(d.rgbwafChannels[5]);
+                break;
+              case 15:
+                set16(0); // RGBWAF CONTROL: keep 0
+                break;
+
+              // Primary N info 64..82: return raw 16-bit for x/y (simulate 16-bit), TY & NUMBER single byte in low
+              case 64:
+              case 67:
+              case 70:
+              case 73:
+              case 76:
+              case 79:
+                {
+                  final n = (sel - 64) ~/ 3;
+                  final x = (10000 + n * 1000).clamp(0, 65535);
+                  set16(x);
+                  break;
+                }
+              case 65:
+              case 68:
+              case 71:
+              case 74:
+              case 77:
+              case 80:
+                {
+                  final n = (sel - 65) ~/ 3;
+                  final y = (12000 + n * 1000).clamp(0, 65535);
+                  set16(y);
+                  break;
+                }
+              case 66:
+              case 69:
+              case 72:
+              case 75:
+              case 78:
+              case 81:
+                {
+                  final n = (sel - 66) ~/ 3;
+                  final ty = (n + 1) & 0xFF;
+                  set16(ty);
+                  break;
+                }
+              case 82:
+                set16(3); // NUMBER OF PRIMARIES -> say 3
+                break;
+
+              // CT min/physical min/max/warmest
+              case 128:
+                set16(d.mirekMin);
+                break;
+              case 129:
+                set16(d.mirekMin);
+                break; // PHYSICAL COOLEST ~ same as min for mock
+              case 130:
+                set16(d.mirekMax);
+                break;
+              case 131:
+                set16(d.mirekMax);
+                break; // PHYSICAL WARMEST ~ same as max for mock
+
+              // Temporary values 192..208 from tmp snapshot
+              case 192:
+                set16(d.tmpX);
+                break;
+              case 193:
+                set16(d.tmpY);
+                break;
+              case 194:
+                set16(d.tmpMirek);
+                break;
+              case 195:
+              case 196:
+              case 197:
+              case 198:
+              case 199:
+              case 200:
+                {
+                  final n = sel - 195;
+                  final v = (n >= 0 && n < d.tmpPrimary.length) ? d.tmpPrimary[n] : 255;
+                  set16(v);
+                  break;
+                }
+              case 201:
+                set16(d.tmpRGBWAF[0]);
+                break;
+              case 202:
+                set16(d.tmpRGBWAF[1]);
+                break;
+              case 203:
+                set16(d.tmpRGBWAF[2]);
+                break;
+              case 204:
+                set16(d.tmpRGBWAF[3]);
+                break;
+              case 205:
+                set16(d.tmpRGBWAF[4]);
+                break;
+              case 206:
+                set16(d.tmpRGBWAF[5]);
+                break;
+              case 207:
+                set16(0);
+                break;
+              case 208:
+                set16(d.tmpColourType);
+                break;
+
+              // Report values 224..240 from current state
+              case 224:
+                set16(d.xyX);
+                break;
+              case 225:
+                set16(d.xyY);
+                break;
+              case 226:
+                set16(d.mirek);
+                break;
+              case 227:
+              case 228:
+              case 229:
+              case 230:
+              case 231:
+              case 232:
+                {
+                  final n = sel - 227;
+                  final v = (n >= 0 && n < d.primaryN.length) ? d.primaryN[n] : 255;
+                  set16(v);
+                  break;
+                }
+              case 233:
+                set16(d.rgbwafChannels[0]);
+                break;
+              case 234:
+                set16(d.rgbwafChannels[1]);
+                break;
+              case 235:
+                set16(d.rgbwafChannels[2]);
+                break;
+              case 236:
+                set16(d.rgbwafChannels[3]);
+                break;
+              case 237:
+                set16(d.rgbwafChannels[4]);
+                break;
+              case 238:
+                set16(d.rgbwafChannels[5]);
+                break;
+              case 239:
+                set16(0);
+                break;
+              case 240:
+                set16(d.colorType & 0xFF);
+                break;
+
+              default:
+                // Any other value: leave DTR unchanged; return 0
+                break;
+            }
             return 0;
-          } else if (sel == 1) {
-            return 0;
-          } else if (sel == 2) {
-            return 0;
-          } else if (sel == 128) {
-            return 0; // min ct requires getDTR/getDTR1
-          } else if (sel == 130) {
-            return 0; // max ct requires getDTR/getDTR1
           }
-          return 0;
         case 0x98:
           // getDTR on device: map according to last selector used in dt8.dart
-          // If selector 0/1 -> X/Y low; 2 -> mirek low; 128/130 -> min/max mirek low
+          // Return DTR low (already set by 0xFA)
           switch (bus.dtr & 0xFF) {
-            case 0:
-              return d.xyX & 0xFF;
-            case 1:
-              return d.xyY & 0xFF;
-            case 2:
-              return d.mirek & 0xFF;
-            case 128:
-              return d.mirekMin & 0xFF;
-            case 130:
-              return d.mirekMax & 0xFF;
             default:
               return bus.dtr & 0xFF;
           }
         case 0x9C:
-          switch (bus.dtr & 0xFF) {
-            case 0:
-              return (d.xyX >> 8) & 0xFF;
-            case 1:
-              return (d.xyY >> 8) & 0xFF;
-            case 2:
-              return (d.mirek >> 8) & 0xFF;
-            case 128:
-              return (d.mirekMin >> 8) & 0xFF;
-            case 130:
-              return (d.mirekMax >> 8) & 0xFF;
-            default:
-              return bus.dtr1 & 0xFF;
-          }
+          // Return DTR1 high (already set by 0xFA)
+          return bus.dtr1 & 0xFF;
         case 0x9D:
           return bus.dtr2 & 0xFF;
         default:

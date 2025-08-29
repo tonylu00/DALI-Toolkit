@@ -53,6 +53,14 @@ class MockDaliDevice {
   // primaryN values (placeholder slots for 6 primaries)
   final List<int> primaryN;
 
+  // --- DT8 temporary snapshot (for 0xEE copyReportColourToTemp & TEMPORARY queries)
+  int tmpX = 0;
+  int tmpY = 0;
+  int tmpMirek = 0;
+  final List<int> tmpRGBWAF = List<int>.filled(6, 0);
+  final List<int> tmpPrimary = List<int>.filled(6, 0);
+  int tmpColourType = 0; // 0x10 xy / 0x20 ct / 0x80 rgbwaf / 0x40 primaryN
+
   // --- DALI status bits (0x90) ---
   bool lampFailureFlag;
   bool limitErrorFlag;
