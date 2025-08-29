@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../toast.dart';
 import '/dali/dali.dart';
@@ -7,6 +8,7 @@ import 'base_scaffold.dart';
 // Import the new widget components
 import '../widgets/widgets.dart';
 import '../utils/broadcast_read_prefs.dart';
+import '../utils/device_info_store.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title, this.embedded = false});
@@ -17,20 +19,24 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage>
-    with SingleTickerProviderStateMixin {
+class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
   bool isDrawerOpen = false;
   double brightness = 50;
   Color color = Colors.red;
   double colorTemperature = 2700;
   List<bool> groupCheckboxes = List.generate(16, (_) => false);
+  StreamSubscription<dynamic>? _selectedDeviceSub;
 
   @override
   void initState() {
     super.initState();
-    Dali.instance.addr!.selectedDeviceStream.listen((address) {
+    _selectedDeviceSub = Dali.instance.addr!.selectedDeviceStream.listen((address) {
+      if (!mounted) return;
       setState(() {});
     });
+    // Kick store to listen and optionally refresh current selection
+    final sel = Dali.instance.base!.selectedAddress;
+    DeviceInfoStore.instance.refresh(sel, silent: true);
     BroadcastReadPrefs.instance.addListener(_onPrefsChanged);
     BroadcastReadPrefs.instance.load();
     ToastManager().init();
@@ -41,6 +47,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   void dispose() {
+    _selectedDeviceSub?.cancel();
     BroadcastReadPrefs.instance.removeListener(_onPrefsChanged);
     super.dispose();
   }
@@ -54,8 +61,7 @@ class _MyHomePageState extends State<MyHomePage>
     final selAddr = Dali.instance.base!.selectedAddress;
     final allowBroadcast = BroadcastReadPrefs.instance.allow;
     final bool isReadable = selAddr <= 63 || allowBroadcast; // 普通读取条件
-    final bool canReadGroup =
-        selAddr <= 63 || allowBroadcast; // 组读取同条件 (地址>63 禁止)
+    final bool canReadGroup = selAddr <= 63 || allowBroadcast; // 组读取同条件 (地址>63 禁止)
     final content = Row(
       children: <Widget>[
         Expanded(
@@ -68,6 +74,9 @@ class _MyHomePageState extends State<MyHomePage>
                   children: <Widget>[
                     // Device Status (disable tap in embedded ultra-wide layout)
                     DeviceStatusWidget(clickable: !widget.embedded),
+
+                    // Status bits
+                    const StatusBitsWidget(),
 
                     // Device Control Buttons
                     const DeviceControlButtonsWidget(),
@@ -107,6 +116,9 @@ class _MyHomePageState extends State<MyHomePage>
                       },
                     ),
 
+                    // Fade controls (time & rate)
+                    const FadeControlWidget(),
+
                     // Group Control
                     GroupControlWidget(
                       groupCheckboxes: groupCheckboxes,
@@ -117,6 +129,9 @@ class _MyHomePageState extends State<MyHomePage>
                         });
                       },
                     ),
+
+                    // Scene goto (0..15) and editor entry
+                    const SceneGotoWidget(),
 
                     // Toast Test Buttons (only in debug)
                     if (kDebugMode) const ToastTestButtonsWidget(),

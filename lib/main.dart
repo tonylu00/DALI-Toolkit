@@ -16,6 +16,7 @@ import 'pages/about_page.dart';
 import 'pages/custom_keys_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/bus_monitor_page.dart';
+import 'pages/scene_editor_page.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dali/dali.dart';
@@ -123,6 +124,13 @@ void main() async {
         child: const MyApp(),
       )));
   ConnectionManager.instance.init();
+  // Touch DeviceInfoStore to set up listeners early
+  // ignore: unused_local_variable
+  final _ = () {
+    // Deferred import to avoid lint about unused
+    // ignore: unnecessary_statements
+    Dali.instance; // ensure Dali initialized
+  }();
 }
 
 // 生成一个简单的 UUID v4 字符串（基于随机数）
@@ -215,6 +223,7 @@ class MyAppState extends State<MyApp> {
         '/customKeys': (context) => const CustomKeysPage(),
         '/about': (context) => const AuthRequired(child: AboutPage()),
         '/profile': (context) => const ProfilePage(),
+        '/sceneEditor': (context) => const SceneEditorPage(),
       },
     );
   }

@@ -42,10 +42,23 @@ class ColorType {
 }
 
 class ColorTypeFeature {
-  static const xy = 0x01;
-  static const colorTemp = 0x02;
-  static const primaryN = 0x04;
-  static const rgbWaf = 0x08;
+  // Represents the 8-bit 'COLOUR TYPE FEATURES' (Command 249 / 0xF9).
+  // Bit layout:
+  // bit0: xy capable
+  // bit1: colour temperature capable
+  // bit2..4: number of primaries (0..6)
+  // bit5..7: number of RGBWAF channels (0..6)
+  final int _features;
+
+  ColorTypeFeature(this._features);
+
+  bool get xyCapable => (_features & 0x01) == 0x01;
+  bool get ctCapable => (_features & 0x02) == 0x02;
+  int get primaryCount => (_features >> 2) & 0x07; // 0..6 (spec)
+  int get rgbwafChannels => (_features >> 5) & 0x07; // 0..6 (spec)
+
+  bool get primaryNCapable => primaryCount > 0;
+  bool get rgbwafCapable => rgbwafChannels > 0;
 }
 
 class DaliDT8 {
@@ -68,30 +81,46 @@ class DaliDT8 {
   }
 
   Future<int> getColTempRaw(int a, [int? t]) async {
+    // Map selector to DTR code per Table 11
+    // t: 2 => current CT (2), 0 => coolest (128), 1 => warmest (130)
+    // t: 3 => physical coolest (129), 4 => physical warmest (131)
     int type = t ?? 2;
+    int dtrCode;
     if (type == 2) {
-      await base.setDTR(2);
+      dtrCode = 2;
     } else if (type == 0) {
-      await base.setDTR(128);
+      dtrCode = 128;
     } else if (type == 1) {
-      await base.setDTR(130);
+      dtrCode = 130;
+    } else if (type == 3) {
+      dtrCode = 129;
+    } else if (type == 4) {
+      dtrCode = 131;
+    } else {
+      dtrCode = 2;
     }
+    await base.setDTR(dtrCode);
     await base.dtSelect(8);
 
-    int colorType = await getColorType(a);
-    if (colorType != ColorType.colorTemp) {
-      DaliLog.instance.debugLog('Device not supporting color mode');
+    int featuresByte = await getColorType(a);
+    final features = ColorTypeFeature(featuresByte);
+    if (!features.ctCapable) {
+      DaliLog.instance.debugLog('Device not supporting colour temperature (CT)');
       return 0;
     }
 
-    ColorStatus status = await getColorStatus(a);
-    if (status.ctOutOfRange) {
-      DaliLog.instance.debugLog('Color temperature out of range');
-      return 0;
-    }
-    if (!status.ctActive) {
-      DaliLog.instance.debugLog('Color temperature not active');
-      return 0;
+    // For current CT (DTR=2) the answer is active-type related. For CT limits and
+    // physical bounds (128/129/130/131), do not pre-block; let device answer MASK if needed.
+    if (dtrCode == 2) {
+      ColorStatus status = await getColorStatus(a);
+      if (status.ctOutOfRange) {
+        DaliLog.instance.debugLog('Color temperature out of range');
+        // continue; device may still respond per spec
+      }
+      if (!status.ctActive) {
+        DaliLog.instance.debugLog('Color temperature not active; attempting query');
+        // continue to allow possible recalculation/MASK
+      }
     }
 
     int dtr = await base.getDTR(a);
@@ -156,6 +185,21 @@ class DaliDT8 {
     return kelvin.floor();
   }
 
+  /// Physical CT range helpers (Table 11: 129/131)
+  Future<int> getPhysicalMinColorTemperature(int a) async {
+    int mirek = await getColTempRaw(a, 3);
+    if (mirek == 0) return 0;
+    double kelvin = 1000000.0 / mirek;
+    return kelvin.floor();
+  }
+
+  Future<int> getPhysicalMaxColorTemperature(int a) async {
+    int mirek = await getColTempRaw(a, 4);
+    if (mirek == 0) return 0;
+    double kelvin = 1000000.0 / mirek;
+    return kelvin.floor();
+  }
+
   Future<void> setColourRaw(int addr, int x1, int y1) async {
     int x1L = x1 & 0xff;
     int y1L = y1 & 0xff;
@@ -200,29 +244,27 @@ class DaliDT8 {
   }
 
   Future<int?> getColourRaw(int a, int type) async {
-    int colorType = await getColorType(a);
-    if (colorType == 0) {
-      DaliLog.instance.debugLog('Device not supporting color mode');
+    final code = type & 0xFF;
+    final featuresByte = await getColorType(a);
+    final features = ColorTypeFeature(featuresByte);
+    // Only CT-related codes require CT capability
+    if ((code == 2 || code == 128 || code == 129 || code == 130 || code == 131) &&
+        !features.ctCapable) {
+      DaliLog.instance.debugLog('Device not supporting colour temperature (CT)');
       return null;
     }
-    ColorStatus status = await getColorStatus(a);
-    if ((type == 0 || type == 1) && status.xyOutOfRange) {
-      DaliLog.instance.debugLog('Color out of range');
-      return null;
+    // For active-type related codes (0..15), log status but proceed
+    if (code <= 15) {
+      final status = await getColorStatus(a);
+      if ((code == 0 || code == 1)) {
+        if (status.xyOutOfRange) DaliLog.instance.debugLog('Color x/y out of range');
+        if (!status.xyActive) DaliLog.instance.debugLog('x/y not active; attempting query');
+      } else if (code == 2) {
+        if (status.ctOutOfRange) DaliLog.instance.debugLog('CT out of range');
+        if (!status.ctActive) DaliLog.instance.debugLog('CT not active; attempting query');
+      }
     }
-    if ((type == 0 || type == 1) && !status.xyActive) {
-      DaliLog.instance.debugLog('Color not active');
-      return null;
-    }
-    if (type == 2 && status.ctOutOfRange) {
-      DaliLog.instance.debugLog('Color temperature out of range');
-      return null;
-    }
-    if (type == 2 && !status.ctActive) {
-      DaliLog.instance.debugLog('Color temperature not active');
-      return null;
-    }
-    await base.setDTR(type);
+    await base.setDTR(code);
     await base.dtSelect(8);
     await base.queryColourValue(a);
     int dtr = await base.getDTR(a);
@@ -263,5 +305,125 @@ class DaliDT8 {
     DaliLog.instance.debugLog('xy: $xy');
     final rgb = DaliColor.xy2rgb(xy[0], xy[1]);
     return rgb;
+  }
+
+  // ----------------------------- Active-type related queries (Table 11: 3..15) -----------------------------
+  /// PRIMARY N DIMLEVEL (active colour type related). N in [0..5].
+  Future<int?> getPrimaryDimLevel(int a, int n) async {
+    if (n < 0 || n > 5) return null;
+    return await getColourRaw(a, 3 + n);
+  }
+
+  /// Individual RGBWAF dimlevels (active colour type related)
+  Future<int?> getRedDimLevel(int a) async => getColourRaw(a, 9);
+  Future<int?> getGreenDimLevel(int a) async => getColourRaw(a, 10);
+  Future<int?> getBlueDimLevel(int a) async => getColourRaw(a, 11);
+  Future<int?> getWhiteDimLevel(int a) async => getColourRaw(a, 12);
+  Future<int?> getAmberDimLevel(int a) async => getColourRaw(a, 13);
+  Future<int?> getFreecolourDimLevel(int a) async => getColourRaw(a, 14);
+  Future<int?> getRGBWAFControl(int a) async => getColourRaw(a, 15);
+
+  // ----------------------------- Temporary colour queries (Table 11: 192..208) -----------------------------
+  Future<int?> getTemporaryXRaw(int a) async => getColourRaw(a, 192);
+  Future<int?> getTemporaryYRaw(int a) async => getColourRaw(a, 193);
+  Future<int?> getTemporaryColourTemperatureRaw(int a) async => getColourRaw(a, 194);
+
+  /// TEMPORARY PRIMARY N DIMLEVEL (N in [0..5])
+  Future<int?> getTemporaryPrimaryDimLevel(int a, int n) async {
+    if (n < 0 || n > 5) return null;
+    return await getColourRaw(a, 195 + n);
+  }
+
+  Future<int?> getTemporaryRedDimLevel(int a) async => getColourRaw(a, 201);
+  Future<int?> getTemporaryGreenDimLevel(int a) async => getColourRaw(a, 202);
+  Future<int?> getTemporaryBlueDimLevel(int a) async => getColourRaw(a, 203);
+  Future<int?> getTemporaryWhiteDimLevel(int a) async => getColourRaw(a, 204);
+  Future<int?> getTemporaryAmberDimLevel(int a) async => getColourRaw(a, 205);
+  Future<int?> getTemporaryFreecolourDimLevel(int a) async => getColourRaw(a, 206);
+  Future<int?> getTemporaryRGBWAFControl(int a) async => getColourRaw(a, 207);
+  Future<int?> getTemporaryColourType(int a) async => getColourRaw(a, 208);
+
+  /// Return TEMPORARY x/y as [x, y] in 0..1 range; empty list on MASK.
+  Future<List<double>> getTemporaryColour(int a) async {
+    final x = await getTemporaryXRaw(a);
+    final y = await getTemporaryYRaw(a);
+    if (x == null || y == null) return [];
+    return [x / 65535.0, y / 65535.0];
+  }
+
+  /// Return TEMPORARY COLOUR TEMPERATURE (Kelvin)
+  Future<int> getTemporaryColorTemperature(int a) async {
+    final mirek = await getTemporaryColourTemperatureRaw(a) ?? 0;
+    if (mirek == 0) return 0;
+    return (1000000.0 / mirek).floor();
+  }
+
+  // ----------------------------- Report colour queries (Table 11: 224..240) -----------------------------
+  Future<int?> getReportXRaw(int a) async => getColourRaw(a, 224);
+  Future<int?> getReportYRaw(int a) async => getColourRaw(a, 225);
+  Future<int?> getReportColourTemperatureRaw(int a) async => getColourRaw(a, 226);
+
+  /// REPORT PRIMARY N DIMLEVEL (N in [0..5])
+  Future<int?> getReportPrimaryDimLevel(int a, int n) async {
+    if (n < 0 || n > 5) return null;
+    return await getColourRaw(a, 227 + n);
+  }
+
+  Future<int?> getReportRedDimLevel(int a) async => getColourRaw(a, 233);
+  Future<int?> getReportGreenDimLevel(int a) async => getColourRaw(a, 234);
+  Future<int?> getReportBlueDimLevel(int a) async => getColourRaw(a, 235);
+  Future<int?> getReportWhiteDimLevel(int a) async => getColourRaw(a, 236);
+  Future<int?> getReportAmberDimLevel(int a) async => getColourRaw(a, 237);
+  Future<int?> getReportFreecolourDimLevel(int a) async => getColourRaw(a, 238);
+  Future<int?> getReportRGBWAFControl(int a) async => getColourRaw(a, 239);
+  Future<int?> getReportColourType(int a) async => getColourRaw(a, 240);
+
+  /// Return REPORT x/y as [x, y] in 0..1 range; empty list on MASK.
+  Future<List<double>> getReportColour(int a) async {
+    final x = await getReportXRaw(a);
+    final y = await getReportYRaw(a);
+    if (x == null || y == null) return [];
+    DaliLog.instance.debugLog('report xy: x=$x, y=$y');
+    return [x / 65535.0, y / 65535.0];
+  }
+
+  /// Return REPORT COLOUR TEMPERATURE (Kelvin)
+  Future<int> getReportColorTemperature(int a) async {
+    final mirek = await getReportColourTemperatureRaw(a) ?? 0;
+    if (mirek == 0) return 0;
+    return (1000000.0 / mirek).floor();
+  }
+
+  /// Query number of primaries (DTR=82). Returns null on MASK/no answer.
+  Future<int?> getNumberOfPrimaries(int a) async {
+    return await getColourRaw(a, 82);
+  }
+
+  /// Primary N info (x, y, TY) — DTR codes 64+3N, 65+3N, 66+3N (N: 0..5)
+  Future<int?> getPrimaryXRaw(int a, int n) async {
+    if (n < 0 || n > 5) return null;
+    return await getColourRaw(a, 64 + 3 * n);
+  }
+
+  Future<int?> getPrimaryYRaw(int a, int n) async {
+    if (n < 0 || n > 5) return null;
+    return await getColourRaw(a, 65 + 3 * n);
+  }
+
+  Future<int?> getPrimaryTy(int a, int n) async {
+    if (n < 0 || n > 5) return null;
+    return await getColourRaw(a, 66 + 3 * n);
+  }
+
+  Future<List<double>> getSceneColor(int a, int sense) async {
+    final bright = await base.getScene(a, sense);
+    if (bright == 255) return []; //MASK
+    await base.copyReportColourToTemp(a);
+    final xy = await getColour(a);
+    if (xy.isEmpty) {
+      return [];
+    }
+    DaliLog.instance.debugLog('xy: $xy');
+    return xy;
   }
 }

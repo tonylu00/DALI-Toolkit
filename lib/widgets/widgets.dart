@@ -10,6 +10,8 @@ export 'controls/device_control_buttons_widget.dart';
 export 'controls/brightness_control_widget.dart';
 export 'controls/color_temperature_control_widget.dart';
 export 'controls/group_control_widget.dart';
+export 'controls/fade_control_widget.dart';
+export 'controls/scene_goto_widget.dart';
 
 // Color widgets
 export 'color/color_control_widget.dart';
@@ -28,3 +30,5 @@ export 'settings/settings_item.dart';
 export 'settings/settings_option_button.dart';
 export 'settings/log_level_setting.dart';
 export 'settings/response_window_setting.dart';
+// Status
+export 'common/status_bits_widget.dart';

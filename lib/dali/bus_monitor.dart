@@ -25,6 +25,12 @@ class BusMonitor {
   final _rawCtrl = StreamController<BusFrame>.broadcast();
   final _decodedCtrl = StreamController<DecodedRecord>.broadcast();
   final decoder = DaliDecode();
+  // Keep decoded history in memory until app exit
+  final List<DecodedRecord> _records = <DecodedRecord>[];
+  List<DecodedRecord> get records => List.unmodifiable(_records);
+  // Persist UI state across navigations
+  double lastScrollOffset = 0.0;
+  bool lastAutoScroll = true;
 
   Stream<BusFrame> get rawStream => _rawCtrl.stream;
   Stream<DecodedRecord> get decodedStream => _decodedCtrl.stream;
@@ -37,6 +43,7 @@ class BusMonitor {
     final f = BusFrame(dir: BusDir.front, proto: proto, b1: addr & 0xFF, b2: cmd & 0xFF);
     _rawCtrl.add(f);
     final rec = decoder.decode(addr & 0xFF, cmd & 0xFF, proto: proto);
+    _records.add(rec);
     _decodedCtrl.add(rec);
   }
 
@@ -44,7 +51,12 @@ class BusMonitor {
     final f = BusFrame(dir: BusDir.back, proto: 0xFF, b1: prefix & 0xFF, b2: value & 0xFF);
     _rawCtrl.add(f);
     final rec = decoder.decodeCmdResponse(value & 0xFF, gwPrefix: prefix & 0xFF);
+    _records.add(rec);
     _decodedCtrl.add(rec);
+  }
+
+  void clear() {
+    _records.clear();
   }
 
   void dispose() {

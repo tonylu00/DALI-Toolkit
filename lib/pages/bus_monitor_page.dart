@@ -24,13 +24,30 @@ class _BusMonitorPageState extends State<BusMonitorPage> {
   void initState() {
     super.initState();
     _loadPrefs();
+    // Seed from global history to persist across navigations
+    _items.addAll(BusMonitor.I.records);
+    // Restore auto-scroll and scroll offset
+    _autoScroll = BusMonitor.I.lastAutoScroll;
     _sub = BusMonitor.I.decodedStream.listen((rec) {
+      if (!mounted) return;
       setState(() {
         _items.add(rec);
       });
       _maybeAutoScroll();
     });
     _controller.addListener(_onScroll);
+    // Restore scroll position after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_controller.hasClients) return;
+      final offset = BusMonitor.I.lastScrollOffset;
+      final max = _controller.position.maxScrollExtent;
+      final clamped = offset.clamp(0.0, max);
+      if (clamped > 0) {
+        try {
+          _controller.jumpTo(clamped);
+        } catch (_) {}
+      }
+    });
   }
 
   Future<void> _loadPrefs() async {
@@ -52,6 +69,8 @@ class _BusMonitorPageState extends State<BusMonitorPage> {
     if (!_controller.hasClients) return;
     final pos = _controller.position;
     final atBottom = pos.pixels >= (pos.maxScrollExtent - 16);
+    // persist last offset
+    BusMonitor.I.lastScrollOffset = pos.pixels;
     if (!atBottom && _autoScroll) {
       setState(() => _autoScroll = false);
     }
@@ -60,7 +79,7 @@ class _BusMonitorPageState extends State<BusMonitorPage> {
   void _maybeAutoScroll() {
     if (!_autoScroll || !_controller.hasClients) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_controller.hasClients) return;
+      if (!mounted || !_controller.hasClients) return;
       final target = _controller.position.maxScrollExtent;
       try {
         _controller.jumpTo(target);
@@ -122,10 +141,18 @@ class _BusMonitorPageState extends State<BusMonitorPage> {
               ),
               const SizedBox(width: 16),
               const Text('Auto scroll'),
-              Switch(value: _autoScroll, onChanged: (v) => setState(() => _autoScroll = v)),
+              Switch(
+                  value: _autoScroll,
+                  onChanged: (v) => setState(() {
+                        _autoScroll = v;
+                        BusMonitor.I.lastAutoScroll = v;
+                      })),
               const SizedBox(width: 8),
               TextButton(
-                onPressed: () => setState(() => _items.clear()),
+                onPressed: () {
+                  setState(() => _items.clear());
+                  BusMonitor.I.clear();
+                },
                 child: const Text('Clear'),
               ),
             ],
